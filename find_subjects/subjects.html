@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Student Lookup — Subjects by Grade</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="./css/bootstrap.min.css" rel="stylesheet">
+  <!-- Hillcrest theme overrides -->
+  <link rel="stylesheet" href="./css/style.css">
+  <style>
+    /* Small page-specific polish (non-invasive) */
+    .card-fixed { border-radius: .75rem; }
+    .status-ok { color: #198754; }
+    .status-warn { color: #fd7e14; }
+    .status-err { color: #dc3545; }
+    .sticky-head thead th { position: sticky; top: 0; z-index: 1; background: #f8f9fa; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+<body class="bg-light">
+
+  <!-- Themed header -->
+  <header class="hhs-header py-4 mb-4">
+    <div class="container">
+      <h1 class="hhs-title mb-0 text-center">Hillcrest High School — Subjects Lookup</h1>
+    </div>
+  </header>
+
+  <div class="container pb-5">
+
+    <!-- Filter Card -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <form id="subjectsForm" class="row g-3">
+          <div class="col-md-3">
+            <label for="gradeSelect" class="form-label">Grade</label>
+            <select id="gradeSelect" class="form-select" required>
+              <option value="" selected disabled>Select grade…</option>
+              <option value="10">Grade 10</option>
+              <option value="11">Grade 11</option>
+              <option value="12">Grade 12</option>
+            </select>
+            <div class="invalid-feedback">Please choose a grade.</div>
+          </div>
+
+          <div class="col-md-5">
+            <label for="subjectSelect" class="form-label">Subject</label>
+            <select id="subjectSelect" class="form-select" disabled required>
+              <option value="" selected disabled>Select subject…</option>
+            </select>
+            <div class="form-text">Subjects list loads after selecting a grade.</div>
+            <div class="invalid-feedback">Please choose a subject.</div>
+          </div>
+
+          <div class="col-md-2">
+            <label for="lineSelect" class="form-label">Line</label>
+            <select id="lineSelect" class="form-select" disabled>
+              <option value="__ALL__" selected>All lines</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 d-grid align-self-end">
+            <button type="button" id="exportBtn" class="btn btn-primary" disabled>Export CSV</button>
+          </div>
+        </form>
+
+        <div id="messageArea" class="mt-3 small"></div>
+        <div class="mt-2">
+          <span id="countBadge" class="badge bg-secondary">0 students</span>
+          <span id="statusText" class="ms-2"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultArea"></div>
+
+    <!-- Helpful note -->
+    <p class="text-muted mt-3 small">
+      Tip: run this page via a local server (e.g., VS Code “Live Server”, <span class="mono">python -m http.server</span>),
+      as browsers block <span class="mono">fetch()</span> from <span class="mono">file://</span>.
+    </p>
+  </div>
+
+  <!-- JS -->
+  <script src="./js/jquery-4.0.0.min.js"></script>
+  <script src="./js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ===== Configuration (update paths/names if needed) =====
+    const gradeFiles = {
+      "10": "Subjects-Grade10.json",
+      "11": "Subjects-Grade11.json",
+      "12": "Subjects-Grade12.json",
+    };
+
+    // ===== State =====
+    let subjectsMap = new Map();     // subjectName -> students[]
+    let currentSubject = "";
+    let currentStudents = [];
+    let filteredStudents = [];
+
+    // ===== DOM =====
+    const $grade = $('#gradeSelect');
+    const $subject = $('#subjectSelect');
+    const $line = $('#lineSelect');
+    const $result = $('#resultArea');
+    const $msg = $('#messageArea');
+    const $count = $('#countBadge');
+    const $status = $('#statusText');
+    const $export = $('#exportBtn');
+
+    // ===== Helpers =====
+    function setStatus(text, cls = '') {
+      $status.removeClass('status-ok status-warn status-err').addClass(cls).text(text || '');
+    }
+    function setMessage(html) { $msg.html(html || ''); }
+    function updateCount(arr) {
+      const n = Array.isArray(arr) ? arr.length : 0;
+      $count.text(\`\${n} student\${n === 1 ? '' : 's'}\`);
+      $count.toggleClass('bg-secondary', n === 0).toggleClass('bg-success', n > 0);
+    }
+    function clearSelect($sel, placeholder, { disabled = false } = {}) {
+      $sel.empty().append(
+        $('<option>', { value: '', text: placeholder, disabled: true, selected: true })
+      ).prop('disabled', disabled);
+    }
+    function addOptions($sel, opts) {
+      for (const { value, label } of opts) {
+        $sel.append($('<option>', { value, text: label ?? value }));
+      }
+    }
+    async function fetchJson(url) {
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error(\`\${url} (\${resp.status})\`);
+      return resp.json();
+    }
+    function normalizeSubjects(data) {
+      const map = new Map();
+
+      // A) { subjects: [ { name, students: [...] }, ... ] }
+      if (data && Array.isArray(data.subjects)) {
+        for (const entry of data.subjects) {
+          if (!entry) continue;
+          const name = entry.name || entry.subject || entry.title || entry.code || 'Unknown Subject';
+          const students = Array.isArray(entry.students) ? entry.students
+                         : Array.isArray(entry.learners) ? entry.learners
+                         : Array.isArray(entry.pupils)   ? entry.pupils
+                         : [];
+          map.set(String(name), students);
+        }
+        return map;
+      }
+      // B) { "IT": [ {...}, ... ], "Math": [ {...}, ... ] }
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        for (const [key, val] of Object.entries(data)) {
+          if (Array.isArray(val)) {
+            map.set(String(key), val);
+          } else if (val && typeof val === 'object') {
+            const name = val.name || val.subject || key;
+            const students = Array.isArray(val.students) ? val.students : [];
+            map.set(String(name), students);
+          }
+        }
+      }
+      return map;
+    }
+    function uniqValues(arr, key) {
+      return Array.from(new Set(arr.map(o => (o && o[key] != null ? String(o[key]) : '')).filter(Boolean)));
+    }
+    function deriveColumns(students) {
+      const set = new Set();
+      students.forEach(s => { if (s && typeof s === 'object') Object.keys(s).forEach(k => set.add(k)); });
+      const preferred = ['studentId','id','studentNumber','admissionNo','firstName','lastName','name','line','class','group'];
+      const present = new Set(set);
+      const cols = [];
+      preferred.forEach(k => { if (present.has(k)) { cols.push(k); present.delete(k); } });
+      cols.push(...Array.from(present).sort((a,b)=>a.localeCompare(b)));
+      return cols.length ? cols : ['name'];
+    }
+    function esc(s) {
+      if (s == null) return '';
+      return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;");
+    }
+    function stringifyCell(v) {
+      if (v == null) return '';
+      if (typeof v === 'object') { try { return JSON.stringify(v); } catch { return String(v); } }
+      return String(v);
+    }
+    function renderTable(rows) {
+      if (!rows.length) {
+        $result.html('<div class="alert alert-light border">No students to display.</div>');
+        return;
+      }
+      const cols = deriveColumns(rows);
+      const thead = '<thead><tr>' + cols.map(c=>\`<th scope="col">\${esc(c)}</th>\`).join('') + '</tr></thead>';
+      const tbody = '<tbody>' + rows.map(r =>
+        '<tr>' + cols.map(c => \`<td>\${esc(stringifyCell(r?.[c]))}</td>\`).join('') + '</tr>'
+      ).join('') + '</tbody>';
+      $result.html(
+        '<div class="table-responsive">' +
+          '<table class="table table-sm table-hover align-middle sticky-head">' +
+            thead + tbody +
+          '</table>' +
+        '</div>'
+      );
+    }
+    function toCSV(rows) {
+      if (!rows.length) return '';
+      const cols = deriveColumns(rows);
+      const escCSV = s => {
+        const t = String(s ?? '');
+        const need = /[",\n]/.test(t);
+        return need ? '"' + t.replaceAll('"','""') + '"' : t;
+      };
+      const header = cols.map(escCSV).join(',');
+      const lines = rows.map(r => cols.map(c => escCSV(stringifyCell(r?.[c]))).join(','));
+      return [header, ...lines].join('\n');
+    }
+    function download(filename, content, mime='text/plain;charset=utf-8') {
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // ===== Events =====
+    $grade.on('change', async function() {
+      const g = $(this).val();
+      setMessage(''); setStatus('Loading subjects…', 'status-warn');
+      subjectsMap = new Map(); currentSubject = ''; currentStudents = []; filteredStudents = [];
+      updateCount([]); $export.prop('disabled', true);
+      clearSelect($subject, 'Select subject…', { disabled: true });
+      clearSelect($line, 'All lines', { disabled: true }).append($('<option>', { value:'__ALL__', text:'All lines' }));
+
+      const file = gradeFiles[g];
+      if (!file) { setStatus('No data file configured for this grade.', 'status-err'); return; }
+
+      try {
+        const data = await fetchJson(file);
+        subjectsMap = normalizeSubjects(data);
+        if (subjectsMap.size === 0) {
+          setStatus('Loaded, but no subjects found in the file.', 'status-warn');
+          setMessage(\`Check the structure of <code>\${file}</code>.\`);
+          renderTable([]); return;
+        }
+        const subjects = Array.from(subjectsMap.keys()).sort((a,b)=>a.localeCompare(b));
+        addOptions($subject, subjects.map(s => ({ value: s, label: s })));
+        $subject.prop('disabled', false);
+        setStatus(\`Loaded \${subjects.length} subject\${subjects.length===1?'':'s'} for Grade \${g}.\`, 'status-ok');
+      } catch (e) {
+        setStatus('Failed to load grade file.', 'status-err');
+        setMessage(\`<span class="text-danger">Error:</span> \${e.message}. Ensure the file exists and you’re not opening this page via <code>file://</code>.\`);
+        renderTable([]);
+      }
+    });
+
+    $subject.on('change', function() {
+      currentSubject = $(this).val();
+      currentStudents = subjectsMap.get(currentSubject) || [];
+      // Populate line filter
+      clearSelect($line, 'All lines', { disabled: false });
+      $line.append($('<option>', { value:'__ALL__', text:'All lines', selected:true }));
+      uniqValues(currentStudents, 'line').sort((a,b)=>a.localeCompare(b))
+        .forEach(l => $line.append($('<option>', { value: l, text: l })));
+
+      filteredStudents = [...currentStudents];
+      renderTable(filteredStudents);
+      updateCount(filteredStudents);
+      $export.prop('disabled', filteredStudents.length === 0);
+      setStatus(\`Showing “\${currentSubject}” (\${filteredStudents.length} record\${filteredStudents.length===1?'':'s'}).\`, 'status-ok');
+    });
+
+    $line.on('change', function() {
+      const v = $(this).val();
+      filteredStudents = (v === '__ALL__')
+        ? [...currentStudents]
+        : currentStudents.filter(s => String(s?.line ?? '').trim() === v);
+      renderTable(filteredStudents);
+      updateCount(filteredStudents);
+      $export.prop('disabled', filteredStudents.length === 0);
+      setStatus(\`Filter: \${v==='__ALL__' ? 'All lines' : 'Line = '+v}. \${filteredStudents.length} record\${filteredStudents.length===1?'':'s'}.\`, 'status-ok');
+    });
+
+    $('#exportBtn').on('click', function() {
+      if (!filteredStudents.length) return;
+      const g = $grade.val() || 'NA';
+      const subjSafe = (currentSubject || 'Subject').replace(/[^\w\-]+/g, '_');
+      const line = ($line.val() && $line.val() !== '__ALL__') ? $line.val() : 'All';
+      const csv = toCSV(filteredStudents);
+      download(\`Grade\${g}-\${subjSafe}-Line_\${line}.csv\`, csv, 'text/csv;charset=utf-8');
+    });
+
+    // HTML5 validation (non-blocking)
+    (function() {
+      const form = document.getElementById('subjectsForm');
+      form.addEventListener('submit', function(e) {
+        if (!form.checkValidity()) { e.preventDefault(); e.stopPropagation(); }
+        form.classList.add('was-validated');
+      });
+    })();
+  </script>
+</body>
+</html>

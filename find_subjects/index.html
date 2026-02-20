@@ -1,0 +1,85 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Student Lookup — Subject + Line (by Grade) • Vertical Form</title>
+  <!-- Bootstrap 5 -->
+  <link href="../css/bootstrap.min.css" rel="stylesheet">
+  <!-- Hillcrest theme overrides -->
+  <link rel="stylesheet" href="../css/style.css">
+  <!-- Page-specific overrides -->
+  <link rel="stylesheet" href="./subjects.css">
+</head>
+<body class="bg-light">
+  <header class="hhs-header py-4 mb-4">
+    <div class="container">
+      <h1 class="hhs-title mb-0 text-center">Hillcrest High School — Student Lookup</h1>
+    </div>
+  </header>
+
+  <div class="container pb-5">
+    <!-- Search Card -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <form id="searchForm" novalidate>
+          <!-- We keep existing inner blocks, but CSS will stack them vertically -->
+          <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+              <label for="field" class="form-label">Search field</label>
+              <select id="field" name="field" class="form-select">
+                <option value="auto" selected>Auto (Admin / Name / Class)</option>
+                <option value="admin">Admin No</option>
+                <option value="name">Name</option>
+                <option value="class">Registration Class</option>
+                <option value="subject">Subject + Line</option>
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label for="gradeSelect" class="form-label">Grade</label>
+              <select id="gradeSelect" class="form-select" aria-label="Select grade for subject lookup">
+                <option value="" selected>Select…</option>
+                <option value="10">Grade 10</option>
+                <option value="11">Grade 11</option>
+                <option value="12">Grade 12</option>
+              </select>
+              <div class="form-text">Required for Subject + Line search.</div>
+            </div>
+
+            <div class="col-md-5">
+              <label for="query" class="form-label">Search term</label>
+              <input type="text" class="form-control" id="query" name="query"
+                     placeholder="e.g., ‘Information Technology line 7’ or ‘Tourism 5’" required />
+              <div class="form-text">
+                <strong>Subject + Line:</strong> e.g. <code>Information Technology line 7</code> · <code>Tourism 5</code>
+              </div>
+              <div class="invalid-feedback">Please enter a search term.</div>
+            </div>
+
+            <div class="col-md-2 d-grid d-md-flex">
+              <button type="submit" class="btn btn-primary me-md-2 mb-2 mb-md-0">Search</button>
+              <button type="button" id="resetBtn" class="btn btn-outline-secondary">Clear</button>
+            </div>
+          </div>
+        </form>
+        <div id="messageArea" class="mt-3"></div>
+      </div>
+    </div>
+
+    <div id="resultArea"></div>
+  </div>
+
+  <script src="./js/jquery-4.0.0.min.js"></script>
+  <script src="./js/bootstrap.bundle.min.js"></script>
+  <script src="./js/subject-lookup.js"></script>
+  <script src="./js/lookup.js"></script>
+  <script>
+    window.getSelectedField = function() {
+      const el = document.getElementById('field');
+      return el ? el.value : 'auto';
+    };
+  </script>
+</body>
+</html>

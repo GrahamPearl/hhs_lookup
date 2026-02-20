@@ -1,0 +1,182 @@
+/* ================================
+   Hillcrest High School Theme
+   Palette (from public sources): Blue, Red, White
+   ================================ */
+
+/* Core colours (tweak if your internal style guide has exact hex codes) */
+:root {
+  --hhs-blue: #0a4fa3;    /* primary */
+  --hhs-blue-600: #0a3f82;
+  --hhs-red:  #c62828;    /* accent */
+  --hhs-red-600: #a61f1f;
+  --hhs-white: #ffffff;
+  --hhs-bg:    #f7f9fc;
+  --hhs-muted: #6c757d;
+}
+
+/* Bootstrap primary override */
+.btn-primary,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: var(--hhs-blue);
+  border-color: var(--hhs-blue);
+}
+.btn-primary:hover { background-color: var(--hhs-blue-600); border-color: var(--hhs-blue-600); }
+
+.btn-outline-secondary { color: var(--hhs-blue); border-color: var(--hhs-blue); }
+.btn-outline-secondary:hover { color: #fff; background-color: var(--hhs-blue); border-color: var(--hhs-blue); }
+
+/* Header band */
+.hhs-header {
+  background: linear-gradient(90deg, var(--hhs-blue), var(--hhs-blue-600));
+  color: var(--hhs-white);
+}
+.hhs-title { font-weight: 700; letter-spacing: 0.2px; }
+
+/* Form + cards */
+body { background-color: var(--hhs-bg); }
+.card-fixed { border: 1px solid rgba(10,79,163,0.12); }
+.form-label { font-weight: 600; color: #15233b; }
+.form-select:focus, .form-control:focus {
+  border-color: var(--hhs-blue);
+  box-shadow: 0 0 0 0.2rem rgba(10, 79, 163, 0.15);
+}
+
+/* Result grid cards */
+.results-grid .card { transition: transform .12s ease, box-shadow .12s ease; }
+.results-grid .card:hover { transform: translateY(-2px); box-shadow: 0 0.35rem 1rem rgba(10, 27, 60, 0.12); }
+
+/* Accent details */
+a, .link-primary { color: var(--hhs-blue); }
+a:hover { color: var(--hhs-blue-600); }
+.alert-info { border-left: 4px solid var(--hhs-red); }
+
+/* Badges / highlights you might want later
+.badge-hhs { background-color: var(--hhs-red); color: #fff; }
+*/
+
+.student-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      max-height: 240px;
+      display: block;
+    }
+    .card-fixed {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .results-grid .card {
+      height: 100%;
+      cursor: pointer;
+    }
+    .img-col { min-height: 240px; }
+
+    
+.student-photo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+
+img-col {
+  display: flex;
+  justify-content: center; /* horizontal center */
+  align-items: center;     /* vertical center */
+}
+
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.results-grid .card {
+  height: 100%;
+  cursor: pointer;
+}
+
+/* Horizontal card layout */
+.results-grid .card {
+  display: flex;
+  align-items: center;
+  gap: 12px;            /* space between photo and text */
+  padding: 12px;        /* interior breathing room */
+}
+
+/* Keep the 64px round avatar */
+.student-photo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex: 0 0 64px;       /* don’t let it grow/shrink */
+}
+
+/* Let text take the remaining space cleanly */
+.results-grid .card .card-body {
+  padding: 0;           /* remove Bootstrap’s default inner padding */
+  min-width: 0;         /* prevents overflow/truncation in flex rows */
+}
+
+/* Optional: nicer title wrapping */
+.results-grid .card .card-title {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Optional: consistent outer grid (you already set auto-fit earlier) */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* Make the detailed card horizontal as well */
+.card-fixed .row.g-0 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-fixed .img-col {
+  display: contents;    /* flatten the column so the <img> becomes a direct flex child */
+}
+
+.card-fixed .student-photo {
+  width: 96px;          /* a bit larger in the detailed view, optional */
+  height: 96px;
+}
+
+/* Remove default grid spacing from the text col in the detailed card */
+.card-fixed .col-md-8 {
+  padding: 0;
+  flex: 1 1 auto;
+}
+
+.card-fixed {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.student-photo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 96px;
+}
+
+.card-fixed .card-body {
+  padding: 0;
+}
