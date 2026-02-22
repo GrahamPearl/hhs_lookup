@@ -1,16 +1,17 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Student Lookup — Subject + Line (by Grade) • Vertical Form</title>
+  <title>Hillcrest High • Student Lookup</title>
   <!-- Bootstrap 5 -->
   <link href="../css/bootstrap.min.css" rel="stylesheet">
-  <!-- Hillcrest theme overrides -->
   <link rel="stylesheet" href="../css/style.css">
-  <!-- Page-specific overrides -->
   <link rel="stylesheet" href="../css/subjects.css">
+  <style>
+    .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap }
+    .toolbar .badge { font-size: .85rem; }
+  </style>
 </head>
 <body class="bg-light">
   <header class="hhs-header py-4 mb-4">
@@ -24,46 +25,93 @@
     <div class="card card-fixed shadow-sm mb-4">
       <div class="card-body">
         <form id="searchForm" novalidate>
-          <!-- We keep existing inner blocks, but CSS will stack them vertically -->
           <div class="row g-3 align-items-end">
             <div class="col-md-3">
               <label for="field" class="form-label">Search field</label>
               <select id="field" name="field" class="form-select">
-                <option value="auto" selected>Auto (Admin / Name / Class)</option>
-                <option value="admin">Admin No</option>
+                <option value="auto" selected>Auto (student_number · name · subject · line · teacher · subject+line)</option>
+                <option value="student_number">Student Number</option>
                 <option value="name">Name</option>
-                <option value="class">Registration Class</option>
-                <option value="subject">Subject + Line</option>
+                <option value="subject">Subject</option>
+                <option value="line">Line</option>
+                <option value="teacher">Teacher</option>
+                <option value="subject_line">Subject + Line</option>
               </select>
             </div>
 
-            <div class="col-md-2">
+            <div class="col-md-3">
               <label for="gradeSelect" class="form-label">Grade</label>
-              <select id="gradeSelect" class="form-select" aria-label="Select grade for subject lookup">
-                <option value="" selected>Select…</option>
+              <select id="gradeSelect" class="form-select" aria-label="Select grade filter">
+                <option value="" selected>All grades</option>
                 <option value="10">Grade 10</option>
                 <option value="11">Grade 11</option>
                 <option value="12">Grade 12</option>
               </select>
-              <div class="form-text">Required for Subject + Line search.</div>
+              <div class="form-text">Required for <strong>Subject + Line</strong>.</div>
             </div>
 
-            <div class="col-md-5">
+            <div class="col-md-3">
+              <label for="subjectSelect" class="form-label">Subject</label>
+              <select id="subjectSelect" class="form-select" aria-label="Select subject">
+                <option value="" selected>All subjects</option>
+                  <option value="Accounting">Accounting</option>
+                <option value="Afrikaans First Additional Language">Afrikaans First Additional Language</option>
+                <option value="Business Studies">Business Studies</option>
+                <option value="Consumer Studies">Consumer Studies</option>
+                <option value="Dramatic Arts">Dramatic Arts</option>
+                <option value="Economics">Economics</option>
+                <option value="English Home Language">English Home Language</option>
+                <option value="Further Studies Mathematics">Further Studies Mathematics</option>
+                <option value="Geography">Geography</option>
+                <option value="German First Additional Language">German First Additional Language</option>
+                <option value="History">History</option>
+                <option value="IsiZulu First Additional Language">IsiZulu First Additional Language</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Life Orientation">Life Orientation</option>
+                <option value="Life Sciences">Life Sciences</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Mathematical Literacy">Mathematical Literacy</option>
+                <option value="Physical Sciences">Physical Sciences</option>
+                <option value="Tourism">Tourism</option>
+                <option value="Visual Arts">Visual Arts</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label for="lineSelect" class="form-label">Line</label>
+              <select id="lineSelect" class="form-select" aria-label="Select line">
+                <option value="" selected>All lines</option>
+                <option value="1">Line 1</option>
+                <option value="2">Line 2</option>
+                <option value="3">Line 3</option>
+                <option value="4">Line 4</option>
+                <option value="5">Line 5</option>
+                <option value="6">Line 6</option>
+                <option value="7">Line 7</option>
+                <option value="8">Line 8</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 align-items-end mt-1">
+            <div class="col-md-10">
               <label for="query" class="form-label">Search term</label>
               <input type="text" class="form-control" id="query" name="query"
-                     placeholder="e.g., ‘Information Technology line 7’ or ‘Tourism 5’" required />
-              <div class="form-text">
-                <strong>Subject + Line:</strong> e.g. <code>Information Technology line 7</code> · <code>Tourism 5</code>
-              </div>
-              <div class="invalid-feedback">Please enter a search term.</div>
+                     placeholder="Type a name, student number, subject, line, teacher, or ‘Subject line N’…" />
+              <div class="form-text" id="helpText">Use the dropdowns above and/or a search term. Auto searches across all fields.</div>
             </div>
-
             <div class="col-md-2 d-grid d-md-flex">
               <button type="submit" class="btn btn-primary me-md-2 mb-2 mb-md-0">Search</button>
               <button type="button" id="resetBtn" class="btn btn-outline-secondary">Clear</button>
             </div>
           </div>
         </form>
+
+        <div class="toolbar mt-3">
+          <span id="status" class="badge bg-secondary">Ready</span>
+          <button type="button" id="exportBtn" class="btn btn-sm btn-outline-primary" disabled>Export CSV</button>
+        </div>
+
         <div id="messageArea" class="mt-3"></div>
       </div>
     </div>
@@ -74,12 +122,5 @@
   <script src="../js/jquery-4.0.0.min.js"></script>
   <script src="../js/bootstrap.bundle.min.js"></script>
   <script src="../js/subject-lookup.js"></script>
-  <script src="../js/student-lookup.js"></script>
-  <script>
-    window.getSelectedField = function() {
-      const el = document.getElementById('field');
-      return el ? el.value : 'auto';
-    };
-  </script>
 </body>
 </html>

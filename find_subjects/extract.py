@@ -12,7 +12,7 @@ import pandas as pd
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 # Your workbook (Grade 10, Grade 11, etc.)
-EXCEL_FILE = SCRIPT_DIR / "Grade 10.xlsx"
+EXCEL_FILE = SCRIPT_DIR / "Grade12.xlsx"
 
 # Official subject list (one per line)
 SUBJECTS_TXT = SCRIPT_DIR / "list_of_subjects.txt"
@@ -40,6 +40,21 @@ ABBR = {
 }
 
 MATH_PREFIXES = {"M", "MA", "MAT", "MATH", "MATHS", "MATHEMATICS"}
+
+TEACHER_PREFIX_RE = re.compile(r"^\s*(MR\.|MRS\.|MR |MRS |MSS |MS |MISS )\s*", flags=re.I)
+GRADE_SUFFIX_RE = re.compile(r"\s*\(Gr\s*\d+\)\s*$", flags=re.I)
+
+
+def remove_grade_suffix(s: str) -> str:
+    if not s:
+        return ""
+    return GRADE_SUFFIX_RE.sub("", s).strip()
+
+def clean_teacher_prefix(s: str) -> str:
+    if not s:
+        return ""
+    return TEACHER_PREFIX_RE.sub("", str(s)).strip()
+
 
 def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip().upper())
@@ -146,6 +161,12 @@ def parse_line(*raw_candidates: str) -> str | None:
             return m.group(1)
     return None
 
+
+def extract_line_number(text):
+    match = re.search(r"\d+", text)
+    return int(match.group()) if match else None
+
+
 # =========================
 # EXTRACTION LOGIC
 # =========================
@@ -164,52 +185,56 @@ def excel_to_master_json(excel_path: Path, subjects_txt: Path) -> list[dict]:
         # SUBJECT COMES FROM D5
         try:
             subject_raw = str(df.iat[4, 3]).strip()
+            subject_raw = trim_trailing_grade(subject_raw)
+            subject_raw = GRADE_SUFFIX_RE.sub("", subject_raw)       
         except Exception:
             continue
+        
+        try:
+            subject_line = str(df.iat[3, 3]).strip()
+            subject_line = extract_line_number(subject_line)
+                   
+        except Exception:
+            continue
+        
+        try:
+            teacher_cell = df.iat[5, 3] if df.shape[0] > 5 and df.shape[1] > 3 else None
+            teacher_raw = clean_teacher_prefix(str(teacher_cell).strip()) if pd.notna(teacher_cell) else ""
+        except Exception:
+            teacher_raw = ""
 
         # Tourism fix: derive hint from sheet tab name
-        hint = subject_hint_from_sheet(sheet_name)
+        # hint = subject_hint_from_sheet(sheet_name)
 
         # Normalise/match subject
-        subject_clean = match_subject(subject_raw, official_subjects, fallback_hint=hint)
+        # subject_clean = match_subject(subject_raw, official_subjects, fallback_hint=hint)
+        
+        print(subject_raw)
 
         # Extract line from subject_raw or D4
         top_cell = str(df.iat[3, 3]) if df.shape[0] > 3 else None
-        line = parse_line(subject_raw, top_cell)
-        if not line:
-            continue
+        line = subject_line
 
-        # Find header row containing "NO"
-        try:
-            header_rows = df.index[df.iloc[:, 0] == "NO"]
-        except Exception:
-            continue
-        if len(header_rows) == 0:
-            continue
-
-        header_row = int(header_rows[0])
-
-        # Extract student rows
+        header_row = 9 
         data = df.iloc[header_row + 1 :].dropna(subset=[0])
         data.columns = ["NO", "ADMNR", "NAME", "GENDER", "CLASS"]
 
         for _, row in data.iterrows():
-            try:
-                student_no = int(row.ADMNR)
-            except Exception:
-                continue
-
+            student_no = int(row.ADMNR)
+            
             master_records.append({
                 "student_number": student_no,
                 "name": str(row.NAME).strip() if pd.notna(row.NAME) else "",
                 "gender": str(row.GENDER).strip() if pd.notna(row.GENDER) else "",
                 "class": str(row.CLASS).strip() if pd.notna(row.CLASS) else "",
-                "subject": subject_clean,       # ← NOW GUARANTEED CORRECT EVERY TIME
+                "subject": subject_raw,       # ← NOW GUARANTEED CORRECT EVERY TIME
                 "line": line,
-                "teacher_raw": subject_raw,     # keep for auditing
-                "sheet": sheet_name,
+                "teacher": teacher_raw,     # keep for auditing
+                #"sheet": sheet_name,
             })
-
+    
+    print( int( len(master_records)) )
+    
     return master_records
 
 # =========================
@@ -219,7 +244,7 @@ if __name__ == "__main__":
     excel_path = Path(EXCEL_FILE)
     records = excel_to_master_json(excel_path, SUBJECTS_TXT)
 
-    output_file = excel_path.with_name(excel_path.stem + "_Master_Subjects.json")
+    output_file = excel_path.with_name("Subjects-"+excel_path.stem + ".json")
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2, ensure_ascii=False)
 
