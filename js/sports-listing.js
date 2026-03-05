@@ -1,10 +1,10 @@
+const STORAGE_KEY = "activityTeams";
+const DATA_URL = "../students.json";
+const LIST_URL = "list_of_sports.txt";
+
 let students = [];
 let activities = [];
 let team = {};
-
-const STORAGE_KEY = "activityTeams";
-const DATA_URL = '../students.json';
-const LIST_URL = "list_of_sports.txt";
 
 async function loadStudents() {
   const res = await fetch(DATA_URL);
@@ -13,7 +13,9 @@ async function loadStudents() {
 
 async function loadActivities() {
   const res = await fetch(LIST_URL);
+
   const text = await res.text();
+
   const lines = text.split("\n");
 
   lines.forEach((line) => {

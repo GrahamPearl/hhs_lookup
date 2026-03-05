@@ -6,32 +6,39 @@
 
     <link rel="stylesheet" href="../css/style.css" />
     <link rel="stylesheet" href="../css/teams.css" />
+     <script src="xlsx.full.min.js"></script>
+     <script src="jszip.min.js"></script>
   </head>
 
   <body>
     <h1>School Activity Team Manager</h1>
     <h4>This builder is browser based. <br>Export and Import to move to other devices</h3>
 
-    <div class="controls">
-      <label>Activity</label>
 
-      <select id="activitySelect"></select>
+<div class="controls">
 
-      <input id="adminInput" placeholder="Admin No" />
+<label>Activity</label>
 
-      <button onclick="addStudent()">Add</button>
-      <button onclick="removeStudent()">Delete</button>
+<select id="activitySelect"></select>
 
-      <input type="file" id="importFile" />
-      <button onclick="importTeam()">Import</button>
-      <button onclick="exportTeam()">Export</button>
+<input id="adminInput" placeholder="Admin No">
 
-      <button onclick="printTeam()">Print Team Sheet</button>
-    </div>
+<button onclick="addStudent()">Add</button>
+<button onclick="removeStudent()">Delete</button>
 
-    <h2 id="teamTitle"></h2>
+<button onclick="exportTeam()">Export</button>
 
-    <div id="team"></div>
+<input type="file" id="importFile">
+
+<button onclick="importTeam()">Import</button>
+
+<button onclick="printTeam()">Print Team Sheet</button>
+
+</div>
+
+<h2 id="teamTitle"></h2>
+
+<div id="team"></div>
     <script src="../js/jquery-4.0.0.min.js"></script>
     <script src="../js/bootstrap.bundle.min.js"></script>
     <script src="../js/sports-listing.js"></script>
