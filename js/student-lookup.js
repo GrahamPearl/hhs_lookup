@@ -1,5 +1,5 @@
 // --- Configuration ---
-const DATA_URL = 'students.json'; // same folder as index.html
+const DATA_URL = '../students.json'; // same folder as index.html
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/400x240?text=No+Photo';
 
 // --- State ---
