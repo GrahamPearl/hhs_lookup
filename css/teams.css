@@ -9,10 +9,16 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3,
+h4 {
   text-align: center;
   font-weight: 600;
   color: #0a3d62;
+}
+
+h4 {
+  color: #171718;
 }
 
 .controls {
