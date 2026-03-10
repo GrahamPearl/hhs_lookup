@@ -1,50 +1,47 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>Sport / Culture / Service Team Manager</title>
 
+    <!-- Styles -->
     <link rel="stylesheet" href="../css/style.css" />
     <link rel="stylesheet" href="../css/teams.css" />
-     <script src="xlsx.full.min.js"></script>
-     <script src="jszip.min.js"></script>
-  </head>
 
+    <!-- XLSX + JSZip (already used by the project) -->
+    <script src="xlsx.full.min.js"></script>
+    <script src="jszip.min.js"></script>
+  </head>
   <body>
     <h1>School Activity Team Manager</h1>
-    <h4>This builder is browser based. <br>Export and Import to move to other devices</h4>
+    <h4>This builder is browser based. <br>Export and Import to move to other devices</h4> <!-- fixed closing tag -->
 
+    <div class="controls">
+      <label for="activitySelect">Activity</label>
+      <select id="activitySelect"></select>
 
-<div class="controls">
+      <label for="agegroupSelect">Age Group</label>
+      <select id="agegroupSelect"></select>
 
-<label>Activity</label>
+      <input id="adminInput" placeholder="Admin No" />
 
-<select id="activitySelect"></select>
+      <button onclick="addStudent()">Add</button>
+      <button onclick="removeStudent()">Delete</button>
+      <button onclick="exportTeam()">Export JSON</button>
+      <button onclick="exportTeamExcel()">Export Excel</button>
+      <input type="file" id="importFile" />
+      <button onclick="importTeam()">Import</button>
+      <button onclick="printTeam()">Print Team Sheet</button>
+    </div>
 
-<label>Age Group</label>
-<select id="agegroupSelect"></select>
+    <h2 id="teamTitle"></h2>
+    <div id="team"></div>
 
-
-<input id="adminInput" placeholder="Admin No">
-
-<button onclick="addStudent()">Add</button>
-<button onclick="removeStudent()">Delete</button>
-
-<button onclick="exportTeam()">Export</button>
-
-<input type="file" id="importFile">
-
-<button onclick="importTeam()">Import</button>
-
-<button onclick="printTeam()">Print Team Sheet</button>
-
-</div>
-
-<h2 id="teamTitle"></h2>
-
-<div id="team"></div>
+    <!-- Vendor JS -->
     <script src="../js/jquery-4.0.0.min.js"></script>
     <script src="../js/bootstrap.bundle.min.js"></script>
+
+    <!-- App JS -->
     <script src="../js/sports-listing.js"></script>
   </body>
 </html>

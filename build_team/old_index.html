@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sport / Culture / Service Team Manager</title>
+
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/teams.css" />
+     <script src="xlsx.full.min.js"></script>
+     <script src="jszip.min.js"></script>
+  </head>
+
+  <body>
+    <h1>School Activity Team Manager</h1>
+    <h4>This builder is browser based. <br>Export and Import to move to other devices</h4>
+
+
+<div class="controls">
+
+<label>Activity</label>
+
+<select id="activitySelect"></select>
+
+<label>Age Group</label>
+<select id="agegroupSelect"></select>
+
+
+<input id="adminInput" placeholder="Admin No">
+
+<button onclick="addStudent()">Add</button>
+<button onclick="removeStudent()">Delete</button>
+
+<button onclick="exportTeam()">Export</button>
+
+<input type="file" id="importFile">
+
+<button onclick="importTeam()">Import</button>
+
+<button onclick="printTeam()">Print Team Sheet</button>
+
+</div>
+
+<h2 id="teamTitle"></h2>
+
+<div id="team"></div>
+    <script src="../js/jquery-4.0.0.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sports-listing.js"></script>
+  </body>
+</html>
