@@ -1,0 +1,10 @@
+0;All - No Age Group
+1;U13
+2;U14
+3;U15
+4;U16
+5;U17
+6;U18
+7;Open
+8;2nd Team
+9;1st Team
