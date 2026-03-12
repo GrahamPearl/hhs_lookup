@@ -73,4 +73,17 @@ body {
     background-color: #f8f9fa;
     width: 90px;
 }
-``
+
+/* All free lessons highlighted in a soft blue shade */
+.free-lesson {
+    background-color: #d8e8ff !important;   /* light blue */
+    border-left: 4px solid #68a0ff !important;
+    color: #003d7a !important;
+    font-weight: 600;
+}
+
+
+.free-lesson:hover {
+    background-color: #c6dcff !important;
+    cursor: pointer;
+}

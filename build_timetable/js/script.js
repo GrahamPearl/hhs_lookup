@@ -305,8 +305,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (entry.type === "free") {
+      cell.classList.remove("lesson-cell", "meeting-cell");
+      cell.classList.add("free-lesson");
       cell.innerHTML = "<b>Free Time</b>";
+      return;
     } else {
+      cell.classList.remove("free-lesson");
       cell.innerHTML =
         `<b>${entry.title || "Lesson"}</b><br>` +
         `${entry.className || ""}<br>` +
