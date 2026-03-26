@@ -304,18 +304,31 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    // Always reset type-related classes first
+    cell.classList.remove("free-lesson", "meeting-lesson");
+
+    // FREE TIME
     if (entry.type === "free") {
-      cell.classList.remove("lesson-cell", "meeting-cell");
       cell.classList.add("free-lesson");
       cell.innerHTML = "<b>Free Time</b>";
       return;
-    } else {
-      cell.classList.remove("free-lesson");
-      cell.innerHTML =
-        `<b>${entry.title || "Lesson"}</b><br>` +
-        `${entry.className || ""}<br>` +
-        `<small>${entry.venue || ""}</small>`;
     }
+
+    // MEETING
+    if (entry.type === "meeting") {
+      cell.classList.add("meeting-lesson");
+      cell.innerHTML = `<i class="fa-solid fa-clock me-1"></i>
+         <b>${entry.title || "Meeting"}</b><br>
+         ${entry.className || ""}<br>
+         <small>${entry.venue || ""}</small>`;
+      return;
+    }
+
+    // DEFAULT: LESSON
+    cell.innerHTML =
+      `<b>${entry.title || "Lesson"}</b><br>` +
+      `${entry.className || ""}<br>` +
+      `<small>${entry.venue || ""}</small>`;
   }
 
   // ---------------------- SAVE / LOAD TIMETABLE -------------

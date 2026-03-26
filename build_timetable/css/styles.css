@@ -87,3 +87,15 @@ body {
     background-color: #c6dcff !important;
     cursor: pointer;
 }
+
+/* Meetings highlighted in green */
+.meeting-lesson {
+    background-color: #e6f4ea !important;
+    border-left: 5px solid #2e7d32 !important;
+    color: #1b5e20 !important;
+    font-weight: 600;
+}
+
+.meeting-lesson i.fa-clock {
+    color: #2e7d32;
+}
