@@ -52,124 +52,8 @@
   <!-- Action area -->
   <main class="py-5" id="lookups">
     <div class="container">
-      <div class="row g-4">
-        <!-- Students Lookup -->
-        <div class="col-12 col-md-6">
-          <div class="card action-card h-100">
-            <div class="card-body p-4">
-              <div class="d-flex align-items-start">
-                <div class="me-3">
-                  <span class="badge bg-primary">Students</span>
-                </div>
-                <div>
-                  <h2 class="h4 mb-2">Students Lookup</h2>
-                  <p class="text-secondary mb-4">Find student details quickly and securely.</p>
-                  <!-- TODO: Replace href with your actual Students Lookup URL -->
-                  <a class="btn btn-hhs" href=".\find_students\index.html">Open Students Lookup</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Subject Lookup -->
-        <div class="col-12 col-md-6">
-          <div class="card action-card h-100">
-            <div class="card-body p-4">
-              <div class="d-flex align-items-start">
-                <div class="me-3">
-                  <span class="badge bg-primary">Subjects</span>
-                </div>
-                <div>
-                  <h2 class="h4 mb-2">Subject Lookup</h2>
-                  <p class="text-secondary mb-4">Browse subject information, codes and resources.</p>
-                  <!-- TODO: Replace href with your actual Subject Lookup URL -->
-                  <a class="btn btn-hhs" href=".\find_subjects\index.html">Open Subject Lookup</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- /Subject Lookup -->
-
-        <!-- Sport Team Manager -->
-        <div class="col-12 col-md-6">
-          <div class="card action-card h-100">
-            <div class="card-body p-4">
-              <div class="d-flex align-items-start">
-                <div class="me-3">
-                  <span class="badge bg-primary">Teams</span>
-                </div>
-                <div>
-                  <h2 class="h4 mb-2">School Activity Team Manager</h2>
-                  <p class="text-secondary mb-4">Browse sport information, codes and resources.</p>
-                  <!-- TODO: Replace href with your actual Subject Lookup URL -->
-                  <a class="btn btn-hhs" href=".\build_team\index.html">Open School Activity Manager</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-                  <!-- Sport Lookup -->
-        <div class="col-12 col-md-6">
-          <div class="card action-card h-100">
-            <div class="card-body p-4">
-              <div class="d-flex align-items-start">
-                <div class="me-3">
-                  <span class="badge bg-secondary">Sports</span>
-                </div>
-                <div>
-                  <h2 class="h4 mb-2">Sports Lookup</h2>
-                  <p class="text-secondary mb-4">Browse sport information, codes and resources.</p>
-                  <!-- TODO: Replace href with your actual Subject Lookup URL -->
-                  <a class="btn btn-accent" href=".\find_sports\index.html">Open Sport Lookup</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- /Sport Lookup -->
-
-        <!-- Timetable Builder -->
-        <div class="col-12 col-md-6">
-          <div class="card action-card h-100">
-            <div class="card-body p-4">
-              <div class="d-flex align-items-start">
-                <div class="me-3">
-                  <span class="badge bg-primary">Teachers</span>
-                </div>
-                <div>
-                  <h2 class="h4 mb-2">Teacher Timetable Builder</h2>
-                  <p class="text-secondary mb-4">Browse timetable information, build your own.</p>
-                  <!-- TODO: Replace href with your actual Subject Lookup URL -->
-                  <a class="btn btn-hhs" href=".\build_timetable\index.html">Open Teacher Timetable Builder</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Timetable Builder -->
-        <div class="col-12 col-md-6">
-          <div class="card action-card h-100">
-            <div class="card-body p-4">
-              <div class="d-flex align-items-start">
-                <div class="me-3">
-                  <span class="badge bg-primary">Teachers</span>
-                </div>
-                <div>
-                  <h2 class="h4 mb-2">Cover Teacher Timetable Builder</h2>
-                  <p class="text-secondary mb-4">Cover teacher timetable.</p>
-                  <!-- TODO: Replace href with your actual Subject Lookup URL -->
-                  <a class="btn btn-hhs" href=".\build_cover\index.html">Open Cover Teacher Timetable Builder</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      
+      <div class="row g-4" id="cards-container">
+        <!-- Cards will be rendered here dynamically -->
       </div>
     </div>
   </main>
@@ -197,6 +81,35 @@
   <script>
     // Update footer year
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Dynamically render cards from JSON
+    fetch('./cards.json')
+      .then(response => response.json())
+      .then(cards => {
+        const container = document.getElementById('cards-container');
+        container.innerHTML = cards.map(card => `
+          <div class="col-12 col-md-6">
+            <div class="card action-card h-100">
+              <div class="card-body p-4">
+                <div class="d-flex align-items-start">
+                  <div class="me-3">
+                    <span class="badge ${card.badgeClass}">${card.badge}</span>
+                  </div>
+                  <div>
+                    <h2 class="h4 mb-2">${card.title}</h2>
+                    <p class="text-secondary mb-4">${card.description}</p>
+                    <a class="btn ${card.buttonClass}" href="${card.link}">${card.buttonText}</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      })
+      .catch(error => {
+        document.getElementById('cards-container').innerHTML = '<div class="col-12"><div class="alert alert-danger">Failed to load cards.</div></div>';
+        console.error('Error loading cards.json:', error);
+      });
   </script>
 </body>
 </html>

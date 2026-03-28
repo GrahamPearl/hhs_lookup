@@ -1,0 +1,56 @@
+[
+  {
+    "badge": "Students",
+    "badgeClass": "bg-primary",
+    "title": "Students Lookup",
+    "description": "Find student details quickly and securely.",
+    "buttonText": "Open Students Lookup",
+    "link": "./find_students/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Subjects",
+    "badgeClass": "bg-primary",
+    "title": "Subject Lookup",
+    "description": "Browse subject information, codes and resources.",
+    "buttonText": "Open Subject Lookup",
+    "link": "./find_subjects/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Teams",
+    "badgeClass": "bg-primary",
+    "title": "School Activity Team Manager",
+    "description": "Browse sport information, codes and resources.",
+    "buttonText": "Open School Activity Manager",
+    "link": "./build_team/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Sports",
+    "badgeClass": "bg-secondary",
+    "title": "Sports Lookup",
+    "description": "Browse sport information, codes and resources.",
+    "buttonText": "Open Sport Lookup",
+    "link": "./find_sports/index.html",
+    "buttonClass": "btn-accent"
+  },
+  {
+    "badge": "Teachers",
+    "badgeClass": "bg-primary",
+    "title": "Teacher Timetable Builder",
+    "description": "Browse timetable information, build your own.",
+    "buttonText": "Open Teacher Timetable Builder",
+    "link": "./build_timetable/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Teachers",
+    "badgeClass": "bg-primary",
+    "title": "Cover Teacher Timetable Builder",
+    "description": "Cover teacher timetable.",
+    "buttonText": "Open Cover Teacher Timetable Builder",
+    "link": "./build_cover/index.html",
+    "buttonClass": "btn-hhs"
+  }
+]
