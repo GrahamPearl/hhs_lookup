@@ -7,10 +7,24 @@ let absentTeachers = [];
 
 function getAvailableTeachers(period, day, absentList = []) {
   let list = [];
+  // Find teachers already assigned as cover for this period
+  let assignedCovers = new Set();
+  Object.keys(coverAssignments).forEach((key) => {
+    // key format: teacher:day-period
+    let parts = key.split(":");
+    if (parts.length === 2) {
+      let [_, dp] = parts;
+      let [d, p] = dp.split("-");
+      if (parseInt(d) === day && parseInt(p) === period) {
+        assignedCovers.add(coverAssignments[key]);
+      }
+    }
+  });
   Object.keys(localStorage).forEach((k) => {
     if (!k.startsWith(PREFIX)) return;
     let name = k.replace(PREFIX, "");
     if (absentList.includes(name)) return;
+    if (assignedCovers.has(name)) return;
     let data = JSON.parse(localStorage.getItem(k));
     let entry = data.entries?.find((e) => e.row == day && e.col == period);
     if (entry && (entry.type === "free" || entry.type === "meeting")) {
