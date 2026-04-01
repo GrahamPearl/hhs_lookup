@@ -14,6 +14,20 @@ body { background:#f4f6f9; }
 .meeting { background:#fef3c7; }
 .avail-badge { cursor: grab; }
 .assigned { background:#fde68a; }
+
+.avail-badge {
+  cursor: grab;
+  font-size: 0.85em;
+}
+.avail-badge .badge {
+  font-size: 0.7em;
+}
+
+@media print {
+  .avail-badge {
+    display: none;
+  }
+}
 </style>
 </head>
 <body>
@@ -45,7 +59,7 @@ body { background:#f4f6f9; }
 
 
 <button id="saveBtn" class="btn btn-success w-100 mb-2">Save Plan</button>
-<button id="printBtn" class="btn btn-secondary w-100 mb-2">Print Plan</button>
+<button id="printBtn" class="btn btn-secondary w-100 mb-2">Generate PDF</button>
 <div class="input-group mb-2">
 	<input type="email" id="emailInput" class="form-control" placeholder="Email address">
 	<button id="emailBtn" class="btn btn-info">Email Table</button>
@@ -59,7 +73,9 @@ body { background:#f4f6f9; }
 <div id="status"></div>
 
 <button id="clearBtn" class="btn btn-danger w-100 mb-2">Clear All Data</button>
-
+<button id="exportBtn" class="btn btn-outline-dark w-100 mb-2">Download Backup</button>
+<input type="file" id="importMetricsInput" class="d-none">
+<button id="importBtn" class="btn btn-outline-secondary w-100 mb-2">Restore Backup</button>
 </div>
 
 <div class="col-md-9 p-3">
@@ -89,6 +105,7 @@ body { background:#f4f6f9; }
 </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
