@@ -11,30 +11,12 @@ const METRICS_KEY = "teacherMetrics";
 const HISTORY_KEY = "coverHistory";
 const TEN_WEEK_START = "tenWeekStart";
 
-// ── [OPT-2] Indexed teacher entry lookup ───────────────────────
-// Maps teacher name → Map("row-col" → entry) for O(1) lookups
-const _entryIndex = {};
-
-function _buildEntryIndex(name, data) {
-  if (!data || !data.entries) return;
-  const idx = new Map();
-  for (let i = 0, len = data.entries.length; i < len; i++) {
-    const e = data.entries[i];
-    idx.set(e.row + "-" + e.col, e);
-  }
-  _entryIndex[name] = idx;
-}
-
-function getTeacherEntry(name, row, col) {
-  const idx = _entryIndex[name];
-  return idx ? idx.get(row + "-" + col) : undefined;
-}
-
 // ── Cached localStorage accessors ──────────────────────────────
+// Avoid repeated JSON.parse on every call; invalidate on write.
 
 let _metricsCache = null;
 let _historyCache = null;
-let _tenWeekStartCache = undefined;
+let _tenWeekStartCache = undefined; // undefined = not yet read
 
 function loadMetrics() {
   if (_metricsCache === null) {
@@ -72,18 +54,6 @@ function setCachedTenWeekStart(val) {
   localStorage.setItem(TEN_WEEK_START, val);
 }
 
-// ── [OPT-6] Cross-tab localStorage sync ────────────────────────
-window.addEventListener("storage", (e) => {
-  if (e.key === METRICS_KEY) _metricsCache = null;
-  else if (e.key === HISTORY_KEY) _historyCache = null;
-  else if (e.key === TEN_WEEK_START) _tenWeekStartCache = undefined;
-  else if (e.key && e.key.startsWith(PREFIX)) {
-    const name = e.key.slice(PREFIX.length);
-    delete teacherCache[name];
-    delete _entryIndex[name];
-  }
-});
-
 // ── 10-week period helpers ─────────────────────────────────────
 
 function initializeTenWeekPeriod() {
@@ -101,17 +71,20 @@ function getWeekNumber(dateStr) {
 }
 
 // ── Batch history stats ────────────────────────────────────────
+// Instead of filtering the full history array per-teacher per-stat,
+// compute all stats in a single pass.
 
 function buildHistoryStats(history, currentWeek) {
-  const stats = {};
+  const stats = {}; // { teacherName: { total, thisWeek } }
   for (let i = 0, len = history.length; i < len; i++) {
     const h = history[i];
     const t = h.coverTeacher;
-    if (!stats[t]) stats[t] = { total: 0, thisWeek: 0, relevantTotal: 0 };
+    if (!stats[t]) stats[t] = { total: 0, thisWeek: 0, relevantTotal: 0, relevantWeeks: 0 };
     stats[t].total++;
     if (h.week === currentWeek) stats[t].thisWeek++;
     if (h.week <= currentWeek) stats[t].relevantTotal++;
   }
+  // Compute per-week averages
   for (const t in stats) {
     stats[t].coversPerWeek = currentWeek > 0
       ? (stats[t].relevantTotal / currentWeek).toFixed(2)
@@ -120,7 +93,7 @@ function buildHistoryStats(history, currentWeek) {
   return stats;
 }
 
-// Legacy single-teacher accessors (used in drop handler & auto-assign metrics update)
+// Legacy single-teacher accessors (still used in some isolated spots)
 function getCoversThisWeek(coverTeacher) {
   const history = loadCoverHistory();
   const week = getWeekNumber(coverDate);
@@ -150,16 +123,12 @@ function getCoversPerWeekAverage(coverTeacher) {
   return count === 0 ? 0 : (count / week).toFixed(2);
 }
 
-// ── Teacher data helpers (with index building) ─────────────────
+// ── Teacher data helpers ───────────────────────────────────────
 
 function loadTeacher(name) {
   if (!teacherCache[name]) {
     const raw = localStorage.getItem(PREFIX + name);
-    if (raw) {
-      const data = JSON.parse(raw);
-      teacherCache[name] = data;
-      _buildEntryIndex(name, data);
-    }
+    if (raw) teacherCache[name] = JSON.parse(raw);
   }
   return teacherCache[name];
 }
@@ -224,109 +193,99 @@ function autoPruneOldEntries() {
   const history = loadCoverHistory();
   const tenWeekStart = getCachedTenWeekStart();
   if (!tenWeekStart) return;
+
   const cutoff = new Date(tenWeekStart);
   cutoff.setDate(cutoff.getDate() + 70);
+
   const pruned = history.filter(h => new Date(h.date) >= cutoff);
-  if (pruned.length !== history.length) saveCoverHistory(pruned);
+  if (pruned.length !== history.length) {
+    saveCoverHistory(pruned);
+  }
 }
 
-// ── [OPT-3] Compute available teachers for ALL periods at once ─
-// Single pass over all teachers, returns Map<period, list[]>
+// ── Available teachers (hot path — heavily optimized) ──────────
 
-function getAllAvailableTeachers(day, absentList) {
-  // Build set of already-assigned covers per period
-  const assignedByPeriod = {}; // period → Set of teacher names
+function getAvailableTeachers(period, day, absentList) {
+  // Build set of already-assigned covers for this period
+  const assignedCovers = new Set();
+  const suffix = day + "-" + period;
   for (const key in coverAssignments) {
     const idx = key.indexOf(":");
-    if (idx === -1) continue;
-    const dp = key.slice(idx + 1);
-    const dashIdx = dp.indexOf("-");
-    const d = parseInt(dp.slice(0, dashIdx));
-    const p = parseInt(dp.slice(dashIdx + 1));
-    if (d === day) {
-      if (!assignedByPeriod[p]) assignedByPeriod[p] = new Set();
-      assignedByPeriod[p].add(coverAssignments[key]);
+    if (idx !== -1 && key.slice(idx + 1) === suffix) {
+      assignedCovers.add(coverAssignments[key]);
     }
   }
 
   const absentSet = new Set(absentList);
+  const list = [];
   const allNames = getTeacherNames();
-  const result = {}; // period → [{name, type}]
-  for (let p = 0; p < 6; p++) result[p] = [];
 
-  // Single pass over all teachers — check all 6 periods per teacher
   for (let i = 0, len = allNames.length; i < len; i++) {
     const name = allNames[i];
-    if (absentSet.has(name)) continue;
+    if (absentSet.has(name) || assignedCovers.has(name)) continue;
 
     const data = loadTeacher(name);
     if (!data || !data.entries) continue;
 
-    for (let p = 0; p < 6; p++) {
-      const assigned = assignedByPeriod[p];
-      if (assigned && assigned.has(name)) continue;
-
-      // Use indexed O(1) lookup instead of linear scan
-      const entry = getTeacherEntry(name, day, p);
-      if (entry && (entry.type === "free" || entry.type === "meeting")) {
-        result[p].push({ name, type: entry.type });
+    // Find matching entry
+    const entries = data.entries;
+    let matchedEntry = null;
+    for (let j = 0, elen = entries.length; j < elen; j++) {
+      if (entries[j].row == day && entries[j].col == period) {
+        matchedEntry = entries[j];
+        break;
       }
+    }
+
+    if (matchedEntry && (matchedEntry.type === "free" || matchedEntry.type === "meeting")) {
+      list.push({ name, type: matchedEntry.type });
     }
   }
 
-  // Ensure metrics exist (batch across all periods)
+  // Ensure metrics exist (batch)
   const metrics = loadMetrics();
   let metricsChanged = false;
-  const seen = new Set();
-  for (let p = 0; p < 6; p++) {
-    for (let j = 0; j < result[p].length; j++) {
-      const tName = result[p][j].name;
-      if (seen.has(tName)) continue;
-      seen.add(tName);
-      if (!metrics[tName]) {
-        metrics[tName] = {
-          freePeriods: calculateFreePeriods(tName),
-          coversDone: 0, coversThisWeek: 0, totalCovers: 0, lastCoverDate: null
-        };
-        metricsChanged = true;
-      }
+  for (let i = 0; i < list.length; i++) {
+    if (!metrics[list[i].name]) {
+      metrics[list[i].name] = {
+        freePeriods: calculateFreePeriods(list[i].name),
+        coversDone: 0,
+        coversThisWeek: 0,
+        totalCovers: 0,
+        lastCoverDate: null
+      };
+      metricsChanged = true;
     }
   }
   if (metricsChanged) saveMetrics(metrics);
 
-  // Build history stats once
+  // Build history stats in a single pass
   const history = loadCoverHistory();
   const currentWeek = getWeekNumber(coverDate);
   const histStats = buildHistoryStats(history, currentWeek);
 
-  // Attach stats & sort each period's list
-  for (let p = 0; p < 6; p++) {
-    const list = result[p];
-    for (let j = 0; j < list.length; j++) {
-      const t = list[j];
-      const m = metrics[t.name] || { freePeriods: 0, coversDone: 0 };
-      const hs = histStats[t.name] || { total: 0, thisWeek: 0, coversPerWeek: "0.00" };
-      t.freePeriods = m.freePeriods;
-      t.coversDone = m.coversDone || 0;
-      t.coversThisWeek = hs.thisWeek;
-      t.totalCovers = hs.total;
-      t.coversPerWeek = hs.coversPerWeek;
-    }
-    list.sort((a, b) => {
-      if (a.totalCovers !== b.totalCovers) return a.totalCovers - b.totalCovers;
-      if (a.coversThisWeek !== b.coversThisWeek) return a.coversThisWeek - b.coversThisWeek;
-      const aDiff = parseFloat(a.coversPerWeek), bDiff = parseFloat(b.coversPerWeek);
-      if (aDiff !== bDiff) return aDiff - bDiff;
-      return b.freePeriods - a.freePeriods;
-    });
+  // Attach stats
+  for (let i = 0; i < list.length; i++) {
+    const t = list[i];
+    const m = metrics[t.name] || { freePeriods: 0 };
+    const hs = histStats[t.name] || { total: 0, thisWeek: 0, coversPerWeek: "0.00" };
+    t.freePeriods = m.freePeriods;
+    t.coversDone = m.coversDone || 0;
+    t.coversThisWeek = hs.thisWeek;
+    t.totalCovers = hs.total;
+    t.coversPerWeek = hs.coversPerWeek;
   }
 
-  return result;
-}
+  // Sort by fairness
+  list.sort((a, b) => {
+    if (a.totalCovers !== b.totalCovers) return a.totalCovers - b.totalCovers;
+    if (a.coversThisWeek !== b.coversThisWeek) return a.coversThisWeek - b.coversThisWeek;
+    const aDiff = parseFloat(a.coversPerWeek), bDiff = parseFloat(b.coversPerWeek);
+    if (aDiff !== bDiff) return aDiff - bDiff;
+    return b.freePeriods - a.freePeriods;
+  });
 
-// Legacy wrapper — used by drop handler validation (single period)
-function getAvailableTeachers(period, day, absentList) {
-  return getAllAvailableTeachers(day, absentList)[period] || [];
+  return list;
 }
 
 // ── UI: refresh teacher dropdown ───────────────────────────────
@@ -334,9 +293,12 @@ function getAvailableTeachers(period, day, absentList) {
 function refreshTeachers() {
   const sel = document.getElementById("addAbsenceTeacherSelect");
   if (!sel) return;
+
   const absentSet = new Set(absentTeachers);
   const names = getTeacherNames().filter(n => !absentSet.has(n));
   names.sort();
+
+  // Build options via innerHTML (faster than createElement loop)
   sel.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join("");
 }
 
@@ -347,37 +309,21 @@ function renderAbsentTeachersTable() {
   tableBody.innerHTML = absentTeachers.map((name, idx) =>
     `<tr><td>${name}</td><td><button class="btn btn-sm btn-danger" data-remove-idx="${idx}">Remove</button></td></tr>`
   ).join("");
+
+  // Delegate click events
   tableBody.onclick = (e) => {
     const btn = e.target.closest("[data-remove-idx]");
     if (!btn) return;
     absentTeachers.splice(parseInt(btn.dataset.removeIdx), 1);
     refreshTeachers();
     renderAbsentTeachersTable();
-    scheduleRenderGrid();
-  };
-}
-
-// ── [OPT-1] Debounced renderGrid via requestAnimationFrame ─────
-
-let _renderGridRAF = null;
-
-function scheduleRenderGrid() {
-  if (_renderGridRAF !== null) return; // already scheduled
-  _renderGridRAF = requestAnimationFrame(() => {
-    _renderGridRAF = null;
     renderGrid();
-  });
+  };
 }
 
 // ── UI: main cover grid ────────────────────────────────────────
 
 function renderGrid() {
-  // Cancel any pending scheduled render since we're rendering now
-  if (_renderGridRAF !== null) {
-    cancelAnimationFrame(_renderGridRAF);
-    _renderGridRAF = null;
-  }
-
   const day = parseInt(document.getElementById("absenceDaySelect").value);
   const grid = document.getElementById("coverGrid");
   const availDiv = document.getElementById("availableCoverList");
@@ -388,8 +334,9 @@ function renderGrid() {
     return;
   }
 
-  // Build absent teacher lessons table
+  // Build absent teacher lessons table via string concat (faster than DOM API)
   const rowsHtml = [];
+  const dropZones = []; // { key, period, teacher, lesson }
 
   absentTeachers.forEach((teacher) => {
     const data = loadTeacher(teacher);
@@ -431,8 +378,10 @@ function renderGrid() {
   grid.onclick = (e) => {
     const undoBtn = e.target.closest("[data-undo-key]");
     if (undoBtn) { undo(undoBtn.dataset.undoKey); return; }
+
     const undoNoCoverBtn = e.target.closest("[data-undo-nocover]");
     if (undoNoCoverBtn) { undoNoCover(undoNoCoverBtn.dataset.undoNocover); return; }
+
     const markBtn = e.target.closest("[data-mark-nocover]");
     if (markBtn) { markNoCover(markBtn.dataset.markNocover); return; }
   };
@@ -457,9 +406,10 @@ function renderGrid() {
       if (noCoverNeeded[key]) delete noCoverNeeded[key];
       coverAssignments[key] = t;
 
+      // Parse teacher name from key
       const teacher = key.split(":")[0];
-      // Use indexed entry lookup
-      const lesson = getTeacherEntry(teacher, dropDay, period);
+      const teacherData = loadTeacher(teacher);
+      const lesson = teacherData?.entries?.find(e => e.row == dropDay && e.col == period);
 
       addCoverHistoryEntry(teacher, t, period + 1, dropDay + 1, lesson?.subject || lesson?.type, lesson?.className, lesson?.venue);
 
@@ -475,11 +425,10 @@ function renderGrid() {
     };
   });
 
-  // ── [OPT-3] Build available cover teachers table — single pass for all periods
-  const allAvail = getAllAvailableTeachers(day, absentTeachers);
+  // Build available cover teachers table
   const availRows = [];
   for (let period = 0; period < 6; period++) {
-    const avail = allAvail[period];
+    const avail = getAvailableTeachers(period, day, absentTeachers);
     let tdContent;
     if (avail.length === 0) {
       tdContent = '<span class="text-muted">None</span>';
@@ -503,6 +452,7 @@ function renderGrid() {
     <thead><tr><th>Period</th><th>Available Teachers</th></tr></thead>
     <tbody>${availRows.join("")}</tbody></table>`;
 
+  // Set up drag on badges via delegation
   availDiv.addEventListener("dragstart", (ev) => {
     const badge = ev.target.closest("[data-teacher-name]");
     if (badge) ev.dataTransfer.setData("text", badge.dataset.teacherName);
@@ -511,11 +461,12 @@ function renderGrid() {
   checkFairnessWarnings();
 }
 
-// ── Fairness warnings ──────────────────────────────────────────
+// ── Fairness warnings (optimized with single-pass stats) ───────
 
 function checkFairnessWarnings() {
   const history = loadCoverHistory();
   const week = getWeekNumber(coverDate);
+
   const coversPerTeacher = {};
   for (let i = 0, len = history.length; i < len; i++) {
     if (history[i].week === week) {
@@ -523,12 +474,14 @@ function checkFairnessWarnings() {
       coversPerTeacher[t] = (coversPerTeacher[t] || 0) + 1;
     }
   }
+
   const warnings = [];
   for (const teacher in coversPerTeacher) {
     if (coversPerTeacher[teacher] > 3) {
       warnings.push(`⚠️ ${teacher} has ${coversPerTeacher[teacher]} covers this week (unfair load)`);
     }
   }
+
   const warningDiv = document.getElementById("fairnessWarning");
   if (warnings.length > 0) {
     warningDiv.innerHTML = warnings.join("<br>");
@@ -545,9 +498,11 @@ function undo(key) {
   const [teacher, dp] = key.split(":");
   const [d, p] = dp.split("-");
   const dayNum = parseInt(d) + 1, periodNum = parseInt(p) + 1;
+
   saveCoverHistory(history.filter(h =>
     !(h.coveredTeacher === teacher && h.day === dayNum && h.period === periodNum)
   ));
+
   delete coverAssignments[key];
   renderGrid();
 }
@@ -562,7 +517,7 @@ function undoNoCover(key) {
   renderGrid();
 }
 
-// ── [OPT-4] Auto-assign with batched saveMetrics ───────────────
+// ── Auto-assign ────────────────────────────────────────────────
 
 function autoAssignCoverTeachers() {
   if (absentTeachers.length === 0) {
@@ -572,10 +527,8 @@ function autoAssignCoverTeachers() {
 
   const day = parseInt(document.getElementById("absenceDaySelect").value);
   let assignmentsMade = 0, conflicts = 0;
-  const assignedTeachers = new Set(Object.values(coverAssignments));
 
-  // Load metrics ONCE before the loop
-  const metrics = loadMetrics();
+  const assignedTeachers = new Set(Object.values(coverAssignments));
 
   absentTeachers.forEach((teacher) => {
     const data = loadTeacher(teacher);
@@ -598,17 +551,13 @@ function autoAssignCoverTeachers() {
 
         addCoverHistoryEntry(teacher, best.name, e.col + 1, day + 1, e.subject || e.type, e.className, e.venue);
 
-        // Update metrics in-memory (no save per iteration)
-        if (!metrics[best.name]) {
-          metrics[best.name] = {
-            freePeriods: calculateFreePeriods(best.name),
-            coversDone: 0, coversThisWeek: 0, totalCovers: 0, lastCoverDate: null
-          };
-        }
+        const metrics = loadMetrics();
+        ensureTeacherMetrics(best.name);
         metrics[best.name].coversDone += 1;
         metrics[best.name].totalCovers = getTotalCovers(best.name);
         metrics[best.name].coversThisWeek = getCoversThisWeek(best.name);
         metrics[best.name].lastCoverDate = coverDate;
+        saveMetrics(metrics);
 
         assignmentsMade++;
       } else {
@@ -616,9 +565,6 @@ function autoAssignCoverTeachers() {
       }
     });
   });
-
-  // [OPT-4] Single save after all assignments
-  saveMetrics(metrics);
 
   renderGrid();
   let message = `Auto-assignment complete!\n\nAssignments made: ${assignmentsMade}`;
@@ -665,10 +611,12 @@ function updatePeriodStatus() {
 function displayCoverHistory() {
   const history = loadCoverHistory();
   const tbody = document.getElementById("historyTableBody");
+
   if (history.length === 0) {
     tbody.innerHTML = "<tr><td colspan='6' class='text-center text-muted'>No cover history yet</td></tr>";
     return;
   }
+
   tbody.innerHTML = history.map(entry =>
     `<tr><td>${entry.date}</td><td>${entry.week}</td><td>${entry.coveredTeacher}</td><td>${entry.coverTeacher}</td><td>${entry.period}</td><td>${entry.subject}</td></tr>`
   ).join("");
@@ -699,6 +647,7 @@ function getCoverPlanRows(day) {
 function buildCoverGridTableHtml(day, includeActions = false) {
   const rows = getCoverPlanRows(day);
   let html = `<div class="container p-4" id="coverPrintContainer"><h3>Absent Teachers Cover Plan - Day ${day + 1}</h3>`;
+
   if (includeActions) {
     html += `<div hidden class="mb-3 no-print">
       <button id="printPageBtn" class="btn btn-primary me-2">Print</button>
@@ -707,31 +656,16 @@ function buildCoverGridTableHtml(day, includeActions = false) {
       <button id="emailExportBtn" class="btn btn-info">Email</button>
     </div>`;
   }
+
   if (rows.length === 0) {
     return html + "<div class='alert alert-info'>No absent teacher lessons found for the selected day.</div></div>";
   }
+
   html += '<table class="table table-bordered"><thead><tr><th>Teacher</th><th>Period</th><th>Subject/Type</th><th>Class</th><th>Venue</th><th>Assigned Cover</th></tr></thead><tbody>';
   html += rows.map(r => `<tr><td>${r.teacher}</td><td>${r.period}</td><td>${r.subject}</td><td>${r.className}</td><td>${r.venue}</td><td>${r.assigned}</td></tr>`).join("");
   html += "</tbody></table></div>";
   return html;
 }
-
-// ── [OPT-7] Lazy-load html2canvas & jsPDF ──────────────────────
-
-function loadScript(url) {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${url}"]`);
-    if (existing) { resolve(); return; }
-    const s = document.createElement("script");
-    s.src = url;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error("Failed to load " + url));
-    document.head.appendChild(s);
-  });
-}
-
-const HTML2CANVAS_URL = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-const JSPDF_URL = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
 
 function openCoverPrintPreview(action = null) {
   if (absentTeachers.length === 0) {
@@ -743,7 +677,6 @@ function openCoverPrintPreview(action = null) {
   const tableHtml = buildCoverGridTableHtml(day, true);
 
   let win = window.open("", "_blank", "width=1100,height=850");
-  // [OPT-7] Only inject heavy libs when the print preview is actually opened
   win.document.write(`<html><head><title>Cover Grid Print Preview</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <style>
@@ -759,6 +692,8 @@ function openCoverPrintPreview(action = null) {
         tr { page-break-inside: avoid; page-break-after: auto; }
       }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
   </head><body>${tableHtml}</body></html>`);
   win.document.close();
   win.focus();
@@ -772,70 +707,45 @@ function openCoverPrintPreview(action = null) {
 
       doc.getElementById("printPageBtn").onclick = () => win.print();
 
-      // Lazy-load libs only when PDF/PNG buttons are clicked
-      const ensureLibs = () => {
-        const promises = [];
-        if (!win.html2canvas) {
-          promises.push(new Promise((res, rej) => {
-            const s = doc.createElement("script");
-            s.src = HTML2CANVAS_URL;
-            s.onload = res; s.onerror = rej;
-            doc.head.appendChild(s);
-          }));
-        }
-        if (!win.jspdf) {
-          promises.push(new Promise((res, rej) => {
-            const s = doc.createElement("script");
-            s.src = JSPDF_URL;
-            s.onload = res; s.onerror = rej;
-            doc.head.appendChild(s);
-          }));
-        }
-        return Promise.all(promises);
-      };
-
       doc.getElementById("downloadPdfBtn").onclick = () => {
-        ensureLibs().then(() => {
-          const { jsPDF } = win.jspdf;
-          const content = doc.querySelector('.container');
-          if (!content) return;
-          win.html2canvas(content, { scale: 2 }).then((canvas) => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-            const pdfW = pdf.internal.pageSize.getWidth();
-            const pdfH = pdf.internal.pageSize.getHeight();
-            const ratio = Math.min(pdfW / canvas.width, pdfH / canvas.height);
-            const imgW = canvas.width * ratio, imgH = canvas.height * ratio;
-            if (imgH <= pdfH) {
-              pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
-            } else {
-              let remaining = canvas.height, pos = 0;
-              while (remaining > 0) {
-                const pageH = Math.min(remaining, Math.floor(pdfH / ratio));
-                const c = document.createElement('canvas');
-                c.width = canvas.width; c.height = pageH;
-                c.getContext('2d').drawImage(canvas, 0, pos, canvas.width, pageH, 0, 0, canvas.width, pageH);
-                pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, imgW, pageH * ratio);
-                remaining -= pageH; pos += pageH;
-                if (remaining > 0) pdf.addPage();
-              }
+        const { jsPDF } = window.jspdf;
+        const content = doc.querySelector('.container');
+        if (!content) return;
+        win.html2canvas(content, { scale: 2 }).then((canvas) => {
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+          const pdfW = pdf.internal.pageSize.getWidth();
+          const pdfH = pdf.internal.pageSize.getHeight();
+          const ratio = Math.min(pdfW / canvas.width, pdfH / canvas.height);
+          const imgW = canvas.width * ratio, imgH = canvas.height * ratio;
+
+          if (imgH <= pdfH) {
+            pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
+          } else {
+            let remaining = canvas.height, pos = 0;
+            while (remaining > 0) {
+              const pageH = Math.min(remaining, Math.floor(pdfH / ratio));
+              const c = document.createElement('canvas');
+              c.width = canvas.width; c.height = pageH;
+              c.getContext('2d').drawImage(canvas, 0, pos, canvas.width, pageH, 0, 0, canvas.width, pageH);
+              pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, imgW, pageH * ratio);
+              remaining -= pageH; pos += pageH;
+              if (remaining > 0) pdf.addPage();
             }
-            pdf.save(`cover_plan_day_${day + 1}.pdf`);
-          }).catch(err => { console.error('pdf generation failed', err); alert('Error generating PDF: ' + err); });
-        }).catch(err => alert("Failed to load PDF libraries: " + err));
+          }
+          pdf.save(`cover_plan_day_${day + 1}.pdf`);
+        }).catch(err => { console.error('pdf generation failed', err); alert('Error generating PDF: ' + err); });
       };
 
       doc.getElementById("downloadPngBtn").onclick = () => {
-        ensureLibs().then(() => {
-          const content = doc.querySelector('.container');
-          if (!content) return;
-          win.html2canvas(content, { scale: 2 }).then(canvas => {
-            const link = doc.createElement('a');
-            link.download = `cover_plan_day_${day + 1}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-          }).catch(err => { console.error('png capture failed', err); alert('Error generating image: ' + err); });
-        }).catch(err => alert("Failed to load image libraries: " + err));
+        const content = doc.querySelector('.container');
+        if (!content) return;
+        win.html2canvas(content, { scale: 2 }).then(canvas => {
+          const link = doc.createElement('a');
+          link.download = `cover_plan_day_${day + 1}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }).catch(err => { console.error('png capture failed', err); alert('Error generating image: ' + err); });
       };
 
       doc.getElementById("emailExportBtn").onclick = () => {
@@ -862,10 +772,10 @@ function openCoverPrintPreview(action = null) {
 document.getElementById("coverDate").addEventListener("change", (e) => {
   coverDate = e.target.value;
   updateWeekDisplay();
-  scheduleRenderGrid();
+  renderGrid();
 });
 
-document.getElementById("absenceDaySelect").onchange = () => scheduleRenderGrid();
+document.getElementById("absenceDaySelect").onchange = () => renderGrid();
 
 document.getElementById("addAbsenceTeacherBtn").onclick = () => {
   const sel = document.getElementById("addAbsenceTeacherSelect");
@@ -874,7 +784,7 @@ document.getElementById("addAbsenceTeacherBtn").onclick = () => {
     absentTeachers.push(name);
     refreshTeachers();
     renderAbsentTeachersTable();
-    scheduleRenderGrid();
+    renderGrid();
   }
 };
 
@@ -942,13 +852,12 @@ document.getElementById("bulkInput").addEventListener("change", async (e) => {
     const data = JSON.parse(await f.text());
     const name = data.teacherName || f.name.replace(".json", "");
     localStorage.setItem(PREFIX + name, JSON.stringify(data));
-    teacherCache[name] = data;
-    _buildEntryIndex(name, data); // Build index on import
+    teacherCache[name] = data; // populate cache immediately
     count++;
   }
   document.getElementById("status").innerText = "Imported " + count;
   refreshTeachers();
-  scheduleRenderGrid();
+  renderGrid();
 });
 
 document.getElementById("clearBtn").onclick = () => {
@@ -968,8 +877,6 @@ document.getElementById("clearBtn").onclick = () => {
     tallies = {};
     _metricsCache = null;
     _historyCache = null;
-    // Clear entry index
-    for (const k in _entryIndex) delete _entryIndex[k];
     document.getElementById("status").innerText = "All data cleared.";
     refreshTeachers();
     renderAbsentTeachersTable();
@@ -990,7 +897,7 @@ document.getElementById("exportBtn").onclick = () => {
   a.href = URL.createObjectURL(blob);
   a.download = `cover_backup_${new Date().toISOString().split('T')[0]}.json`;
   a.click();
-  URL.revokeObjectURL(a.href);
+  URL.revokeObjectURL(a.href); // free memory
 };
 
 document.getElementById("importBtn").onclick = () => document.getElementById("importMetricsInput").click();
@@ -1039,7 +946,7 @@ document.getElementById("exportExcelBtn").onclick = () => {
 
   // Sheet 2: Weekly Breakdown (single pass)
   const teachers = new Set(history.map(h => h.coverTeacher));
-  const weekCounts = {};
+  const weekCounts = {}; // { teacher: { week: count } }
   for (let i = 0; i < history.length; i++) {
     const h = history[i];
     if (!weekCounts[h.coverTeacher]) weekCounts[h.coverTeacher] = {};
@@ -1102,7 +1009,7 @@ document.getElementById("savePeriodBtn").onclick = () => {
     setCachedTenWeekStart(newStartDate);
     updatePeriodStatus();
     updateWeekDisplay();
-    scheduleRenderGrid();
+    renderGrid();
     alert("10-week period updated!");
   }
 };
@@ -1116,22 +1023,14 @@ document.getElementById("resetPeriodBtn").onclick = () => {
     coverDate = today;
     document.getElementById("coverDate").value = today;
     updateWeekDisplay();
-    scheduleRenderGrid();
+    renderGrid();
     alert("10-week period has been reset!");
   }
 };
 
 async function generatePDF() {
   try {
-    // [OPT-7] Lazy-load jsPDF only when needed
-    if (!window.jspdf) {
-      try {
-        await loadScript(JSPDF_URL);
-      } catch (err) {
-        alert("jsPDF library failed to load. Please check your internet connection.");
-        return;
-      }
-    }
+    if (!window.jspdf) { alert("jsPDF library not loaded. Please check your internet connection."); return; }
     if (absentTeachers.length === 0) { alert("No absent teachers selected. Please add absent teachers first."); return; }
 
     const { jsPDF } = window.jspdf;
