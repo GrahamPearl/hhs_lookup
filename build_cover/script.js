@@ -4,6 +4,7 @@ let coverAssignments = {};
 let noCoverNeeded = {}; // Track lessons that don't need coverage
 let tallies = {};
 let absentTeachers = [];
+let nextPrintAction = null; // helper for floating nav auto-action
 let coverDate = new Date().toISOString().split('T')[0]; // Today's date
 
 const METRICS_KEY = "teacherMetrics";
@@ -666,7 +667,7 @@ document.getElementById("autoAssignBtn").onclick = () => {
   }
 };
 
-document.getElementById("printBtn").onclick = () => {
+function openCoverPrintPreview(action = null) {
   if (absentTeachers.length === 0) {
     alert("No absent teachers selected. Please add absent teachers first.");
     return;
@@ -777,8 +778,20 @@ document.getElementById("printBtn").onclick = () => {
         const body = encodeURIComponent("" + makeText());
         window.location.href = `mailto:?subject=${subject}&body=${body}`;
       };
-    } catch {
+
+      // If this preview was opened from floating nav with auto action
+      if (action === "print") {
+        doc.getElementById("printPageBtn").click();
+      } else if (action === "pdf") {
+        doc.getElementById("downloadPdfBtn").click();
+      } else if (action === "image") {
+        doc.getElementById("downloadPngBtn").click();
+      } else if (action === "email") {
+        doc.getElementById("emailExportBtn").click();
+      }
+    } catch (err) {
       // this can fail if window is blocked; ignore
+      console.error('setupActions failed', err);
     }
   };
 
@@ -787,7 +800,14 @@ document.getElementById("printBtn").onclick = () => {
   } else {
     win.addEventListener("load", setupActions);
   }
-};
+}
+
+document.getElementById("printBtn").onclick = () => openCoverPrintPreview();
+
+document.getElementById("navPrintBtn").onclick = () => openCoverPrintPreview("print");
+document.getElementById("navPdfBtn").onclick = () => openCoverPrintPreview("pdf");
+document.getElementById("navImgBtn").onclick = () => openCoverPrintPreview("image");
+document.getElementById("navEmailBtn").onclick = () => openCoverPrintPreview("email");
 
 function getCoverPlanRows(day) {
   let rows = [];
@@ -819,12 +839,14 @@ function buildCoverGridTableHtml(day, includeActions = false) {
   let html = `<div class="container p-4" id="coverPrintContainer"><h3>Absent Teachers Cover Plan - Day ${day + 1}</h3>`;
 
   if (includeActions) {
-    html += `<div class="mb-3 no-print">
+    
+    html += `<div hidden class="mb-3 no-print">
       <button id="printPageBtn" class="btn btn-primary me-2">Print</button>
       <button id="downloadPdfBtn" class="btn btn-success me-2">Save as PDF</button>
       <button id="downloadPngBtn" class="btn btn-secondary me-2">Save as Image</button>
       <button id="emailExportBtn" class="btn btn-info">Email</button>
     </div>`;
+    
   }
 
   if (rows.length === 0) {

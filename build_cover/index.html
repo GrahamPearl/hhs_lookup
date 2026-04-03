@@ -127,7 +127,57 @@ body { background:#f4f6f9; margin:0; }
   .sidebar-hover-trigger {
     display: none;
   }
+  .floating-print-nav {
+    display: none !important;
+  }
 }
+
+.floating-print-nav {
+  position: fixed;
+  top: 20px;
+  right: 0;
+  width: 40px;
+  height: auto;
+  background: rgba(30, 41, 59, 0.95);
+  border-radius: 8px 0 0 8px;
+  overflow: hidden;
+  z-index: 1100;
+  box-shadow: -2px 2px 10px rgba(0,0,0,0.2);
+  transition: width 0.2s ease-in-out;
+}
+
+.floating-print-nav:hover,
+.floating-print-nav:focus-within {
+  width: 210px;
+}
+
+.floating-print-handle {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+.floating-print-content {
+  display: none;
+  padding: 8px;
+}
+
+.floating-print-nav:hover .floating-print-content,
+.floating-print-nav:focus-within .floating-print-content {
+  display: block;
+}
+
+.floating-print-content button {
+  font-size: 0.8em;
+  text-align: left;
+}
+
 </style>
 </head>
 <body>
@@ -190,7 +240,19 @@ body { background:#f4f6f9; margin:0; }
 <button class="sidebar-toggle" onclick="document.getElementById('sidebarContainer').style.left='0'">☰</button>
 
 <div class="main-content">
-<h5>Cover Allocation</h5>
+
+  <!-- Floating Print Navigation Menu -->
+  <div id="floatingPrintNav" class="floating-print-nav no-print" tabindex="0" aria-label="Print Actions">
+    <div class="floating-print-handle">🖨️</div>
+    <div class="floating-print-content">
+      <button id="navPrintBtn" class="btn btn-sm btn-light mb-1 w-100">Print</button>
+      <button id="navPdfBtn" class="btn btn-sm btn-light mb-1 w-100">Save as PDF</button>
+      <button id="navImgBtn" class="btn btn-sm btn-light mb-1 w-100">Save as Image</button>
+      <button id="navEmailBtn" class="btn btn-sm btn-light w-100">Email</button>
+    </div>
+  </div>
+
+  <h5>Cover Allocation</h5>
 <div id="coverGrid"></div>
 <h6 class="mt-4">Available Cover Teachers</h6>
 <div id="availableCoverList" class="mb-3"></div>
@@ -207,15 +269,15 @@ body { background:#f4f6f9; margin:0; }
 			</div>
 			<div class="modal-body">
 				<div class="d-grid gap-2">
-					<button id="autoAssignBtn" class="btn btn-warning btn-lg">🤖 Auto-Assign Fairly</button>
-					<button id="saveBtn" class="btn btn-success btn-lg">💾 Save Plan</button>
-					<button id="printBtn" class="btn btn-secondary btn-lg">🖨️ Print</button>
-					<button id="exportExcelBtn" class="btn btn-info btn-lg">📊 Export to Excel</button>
-					<button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#historyModal" data-bs-dismiss="modal">📜 View History</button>
+					<button id="autoAssignBtn" class="btn btn-outline-dark btn-lg">🤖 Auto-Assign Fairly</button>
+					<button id="saveBtn" class="btn btn-outline-dark btn-lg">💾 Save Plan</button>
+					<button id="printBtn" class="btn btn-outline-dark btn-lg">🖨️ Print</button>
+					<button id="exportExcelBtn" class="btn-outline-dark btn-lg">📊 Export to Excel</button>
+					<button class="btn btn-outline-dark btn-lg" data-bs-toggle="modal" data-bs-target="#historyModal" data-bs-dismiss="modal">📜 View History</button>
 					<hr>
 					<div class="input-group">
 						<input type="email" id="emailInput" class="form-control" placeholder="Email address">
-						<button id="emailBtn" class="btn btn-outline-secondary">📧 Send</button>
+						<button id="emailBtn" class="btn btn-outline-dark">📧 Send</button>
 					</div>
 				</div>
 			</div>
