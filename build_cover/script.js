@@ -297,33 +297,182 @@ document.getElementById("saveBtn").onclick = () => {
 };
 
 document.getElementById("printBtn").onclick = () => {
-  generatePDF();
+  if (absentTeachers.length === 0) {
+    alert("No absent teachers selected. Please add absent teachers first.");
+    return;
+  }
+
+  const day = parseInt(document.getElementById("absenceDaySelect").value);
+  const tableHtml = buildCoverGridTableHtml(day, true);
+
+  let win = window.open("", "_blank", "width=1100,height=850");
+  win.document.write("<html><head><title>Cover Grid Print Preview</title>");
+  win.document.write(
+    '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">',
+  );
+  win.document.write(`
+    <style>
+      body { background:#fff; color:#000; }
+      table { table-layout: fixed; width: 100%; border-collapse: collapse; word-wrap: break-word; }
+      th, td { border:1px solid #333; padding: 0.35rem; font-size:0.85rem; }
+      th { background:#f4f4f4; }
+      .print-table-container { page-break-inside: avoid; }
+      @media print {
+        body { margin: 0.5cm; }
+        .no-print { display: none !important; }
+        table { page-break-inside: auto; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  `);
+  win.document.write("</head><body>");
+  win.document.write(tableHtml);
+  win.document.write("</body></html>");
+  win.document.close();
+  win.focus();
+
+  const setupActions = () => {
+    try {
+      const doc = win.document;
+      const rows = getCoverPlanRows(day);
+      const makeText = () =>
+        rows.map((r) => `${r.teacher} | P${r.period} | ${r.subject} | ${r.className} | ${r.venue} | ${r.assigned}`).join("\n");
+
+      doc.getElementById("printPageBtn").onclick = () => win.print();
+
+      doc.getElementById("downloadPdfBtn").onclick = () => {
+        const { jsPDF } = window.jspdf;
+        const content = doc.querySelector('.container');
+        if (!content) return;
+
+        win.html2canvas(content, { scale: 2 }).then((canvas) => {
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+          const imgWidth = canvas.width;
+          const imgHeight = canvas.height;
+          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+          const imgScaledWidth = imgWidth * ratio;
+          const imgScaledHeight = imgHeight * ratio;
+
+          if (imgScaledHeight <= pdfHeight) {
+            pdf.addImage(imgData, 'PNG', 0, 0, imgScaledWidth, imgScaledHeight);
+          } else {
+            let remainingHeight = imgHeight;
+            let position = 0;
+            while (remainingHeight > 0) {
+              const canvasPage = document.createElement('canvas');
+              canvasPage.width = imgWidth;
+              canvasPage.height = Math.min(remainingHeight, Math.floor(pdfHeight / ratio));
+              const ctx = canvasPage.getContext('2d');
+              ctx.drawImage(canvas, 0, position, imgWidth, canvasPage.height, 0, 0, imgWidth, canvasPage.height);
+
+              const pageData = canvasPage.toDataURL('image/png');
+              const pageScaledHeight = canvasPage.height * ratio;
+              pdf.addImage(pageData, 'PNG', 0, 0, imgScaledWidth, pageScaledHeight);
+
+              remainingHeight -= canvasPage.height;
+              position += canvasPage.height;
+
+              if (remainingHeight > 0) pdf.addPage();
+            }
+          }
+
+          pdf.save(`cover_plan_day_${day + 1}.pdf`);
+        }).catch((err) => {
+          console.error('pdf generation failed', err);
+          alert('Error generating PDF: ' + err);
+        });
+      };
+
+      doc.getElementById("downloadPngBtn").onclick = () => {
+        const content = doc.querySelector('.container');
+        if (!content) return;
+        win.html2canvas(content, { scale: 2 }).then((canvas) => {
+          const link = doc.createElement('a');
+          link.download = `cover_plan_day_${day + 1}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }).catch((err) => {
+          console.error('png capture failed', err);
+          alert('Error generating image: ' + err);
+        });
+      };
+
+      doc.getElementById("emailExportBtn").onclick = () => {
+        const subject = encodeURIComponent(`Absent Teachers Cover Plan - Day ${day + 1}`);
+        const body = encodeURIComponent("" + makeText());
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      };
+    } catch {
+      // this can fail if window is blocked; ignore
+    }
+  };
+
+  if (win.document.readyState === "complete") {
+    setupActions();
+  } else {
+    win.addEventListener("load", setupActions);
+  }
 };
 
-document.getElementById("printBtn").onclick = () => {
-  const printArea = document.getElementById("printArea");
+function getCoverPlanRows(day) {
+  let rows = [];
+  absentTeachers.forEach((teacher) => {
+    let data = loadTeacher(teacher);
+    if (!data) return;
+    let lessons = data.entries.filter((e) => e.row == day);
+    lessons.sort((a, b) => a.col - b.col);
 
-  // Clone the already rendered grid (this contains correct assignments)
-  const grid = document.getElementById("coverGrid");
+    lessons.forEach((e) => {
+      if (e.col === 6) return;
+      let key = teacher + ":" + day + "-" + e.col;
+      let assigned = coverAssignments[key] || "";
+      rows.push({
+        teacher,
+        period: e.col + 1,
+        subject: e.subject || e.type,
+        className: e.className || "",
+        venue: e.venue || "",
+        assigned,
+      });
+    });
+  });
+  return rows;
+}
 
-  let clone = grid.cloneNode(true);
+function buildCoverGridTableHtml(day, includeActions = false) {
+  let rows = getCoverPlanRows(day);
+  let html = `<div class="container p-4" id="coverPrintContainer"><h3>Absent Teachers Cover Plan - Day ${day + 1}</h3>`;
 
-  // Clean up buttons (remove undo buttons for print)
-  clone.querySelectorAll("button").forEach(btn => btn.remove());
+  if (includeActions) {
+    html += `<div class="mb-3 no-print">
+      <button id="printPageBtn" class="btn btn-primary me-2">Print</button>
+      <button id="downloadPdfBtn" class="btn btn-success me-2">Save as PDF</button>
+      <button id="downloadPngBtn" class="btn btn-secondary me-2">Save as Image</button>
+      <button id="emailExportBtn" class="btn btn-info">Email</button>
+    </div>`;
+  }
 
-  // Optional: make badges clearer in print
-  clone.querySelectorAll(".badge").forEach(b => {
-    b.style.fontSize = "0.9em";
+  if (rows.length === 0) {
+    html += "<div class='alert alert-info'>No absent teacher lessons found for the selected day.</div>";
+    html += "</div>";
+    return html;
+  }
+
+  html +=
+    '<table class="table table-bordered"><thead><tr><th>Teacher</th><th>Period</th><th>Subject/Type</th><th>Class</th><th>Venue</th><th>Assigned Cover</th></tr></thead><tbody>';
+
+  rows.forEach((r) => {
+    html += `<tr><td>${r.teacher}</td><td>${r.period}</td><td>${r.subject}</td><td>${r.className}</td><td>${r.venue}</td><td>${r.assigned}</td></tr>`;
   });
 
-  let html = "<h3>Absent Teachers Cover Plan</h3>";
-  html += clone.outerHTML;
-
-  printArea.innerHTML = html;
-
-  let modal = new bootstrap.Modal(document.getElementById('printPreviewModal'));
-  modal.show();
-};
+  html += "</tbody></table></div>";
+  return html;
+}
 
 document.getElementById("confirmPrintBtn").onclick = () => {
   // Print only the printArea content
@@ -497,7 +646,7 @@ async function generatePDF() {
 
       lessons.forEach((e) => {
         let key = teacher + ":" + (day - 1) + "-" + e.col;
-        let assigned = coverAssignments[key] || "NOT ASSIGNED";
+        let assigned = coverAssignments[key] || "⚠ NOT ASSIGNED";
 
         let line = `P${e.col + 1} | ${e.subject || ""} | ${e.className || ""} | ${e.venue || ""} | Cover: ${assigned}`;
 
