@@ -1,6 +1,7 @@
 const PREFIX = "teacher_";
 let teacherCache = {};
 let coverAssignments = {};
+let noCoverNeeded = {}; // Track lessons that don't need coverage
 let tallies = {};
 let absentTeachers = [];
 let coverDate = new Date().toISOString().split('T')[0]; // Today's date
@@ -378,13 +379,25 @@ function renderGrid() {
         let key = teacher + ":" + day + "-" + e.col;
         let drop = document.createElement("div");
         drop.className = "border p-2";
-        drop.style.minHeight = "2.5em";
+        drop.style.minHeight = "3em";
+        
         let assigned = coverAssignments[key];
+        let noCover = noCoverNeeded[key];
+        
         if (assigned) {
           drop.innerHTML = `<span class='badge bg-success'>${assigned}</span> <button class='btn btn-sm btn-danger ms-2' onclick=\"undo('${key}')\">Undo</button>`;
+        } else if (noCover) {
+          drop.innerHTML = `<span class='badge bg-secondary'>No Cover Needed</span> <button class='btn btn-sm btn-warning ms-2' onclick=\"undoNoCover('${key}')\">Assign</button>`;
+          drop.style.backgroundColor = "#f8f9fa";
         } else {
-          drop.innerHTML = "<small>Drop teacher here</small>";
+          drop.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted">Drop teacher here</small>
+              <button class='btn btn-sm btn-outline-secondary' onclick=\"markNoCover('${key}')\" title="Mark as no cover needed">✗</button>
+            </div>
+          `;
         }
+        
         drop.ondragover = (ev) => ev.preventDefault();
         drop.ondrop = (ev) => {
           ev.preventDefault();
@@ -396,10 +409,21 @@ function renderGrid() {
           if (!available.includes(t)) {
             drop.innerHTML = `<span class='text-danger'>Teacher not available</span>`;
             setTimeout(() => {
-              drop.innerHTML = "<small>Drop teacher here</small>";
+              drop.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-muted">Drop teacher here</small>
+                  <button class='btn btn-sm btn-outline-secondary' onclick=\"markNoCover('${key}')\" title="Mark as no cover needed">✗</button>
+                </div>
+              `;
             }, 1200);
             return;
           }
+          
+          // Remove from no cover if it was marked as such
+          if (noCoverNeeded[key]) {
+            delete noCoverNeeded[key];
+          }
+          
           coverAssignments[key] = t;
 
           // Record the cover in history
@@ -503,6 +527,18 @@ function undo(key) {
   renderGrid();
 }
 
+// Mark a lesson as not needing cover
+function markNoCover(key) {
+  noCoverNeeded[key] = true;
+  renderGrid();
+}
+
+// Undo the "no cover needed" marking
+function undoNoCover(key) {
+  delete noCoverNeeded[key];
+  renderGrid();
+}
+
 // Auto-assign cover teachers using fairness algorithm
 function autoAssignCoverTeachers() {
   if (absentTeachers.length === 0) {
@@ -530,8 +566,8 @@ function autoAssignCoverTeachers() {
       
       let key = teacher + ":" + day + "-" + e.col;
       
-      // Skip if already assigned
-      if (coverAssignments[key]) return;
+      // Skip if already assigned or marked as no cover needed
+      if (coverAssignments[key] || noCoverNeeded[key]) return;
       
       // Get available teachers for this period, excluding already assigned ones
       let availableTeachers = getAvailableTeachers(e.col, day, absentTeachers);
@@ -893,6 +929,7 @@ document.getElementById("clearBtn").onclick = () => {
     });
     teacherCache = {};
     coverAssignments = {};
+    noCoverNeeded = {};
     tallies = {};
     document.getElementById("status").innerText = "All data cleared.";
     refreshTeachers();
@@ -904,6 +941,7 @@ document.getElementById("clearBtn").onclick = () => {
 document.getElementById("exportBtn").onclick = () => {
   let data = {
     coverAssignments,
+    noCoverNeeded,
     metrics: loadMetrics(),
     history: loadCoverHistory(),
     tenWeekStart: localStorage.getItem(TEN_WEEK_START)
@@ -932,6 +970,7 @@ document
     let data = JSON.parse(text);
 
     coverAssignments = data.coverAssignments || {};
+    noCoverNeeded = data.noCoverNeeded || {};
     localStorage.setItem(METRICS_KEY, JSON.stringify(data.metrics || {}));
     
     // Restore history and 10-week start if available
