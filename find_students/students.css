@@ -1,14 +1,15 @@
-
-/* Vertical form layout: label above component, stacked downward */
+/* --- Form Layout --- */
 #searchForm {
   display: flex;
   flex-direction: column;
-  gap: 14px;            /* spacing between blocks */
+  gap: 14px;
   width: 100%;
-  padding: 10px;        /* requested inner margin */
+  padding: 10px;
   box-sizing: border-box;
+  animation: slideInDown 400ms ease-out;
 }
-/* Neutralize Bootstrap column widths inside the form so each block becomes full-width */
+
+/* Neutralize Bootstrap column widths inside the form */
 #searchForm .col-md-2,
 #searchForm .col-md-3,
 #searchForm .col-md-4,
@@ -20,38 +21,41 @@
   max-width: 100% !important;
   flex: none !important;
 }
-#searchForm .form-label { display:block; font-weight:600; margin-bottom:4px; }
-#searchForm .form-control,
-#searchForm .form-select { width:100%; box-sizing:border-box; }
 
-/* Keep table sticky headers if you already had them */
-.sticky-head thead th { position: sticky; top: 0; z-index: 1; background: #f8f9fa; }
-
-.student-photo-container {
-  display: grid;
-  place-items: center; /* Centers both horizontally and vertically */
-  height: 300px;         /* Set a height for the container */
+#searchForm .form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
+#searchForm .form-control,
+#searchForm .form-select {
+  width: 100%;
+  box-sizing: border-box;
+}
 
-/* --- Layout containment for cards --- */
+/* --- Sticky Table Headers --- */
+.sticky-head thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8f9fa;
+}
+
+/* --- Photo Container --- */
+.student-photo-container {
+  display: grid;
+  place-items: center;
+  height: 300px;
+}
+
+/* --- Layout Containment for Cards --- */
 .result-card {
-  /* Critical: tells browser this card's layout won't affect siblings */
   contain: layout style paint;
-  
-  /* Skip rendering off-screen elements */
   content-visibility: auto;
-  
-  /* Hint browser to prepare for transform (hover effect) */
   will-change: transform;
-  
-  /* Smooth transitions without jank */
   transition: transform 100ms ease-out, box-shadow 100ms ease-out;
-  
-  /* Make clickable cards obvious */
   cursor: pointer;
-  
-  /* Base styling */
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 0.5rem;
@@ -63,25 +67,21 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* --- Results grid with CSS Grid (not flexbox) --- */
+/* --- Results Grid --- */
 .results-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
-  
-  /* Ensure grid container also respects containment */
   contain: layout;
 }
 
-/* --- Image optimization --- */
+/* --- Image Optimization --- */
 .student-photo {
   width: 100%;
   height: 240px;
   object-fit: cover;
   display: block;
-  
-  /* Show loading animation while image loads */
   background: linear-gradient(
     90deg,
     #efefef 25%,
@@ -92,12 +92,10 @@
   animation: loadingShimmer 1.5s infinite;
 }
 
-/* Stop animation once image loads */
 .student-photo[src*="photos"] {
   animation: none;
 }
 
-/* Placeholder fallback */
 .student-photo[src*="placeholder"] {
   animation: none;
   background: #f0f0f0;
@@ -112,7 +110,7 @@
   }
 }
 
-/* --- Spinner styling (for search loading state) --- */
+/* --- Spinner Styling --- */
 .spinner-border-sm {
   width: 1rem;
   height: 1rem;
@@ -121,19 +119,21 @@
   border-right-color: transparent;
 }
 
+.spinner-border {
+  animation: spinner-border 0.75s linear infinite;
+}
+
 @keyframes spinner-border {
   to {
     transform: rotate(360deg);
   }
 }
 
-.spinner-border {
-  animation: spinner-border 0.75s linear infinite;
-}
-
-/* --- Message area animations --- */
+/* --- Alert & Message Animations --- */
 .alert {
   animation: slideInDown 300ms ease-out;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
 }
 
 @keyframes slideInDown {
@@ -147,7 +147,6 @@
   }
 }
 
-/* --- Result area animations --- */
 #resultArea {
   animation: fadeIn 300ms ease-out;
 }
@@ -161,7 +160,7 @@
   }
 }
 
-/* --- Card body styling --- */
+/* --- Card Body Styling --- */
 .card-body {
   padding: 1rem;
 }
@@ -189,11 +188,7 @@
   font-size: 0.85rem;
 }
 
-/* --- Form styling --- */
-#searchForm {
-  animation: slideInDown 400ms ease-out;
-}
-
+/* --- Form Controls --- */
 .form-select,
 .form-control {
   border-color: #ced4da;
@@ -206,6 +201,7 @@
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
+/* --- Buttons --- */
 .btn {
   transition: all 100ms ease;
   font-weight: 500;
@@ -215,7 +211,7 @@
   transform: scale(0.98);
 }
 
-/* --- Result card specific sizing --- */
+/* --- Result Card Sizing --- */
 .card-fixed {
   height: 100%;
   display: flex;
@@ -232,7 +228,7 @@
   flex-direction: column;
 }
 
-/* --- Badge/label styling --- */
+/* --- List Items --- */
 .list-group-item {
   border-color: #e0e0e0;
   padding: 0.75rem 1rem;
@@ -246,12 +242,7 @@
   border-bottom: none;
 }
 
-/* --- Alert styling --- */
-.alert {
-  border-radius: 0.5rem;
-  font-size: 0.95rem;
-}
-
+/* --- Alert Variants --- */
 .alert-info {
   background-color: #e7f3ff;
   border-color: #b3d9ff;
@@ -276,7 +267,7 @@
   color: #721c24;
 }
 
-/* --- Responsive adjustments --- */
+/* --- Responsive Adjustments --- */
 @media (max-width: 768px) {
   .results-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -306,7 +297,7 @@
   }
 }
 
-/* --- Accessibility: Reduce motion for users who prefer it --- */
+/* --- Accessibility: Reduce Motion --- */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -321,54 +312,25 @@
   }
 }
 
-/* --- Performance: GPU acceleration hints --- */
+/* --- GPU Acceleration --- */
 .card {
   backface-visibility: hidden;
   perspective: 1000px;
 }
 
-/* --- Utility classes --- */
-.mb-0 {
-  margin-bottom: 0 !important;
-}
+/* --- Utility Classes --- */
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-2 { margin-bottom: 0.5rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.mb-4 { margin-bottom: 1.5rem !important; }
+.mt-3 { margin-top: 1rem !important; }
+.me-2 { margin-right: 0.5rem !important; }
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+.flex-grow-1 { flex-grow: 1; }
 
-.mb-1 {
-  margin-bottom: 0.25rem !important;
-}
-
-.mb-2 {
-  margin-bottom: 0.5rem !important;
-}
-
-.mb-3 {
-  margin-bottom: 1rem !important;
-}
-
-.mb-4 {
-  margin-bottom: 1.5rem !important;
-}
-
-.mt-3 {
-  margin-top: 1rem !important;
-}
-
-.me-2 {
-  margin-right: 0.5rem !important;
-}
-
-.d-flex {
-  display: flex;
-}
-
-.align-items-center {
-  align-items: center;
-}
-
-.flex-grow-1 {
-  flex-grow: 1;
-}
-
-/* --- Print styles (if needed) --- */
+/* --- Print Styles --- */
 @media print {
   .result-card {
     page-break-inside: avoid;
