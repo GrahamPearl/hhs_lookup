@@ -122,7 +122,8 @@ for idx, row in df.iterrows():
             "firstName": str(row["firstname"]).strip(),
             "lastName": str(row["lastname"]).strip(),
             "registrationClass": f"GRADE {row['grade']} {row['class']}",
-            "photo": f"{admin_no}.jpg"
+            "photo": f"{admin_no}.jpg",
+            "gender": str(row["g"]).strip().upper() if "g" in row else "UNKNOWN"
         })
 
     except Exception as e:
