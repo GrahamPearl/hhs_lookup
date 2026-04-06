@@ -12,19 +12,6 @@ let timetableConfig = {
 let timetableData = {}; // { "row-col": { row, col, type, title, className, venue } }
 let currentTeacherName = "";
 
-// ── OPTIMIZATION 1: Cached cell references ─────────────────────
-// Instead of querying the DOM with querySelector every time we need
-// to update a cell, we store direct references in a Map keyed by "row-col".
-// This gives us O(1) lookups instead of O(n) DOM traversals.
-const _cellRefCache = new Map();
-
-// ── OPTIMIZATION 3: In-memory teacher index cache ──────────────
-// The teacher index is read from localStorage frequently (on every save,
-// on every ensureTeacherInIndex call). We cache it in memory and only
-// read from localStorage once at startup. All mutations go through
-// the cache and are written back to localStorage.
-let _teacherIndexCache = null;
-
 // ---------------------- DOM READY -----------------------------
 document.addEventListener("DOMContentLoaded", function () {
   // Core form & table
@@ -37,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const timetablePlaceholder = document.getElementById("timetablePlaceholder");
   const timetableWrapper = document.getElementById("timetableWrapper");
 
-  // Teacher controls
+  // Teacher controls (NEW)
   const teacherNameInput = document.getElementById("teacherNameInput");
   const teacherSelect = document.getElementById("teacherSelect");
 
@@ -46,8 +33,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const loadBtn = document.getElementById("loadBtn");
   const clearBtn = document.getElementById("clearBtn");
 
-  const importBtn = document.getElementById("importBtn");
-  const importFileInput = document.getElementById("importFileInput");
+  const importBtn = document.getElementById("importBtn"); // NEW
+  const importFileInput = document.getElementById("importFileInput"); // NEW
 
   const exportBtn = document.getElementById("exportBtn");
   const copyJsonBtn = document.getElementById("copyJsonBtn");
@@ -72,6 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function sanitizeTeacherName(name) {
     const trimmed = name.trim();
     if (!trimmed) return "";
+    // Replace spaces with underscores, strip bad characters
     return trimmed.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "");
   }
 
@@ -81,30 +69,19 @@ document.addEventListener("DOMContentLoaded", function () {
     return STORAGE_PREFIX + safe;
   }
 
-  // ── OPTIMIZATION 3: Cached teacher index ─────────────────────
-  // loadTeacherIndex() now reads from the in-memory cache first.
-  // Only on the very first call does it touch localStorage.
   function loadTeacherIndex() {
-    if (_teacherIndexCache !== null) return _teacherIndexCache;
-
     const raw = localStorage.getItem(STORAGE_INDEX_KEY);
-    if (!raw) {
-      _teacherIndexCache = [];
-      return _teacherIndexCache;
-    }
+    if (!raw) return [];
     try {
       const list = JSON.parse(raw);
-      _teacherIndexCache = Array.isArray(list) ? list : [];
+      return Array.isArray(list) ? list : [];
     } catch (e) {
       console.error("Failed to parse teacher index", e);
-      _teacherIndexCache = [];
+      return [];
     }
-    return _teacherIndexCache;
   }
 
-  // saveTeacherIndex() writes to both the cache and localStorage.
   function saveTeacherIndex(list) {
-    _teacherIndexCache = list;
     localStorage.setItem(STORAGE_INDEX_KEY, JSON.stringify(list));
   }
 
@@ -112,7 +89,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const key = getTeacherStorageKey(teacherName);
     if (!key) return;
 
-    // Uses cached index — no JSON.parse overhead
     const list = loadTeacherIndex();
     const exists = list.some((item) => item.key === key);
     if (!exists) {
@@ -172,8 +148,6 @@ document.addEventListener("DOMContentLoaded", function () {
     timetablePlaceholder.classList.remove("d-none");
     timetableWrapper.classList.add("d-none");
     timetableTable.innerHTML = "";
-    // Clear cell cache when table is destroyed
-    _cellRefCache.clear();
   }
 
   function showTable() {
@@ -182,15 +156,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ---------------------- TABLE BUILD -----------------------
-  // ── OPTIMIZATION 2: DocumentFragment batching ────────────────
-  // The entire table (thead + tbody with all rows and cells) is built
-  // inside a DocumentFragment. Only a single DOM append is performed
-  // at the end, avoiding intermediate layout recalculations.
-  //
-  // ── OPTIMIZATION 1: Cell references cached ──────────────────
-  // As cells are created, their DOM references are stored in
-  // _cellRefCache so renderSingleCell() can retrieve them in O(1)
-  // without any querySelector call.
 
   function buildTableStructure() {
     const { rows, cols, dayNames } = timetableConfig;
@@ -202,10 +167,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     showTable();
     timetableTable.innerHTML = "";
-    _cellRefCache.clear(); // Reset cache for fresh build
-
-    // ── Build everything inside a DocumentFragment ─────────────
-    const fragment = document.createDocumentFragment();
 
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -220,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
       headerRow.appendChild(th);
     }
     thead.appendChild(headerRow);
-    fragment.appendChild(thead);
+    timetableTable.appendChild(thead);
 
     const tbody = document.createElement("tbody");
 
@@ -241,19 +202,12 @@ document.addEventListener("DOMContentLoaded", function () {
           openCellEditor(r, c);
         });
         tr.appendChild(td);
-
-        // ── Cache the cell reference for O(1) lookup later ────
-        _cellRefCache.set(getCellKey(r, c), td);
       }
 
       tbody.appendChild(tr);
     }
 
-    fragment.appendChild(tbody);
-
-    // ── Single DOM mutation: append the complete fragment ──────
-    timetableTable.appendChild(fragment);
-
+    timetableTable.appendChild(tbody);
     renderAllEntries();
   }
 
@@ -328,31 +282,25 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // ---------------------- RENDER CELLS ----------------------
-  // ── OPTIMIZATION 1: renderAllEntries() and renderSingleCell()
-  // now use _cellRefCache for O(1) cell lookups instead of
-  // querySelectorAll / querySelector DOM traversals.
 
   function renderAllEntries() {
-    // Iterate over cached cell references — no DOM query needed
-    _cellRefCache.forEach((cell, key) => {
-      const parts = key.split("-");
-      const r = parseInt(parts[0], 10);
-      const c = parseInt(parts[1], 10);
+    document.querySelectorAll(".timetable-cell").forEach((cell) => {
+      const r = parseInt(cell.dataset.row, 10);
+      const c = parseInt(cell.dataset.col, 10);
       renderSingleCell(r, c);
     });
   }
 
   function renderSingleCell(row, col) {
     const key = getCellKey(row, col);
-
-    // ── O(1) lookup from cache instead of querySelector ───────
-    const cell = _cellRefCache.get(key);
+    const cell = document.querySelector(
+      `.timetable-cell[data-row="${row}"][data-col="${col}"]`,
+    );
     if (!cell) return;
 
     const entry = timetableData[key];
     if (!entry) {
       cell.textContent = "Click to add";
-      cell.classList.remove("free-lesson", "meeting-lesson");
       return;
     }
 
@@ -490,11 +438,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const text = e.target.result;
         const payload = JSON.parse(text);
 
+        // Basic validation
         if (typeof payload !== "object" || payload === null) {
           alert("Invalid JSON structure.");
           return;
         }
 
+        // Get teacherName from payload or ask user
         let teacherName = (payload.teacherName || "").trim();
         if (!teacherName) {
           teacherName = prompt(
@@ -513,6 +463,7 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
+        // Normalise payload to our expected shape
         const config = payload.config || {};
         const entries = Array.isArray(payload.entries) ? payload.entries : [];
 
@@ -526,11 +477,14 @@ document.addEventListener("DOMContentLoaded", function () {
           entries: entries,
         };
 
+        // Save to localStorage under per-teacher key
         localStorage.setItem(storageKey, JSON.stringify(safePayload));
 
+        // Make sure teacher appears in index + combo box
         ensureTeacherInIndex(teacherName);
         setCurrentTeacherName(teacherName);
 
+        // Load into current view
         timetableConfig = safePayload.config;
         timetableData = {};
         safePayload.entries.forEach((entry) => {
@@ -546,6 +500,7 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Error importing JSON", err);
         alert("Could not import JSON. Please check the file format.");
       } finally {
+        // Reset file input so the same file can be selected again if needed
         importFileInput.value = "";
       }
     };
@@ -608,6 +563,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ---------------------- EVENT WIRING ----------------------
 
+  // Generate timetable grid
   gridForm.addEventListener("submit", function (e) {
     e.preventDefault();
 
@@ -622,12 +578,14 @@ document.addEventListener("DOMContentLoaded", function () {
     buildTableStructure();
   });
 
+  // Save / Load / Clear / Export / Copy
   saveBtn.addEventListener("click", saveCurrentTimetable);
   loadBtn.addEventListener("click", loadTimetable);
   clearBtn.addEventListener("click", clearCurrentGrid);
   exportBtn.addEventListener("click", exportCurrentTimetable);
   copyJsonBtn.addEventListener("click", copyJsonToClipboard);
 
+  // When combobox changes, load that teacher automatically
   teacherSelect.addEventListener("change", function () {
     const key = teacherSelect.value;
     if (key) {
@@ -635,10 +593,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // Import: open file dialog
   importBtn.addEventListener("click", function () {
     importFileInput.click();
   });
 
+  // When a file is chosen, import it
   importFileInput.addEventListener("change", function () {
     const file = importFileInput.files[0];
     importFromJsonFile(file);

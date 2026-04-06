@@ -1,0 +1,382 @@
+
+/* Vertical form layout: label above component, stacked downward */
+#searchForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;            /* spacing between blocks */
+  width: 100%;
+  padding: 10px;        /* requested inner margin */
+  box-sizing: border-box;
+}
+/* Neutralize Bootstrap column widths inside the form so each block becomes full-width */
+#searchForm .col-md-2,
+#searchForm .col-md-3,
+#searchForm .col-md-4,
+#searchForm .col-md-5,
+#searchForm .col-md-6,
+#searchForm .col-md-8,
+#searchForm .col-md-12 {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: none !important;
+}
+#searchForm .form-label { display:block; font-weight:600; margin-bottom:4px; }
+#searchForm .form-control,
+#searchForm .form-select { width:100%; box-sizing:border-box; }
+
+/* Keep table sticky headers if you already had them */
+.sticky-head thead th { position: sticky; top: 0; z-index: 1; background: #f8f9fa; }
+
+.student-photo-container {
+  display: grid;
+  place-items: center; /* Centers both horizontally and vertically */
+  height: 300px;         /* Set a height for the container */
+}
+
+
+/* --- Layout containment for cards --- */
+.result-card {
+  /* Critical: tells browser this card's layout won't affect siblings */
+  contain: layout style paint;
+  
+  /* Skip rendering off-screen elements */
+  content-visibility: auto;
+  
+  /* Hint browser to prepare for transform (hover effect) */
+  will-change: transform;
+  
+  /* Smooth transitions without jank */
+  transition: transform 100ms ease-out, box-shadow 100ms ease-out;
+  
+  /* Make clickable cards obvious */
+  cursor: pointer;
+  
+  /* Base styling */
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.result-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* --- Results grid with CSS Grid (not flexbox) --- */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  
+  /* Ensure grid container also respects containment */
+  contain: layout;
+}
+
+/* --- Image optimization --- */
+.student-photo {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  display: block;
+  
+  /* Show loading animation while image loads */
+  background: linear-gradient(
+    90deg,
+    #efefef 25%,
+    #f5f5f5 50%,
+    #efefef 75%
+  );
+  background-size: 200% 100%;
+  animation: loadingShimmer 1.5s infinite;
+}
+
+/* Stop animation once image loads */
+.student-photo[src*="photos"] {
+  animation: none;
+}
+
+/* Placeholder fallback */
+.student-photo[src*="placeholder"] {
+  animation: none;
+  background: #f0f0f0;
+}
+
+@keyframes loadingShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* --- Spinner styling (for search loading state) --- */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+  border-color: currentColor;
+  border-right-color: transparent;
+}
+
+@keyframes spinner-border {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner-border {
+  animation: spinner-border 0.75s linear infinite;
+}
+
+/* --- Message area animations --- */
+.alert {
+  animation: slideInDown 300ms ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Result area animations --- */
+#resultArea {
+  animation: fadeIn 300ms ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- Card body styling --- */
+.card-body {
+  padding: 1rem;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #212529;
+  word-break: break-word;
+}
+
+.card-text {
+  font-size: 0.95rem;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.card-text strong {
+  color: #212529;
+  font-weight: 600;
+}
+
+.text-muted {
+  color: #6c757d !important;
+  font-size: 0.85rem;
+}
+
+/* --- Form styling --- */
+#searchForm {
+  animation: slideInDown 400ms ease-out;
+}
+
+.form-select,
+.form-control {
+  border-color: #ced4da;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.form-select:focus,
+.form-control:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn {
+  transition: all 100ms ease;
+  font-weight: 500;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* --- Result card specific sizing --- */
+.card-fixed {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.result-card .student-photo {
+  flex-shrink: 0;
+}
+
+.result-card .card-body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Badge/label styling --- */
+.list-group-item {
+  border-color: #e0e0e0;
+  padding: 0.75rem 1rem;
+}
+
+.list-group-item:first-child {
+  border-top: none;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+/* --- Alert styling --- */
+.alert {
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.alert-info {
+  background-color: #e7f3ff;
+  border-color: #b3d9ff;
+  color: #004085;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  border-color: #ffeaa7;
+  color: #856404;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+/* --- Responsive adjustments --- */
+@media (max-width: 768px) {
+  .results-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .student-photo {
+    height: 200px;
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+
+  .card-text {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-photo {
+    height: 220px;
+  }
+}
+
+/* --- Accessibility: Reduce motion for users who prefer it --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .result-card:hover {
+    transform: none;
+  }
+}
+
+/* --- Performance: GPU acceleration hints --- */
+.card {
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* --- Utility classes --- */
+.mb-0 {
+  margin-bottom: 0 !important;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem !important;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem !important;
+}
+
+.mb-3 {
+  margin-bottom: 1rem !important;
+}
+
+.mb-4 {
+  margin-bottom: 1.5rem !important;
+}
+
+.mt-3 {
+  margin-top: 1rem !important;
+}
+
+.me-2 {
+  margin-right: 0.5rem !important;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.flex-grow-1 {
+  flex-grow: 1;
+}
+
+/* --- Print styles (if needed) --- */
+@media print {
+  .result-card {
+    page-break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+
+  .student-photo {
+    max-width: 100%;
+  }
+}

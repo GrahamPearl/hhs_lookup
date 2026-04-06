@@ -35,6 +35,8 @@ function getTeacherEntry(name, row, col) {
 let _metricsCache = null;
 let _historyCache = null;
 let _tenWeekStartCache = undefined;
+let _teacherNamesCache = null;
+let _startDateObj = null;
 
 function loadMetrics() {
   if (_metricsCache === null) {
@@ -69,6 +71,7 @@ function getCachedTenWeekStart() {
 
 function setCachedTenWeekStart(val) {
   _tenWeekStartCache = val;
+  _startDateObj = null;
   localStorage.setItem(TEN_WEEK_START, val);
 }
 
@@ -76,11 +79,12 @@ function setCachedTenWeekStart(val) {
 window.addEventListener("storage", (e) => {
   if (e.key === METRICS_KEY) _metricsCache = null;
   else if (e.key === HISTORY_KEY) _historyCache = null;
-  else if (e.key === TEN_WEEK_START) _tenWeekStartCache = undefined;
+  else if (e.key === TEN_WEEK_START) { _tenWeekStartCache = undefined; _startDateObj = null; }
   else if (e.key && e.key.startsWith(PREFIX)) {
     const name = e.key.slice(PREFIX.length);
     delete teacherCache[name];
     delete _entryIndex[name];
+    _teacherNamesCache = null;
   }
 });
 
@@ -93,9 +97,11 @@ function initializeTenWeekPeriod() {
 }
 
 function getWeekNumber(dateStr) {
-  initializeTenWeekPeriod();
-  const startDate = new Date(getCachedTenWeekStart());
-  const diffDays = Math.floor((new Date(dateStr) - startDate) / 86400000);
+  if (!_startDateObj) {
+    initializeTenWeekPeriod();
+    _startDateObj = new Date(getCachedTenWeekStart());
+  }
+  const diffDays = Math.floor((new Date(dateStr) - _startDateObj) / 86400000);
   const week = Math.floor(diffDays / 7) + 1;
   return Math.min(Math.max(week, 1), 10);
 }
@@ -191,11 +197,13 @@ function ensureTeacherMetrics(name) {
 // ── Pre-compute teacher name list from localStorage ────────────
 
 function getTeacherNames() {
+  if (_teacherNamesCache) return _teacherNamesCache;
   const names = [];
   for (let i = 0, len = localStorage.length; i < len; i++) {
     const k = localStorage.key(i);
     if (k.startsWith(PREFIX)) names.push(k.slice(PREFIX.length));
   }
+  _teacherNamesCache = names;
   return names;
 }
 
@@ -466,8 +474,9 @@ function renderGrid() {
       const metrics = loadMetrics();
       ensureTeacherMetrics(t);
       metrics[t].coversDone += 1;
-      metrics[t].totalCovers = getTotalCovers(t);
-      metrics[t].coversThisWeek = getCoversThisWeek(t);
+      const _hs = buildHistoryStats(loadCoverHistory(), getWeekNumber(coverDate));
+      metrics[t].totalCovers = _hs[t]?.total || 0;
+      metrics[t].coversThisWeek = _hs[t]?.thisWeek || 0;
       metrics[t].lastCoverDate = coverDate;
       saveMetrics(metrics);
 
@@ -503,13 +512,14 @@ function renderGrid() {
     <thead><tr><th>Period</th><th>Available Teachers</th></tr></thead>
     <tbody>${availRows.join("")}</tbody></table>`;
 
-  availDiv.addEventListener("dragstart", (ev) => {
-    const badge = ev.target.closest("[data-teacher-name]");
-    if (badge) ev.dataTransfer.setData("text", badge.dataset.teacherName);
-  });
-
   checkFairnessWarnings();
 }
+
+// Assign dragstart once — prevents listener accumulation on every renderGrid call
+document.getElementById("availableCoverList").ondragstart = (ev) => {
+  const badge = ev.target.closest("[data-teacher-name]");
+  if (badge) ev.dataTransfer.setData("text", badge.dataset.teacherName);
+};
 
 // ── Fairness warnings ──────────────────────────────────────────
 
@@ -944,6 +954,7 @@ document.getElementById("bulkInput").addEventListener("change", async (e) => {
     localStorage.setItem(PREFIX + name, JSON.stringify(data));
     teacherCache[name] = data;
     _buildEntryIndex(name, data); // Build index on import
+    _teacherNamesCache = null;
     count++;
   }
   document.getElementById("status").innerText = "Imported " + count;
@@ -968,6 +979,8 @@ document.getElementById("clearBtn").onclick = () => {
     tallies = {};
     _metricsCache = null;
     _historyCache = null;
+    _teacherNamesCache = null;
+    _startDateObj = null;
     // Clear entry index
     for (const k in _entryIndex) delete _entryIndex[k];
     document.getElementById("status").innerText = "All data cleared.";
@@ -990,7 +1003,7 @@ document.getElementById("exportBtn").onclick = () => {
   a.href = URL.createObjectURL(blob);
   a.download = `cover_backup_${new Date().toISOString().split('T')[0]}.json`;
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 
 document.getElementById("importBtn").onclick = () => document.getElementById("importMetricsInput").click();
@@ -1080,7 +1093,6 @@ document.getElementById("exportExcelBtn").onclick = () => {
 // ── Initialization ─────────────────────────────────────────────
 
 refreshTeachers();
-renderAbsentTeachersTable();
 renderGrid();
 initializeDatePicker();
 initializeTenWeekPeriod();
