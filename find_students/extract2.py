@@ -121,6 +121,12 @@ for sheet_name in xls.sheet_names:
 
                 gender = str(row["gender"]).strip().upper()
                 gender = "M" if gender.startswith("M") else "F"
+                
+                birthdate = (
+                    pd.to_datetime(row["no"], errors="coerce").strftime("%Y-%m-%d")
+                    if pd.notna(row["no"])
+                    else None
+                )
 
                 student = {
                     "adminNo": admin_no,
@@ -130,11 +136,13 @@ for sheet_name in xls.sheet_names:
                     "class": class_code,
                     "gender": gender,
                     "agegroup": str(row["agegroup"]).strip(),
-                    "birthdate": (
-                        row["no"].strftime("%Y-%m-%d")
-                        if hasattr(row["no"], "strftime")
-                        else str(row["no"]).strip()
-                    ),
+                    "birthdate": birthdate,
+
+                    ##"birthdate": (
+                    ##    row["no"].strftime("%Y-%m-%d")
+                    ##    if hasattr(row["no"], "strftime")
+                    ##    else str(row["no"]).strip()
+                    ##),
                     "registrationClass": registration_class,
                     "photo": f"{admin_no}.webp"
                 }

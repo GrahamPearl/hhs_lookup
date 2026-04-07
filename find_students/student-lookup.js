@@ -1,383 +1,39 @@
-// --- Configuration ---
-const DATA_URL = '../students.json'; // same folder as index.html
-const PLACEHOLDER_IMG = 'https://via.placeholder.com/400x240?text=No+Photo';
+/* =====================
+   CONFIG & STATE
+===================== */
 
-// --- State ---
+const DATA_URL = "./students.json";
+const PHOTO_PATH = "../photos/";
+const PLACEHOLDER_IMG = "https://via.placeholder.com/120x150?text=No+Photo";
+
 let students = [];
 
-// --- Cached elements ---
-const $form = $('#searchForm');
-const $query = $('#query');
-const $messageArea = $('#messageArea');
-const $resultArea = $('#resultArea');
-const $resetBtn = $('#resetBtn');
-const $folderPicture = '../photos/';
+// Indexes (memory‑efficient, fast lookups)
+let adminIndex = new Map(); // adminNo → student
+let classIndex = new Map(); // class → [students]
 
-// --- NEW: Indexes & cache ---
-/**
- * adminIndex: Map<adminNoLower, student>
- * classIndex: Map<classLower, student[]>
- */
-let adminIndex = new Map(); // NEW
-let classIndex = new Map(); // NEW
+/* =====================
+   INIT
+===================== */
 
-// Simple LRU cache using Map insertion order. NEW
-const resultCache = new Map();
-const MAX_CACHE_SIZE = 50;
-function cacheGet(key) {
-  if (!resultCache.has(key)) return undefined;
-  // refresh order (LRU behavior)
-  const val = resultCache.get(key);
-  resultCache.delete(key);
-  resultCache.set(key, val);
-  return val;
-}
-function cacheSet(key, val) {
-  resultCache.set(key, val);
-  if (resultCache.size > MAX_CACHE_SIZE) {
-    const oldestKey = resultCache.keys().next().value;
-    resultCache.delete(oldestKey);
-  }
-}
+document.addEventListener("DOMContentLoaded", init);
 
-// --- Initial load: AJAX (jQuery) ---
-$(document).ready(function () {
-  $.ajax({
-    url: DATA_URL,
-    method: 'GET',
-    dataType: 'json',
-    cache: false
-  })
-    .done(function (data, textStatus, jqXHR) {
-      // Basic validation
-      if (!Array.isArray(data)) {
-        showMessage('danger', 'Student dataset format is invalid (expected an array).');
-        console.error('Invalid data:', data);
-        return;
-      }
 
-      // Normalize & index for faster lookups. NEW
-      students = data.map(s => {
-        const s2 = { ...s };
-        s2._admin = String(s.adminNo ?? '').toLowerCase();
-        s2._first = String(s.firstName ?? '').toLowerCase();
-        s2._last  = String(s.lastName ?? '').toLowerCase();
-        s2._full  = `${s2._first} ${s2._last}`.trim();
-        s2._class = String(s.registrationClass ?? '').toLowerCase();
-
-        if (s2._admin) {
-          adminIndex.set(s2._admin, s2);
-        }
-        if (s2._class) {
-          if (!classIndex.has(s2._class)) classIndex.set(s2._class, []);
-          classIndex.get(s2._class).push(s2);
-        }
-        return s2;
-      });
-
-      $query.trigger('focus');
-    })
-    .fail(function (jqXHR, textStatus, errorThrown) {
-      let hint = '';
-      if (location.protocol === 'file:') {
-        hint = ' You appear to be opening this file directly. Please run from a local server (e.g., VS Code Live Server).';
-      }
-      showMessage('danger', 'Could not load student dataset.' + hint);
-      console.error('AJAX error:', { status: jqXHR.status, textStatus, errorThrown });
-    });
-});
-
-// --- Subject datasets ---
-const SUBJECT_FILES = {
-  10: 'Grade10_Master_Subjects.json',
-  11: 'Grade11_Master_Subjects.json',
-  12: 'Grade12_Master_Subjects.json'
-};
-
-let subjectIndex = new Map(); 
-// Map<adminNoLower, subject[]>
-
-function loadSubjects(grade) {
-  return $.ajax({
-    url: SUBJECT_FILES[grade],
-    method: 'GET',
-    dataType: 'json',
-    cache: false
-  }).done(function (data) {
-    data.forEach(s => {
-      const admin = String(s.student_number).toLowerCase();
-      if (!subjectIndex.has(admin)) subjectIndex.set(admin, []);
-      subjectIndex.get(admin).push(s);
-    });
-  });
+function normalizeAgeGroup(val) {
+  if (!val) return val;
+  return val.includes('%') ? decodeURIComponent(val) : val;
 }
 
 
-$form.on('submit', function (e) {
-  e.preventDefault();
-  clearUI();
-
-  const raw = ($query.val() ?? '').trim();
-  if (!raw) { $query.addClass('is-invalid'); return; }
-  $query.removeClass('is-invalid');
-
-  // NEW: read selected field from the dropdown
-  const field = (typeof window.getSelectedField === 'function' ? window.getSelectedField() : 'auto');
-
-  let effective = raw;
-  if (field === 'class') {
-    effective = `class:${raw}`;      // forces class search (your function already supports this)
-  } else if (field === 'name') {
-    effective = `name:${raw}`;       // optional: add support below in searchStudents
-  } else if (field === 'admin') {
-    // nothing special; admin exact match wins in your function
+function getStudentPhoto(student) {
+  if (student.photo) {
+    return PHOTO_PATH + student.photo;
   }
-  
-  const matches = searchStudents(effective);
-
-  if (matches.length === 0) {
-    showMessage('warning', `No results for: <strong>${escapeHtml(raw)}</strong>.`);
-    return;
-  }
-  if (matches.length === 1) {
-    renderSingleStudent(matches[0]);
-    showMessage('info', '1 result found.');
-  } else {
-    renderMultipleStudents(matches, raw);
-  }
-});
-
-
-// --- Reset button ---
-$resetBtn.on('click', function () {
-  clearUI(true);
-  $query.trigger('focus');
-});
-
-// --- NEW: Core search with indexes + cache ---
-/**
- * Supports:
- *  - Exact Admin No (fast via adminIndex)
- *  - Exact Class (fast via classIndex)
- *  - Partial search across first/last/full name and registrationClass
- *  - Optional prefix: "class:<text>" to force class search (partial)
- */
-function searchStudents(inputRaw) {
-  const key = inputRaw.toLowerCase().trim();
-  const cached = cacheGet(key);
-  if (cached) return cached;
-
-  let q = key;
-  let forceClass = false;
-
-  // Prefix handling: "class:" or "cls:" → force class search
-  if (q.startsWith('class:')) {
-    forceClass = true;
-    q = q.slice('class:'.length).trim();
-  } else if (q.startsWith('cls:')) {
-    forceClass = true;
-    q = q.slice('cls:'.length).trim();
-  }
-
-  let results = [];
-
-  // 1) If forced class search
-  if (forceClass) {
-    if (!q) {
-      results = []; // nothing after prefix
-    } else {
-      // exact key hit first
-      if (classIndex.has(q)) {
-        results = classIndex.get(q).slice();
-      } else {
-        // partial: include any class key that contains q
-        const buckets = [];
-        for (const [klass, arr] of classIndex.entries()) {
-          if (klass.includes(q)) buckets.push(...arr);
-        }
-        results = buckets;
-      }
-    }
-    cacheSet(key, results);
-    return results;
-  }
-
-  // 2) Exact Admin No (fast)
-  if (adminIndex.has(q)) {
-    results = [adminIndex.get(q)];
-    cacheSet(key, results);
-    return results;
-  }
-
-  // 3) Exact Class (fast)
-  if (classIndex.has(q)) {
-    results = classIndex.get(q).slice();
-    cacheSet(key, results);
-    return results;
-  }
-
-  // 4) Partial fallback: name OR class (case-insensitive)
-  results = students.filter(s =>
-    s._first.includes(q) ||
-    s._last.includes(q) ||
-    s._full.includes(q) ||
-    s._class.includes(q) ||
-    s._admin === q // retain exact admin equality in fallback
-  );
-
-  cacheSet(key, results);
-  return results;
-}
-
-// --- Rendering ---
-function renderSubjects(subjects) {
-  if (subjects.length === 0) {
-    $resultArea.append(`
-      <div class="alert alert-warning mt-3">
-        No subjects found for this student.
-      </div>
-    `);
-    return;
-  }
-
-  let html = `
-    <div class="card mt-3 shadow-sm">
-      <div class="card-body">
-        <h5 class="card-title">Subjects</h5>
-        <ul class="list-group list-group-flush">
-  `;
-
-  subjects.forEach(s => {
-    html += `
-      <li class="list-group-item">
-        <strong>${escapeHtml(s.subject)}</strong><br>
-        <small class="text-muted">
-          Line ${escapeHtml(s.line)} · ${escapeHtml(s.teacher)}
-        </small>
-      </li>
-    `;
-  });
-
-  html += `
-        </ul>
-      </div>
-    </div>
-  `;
-
-  $resultArea.append(html);
+  return PLACEHOLDER_IMG;
 }
 
 
-function renderSingleStudent(student) {
-  const photoSrc = student.photo ? String(student.photo) : PLACEHOLDER_IMG;
-
-  const html = `
-    <div class="card card-fixed shadow-sm result-card">
-      <img
-        class="student-photo"
-        src="${$folderPicture + escapeAttr(photoSrc)}"
-        alt="Profile photo of ${escapeAttr(student.firstName)} ${escapeAttr(student.lastName)}"
-        onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}';"
-      />
-
-      <div class="card-body">
-        <h5 class="card-title mb-2">
-          ${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}
-        </h5>
-
-        <p class="card-text mb-1">
-          <strong>ADMIN NO:</strong> ${escapeHtml(student.adminNo)}
-        </p>
-
-        <p class="card-text mb-3">
-          <strong>Registration Class:</strong> ${escapeHtml(student.registrationClass)}
-        </p>
-
-        <p class="card-text">
-          <small class="text-muted">
-            Result generated on ${new Date().toLocaleString()}
-          </small>
-        </p>
-      </div>
-    </div>
-  `;
-
-  $resultArea.html(html);
-
-  const gradeMatch = student.registrationClass.match(/GRADE\s+(\d+)/i);
-if (!gradeMatch) return;
-
-const grade = Number(gradeMatch[1]);
-const admin = student.adminNo.toLowerCase();
-
-// Load subject data (once per grade)
-loadSubjects(grade).done(function () {
-  const subjects = subjectIndex.get(admin) || [];
-  renderSubjects(subjects);
-});
-
-}
-
-
-function renderMultipleStudents(list, raw) {
-  let grid = `
-    <div class="mb-3">
-      <div class="alert alert-info mb-0">
-        <strong>${list.length}</strong> results for <strong>${escapeHtml(raw)}</strong>. Click a card for details.
-      </div>
-    </div>
-    <div class="results-grid">
-  `;
-
-  list.forEach((s, idx) => {
-    const photoSrc = s.photo ? String(s.photo) : PLACEHOLDER_IMG;
-
-    grid += `
-      <div class="card shadow-sm result-card" data-index="${idx}">
-        <img
-          class="student-photo"
-          src="${$folderPicture + escapeAttr(photoSrc)}"
-          alt="Profile photo of ${escapeAttr(s.firstName)} ${escapeAttr(s.lastName)}"
-          onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}';"
-        />
-        <div class="card-body">
-          <h5 class="card-title">${escapeHtml(s.firstName)} ${escapeHtml(s.lastName)}</h5>
-          <p class="card-text mb-1"><strong>ADMIN NO:</strong> ${escapeHtml(s.adminNo)}</p>
-          <p class="card-text"><strong>Reg Class:</strong> ${escapeHtml(s.registrationClass)}</p>
-        </div>
-      </div>
-    `;
-  });
-
-  grid += `</div>`;
-  $resultArea.html(grid);
-
-  $resultArea.find('.result-card').on('click', function () {
-    const idx = Number($(this).attr('data-index'));
-    renderSingleStudent(list[idx]);
-    $('html, body').animate({ scrollTop: $resultArea.offset().top - 16 }, 200);
-  });
-}
-
-
-// --- UI helpers ---
-function showMessage(type, html) {
-  $messageArea.html(`
-    <div class="alert alert-${type} d-flex align-items-center" role="alert">
-      <div>${html}</div>
-    </div>
-  `);
-}
-
-function clearUI(clearInput = false) {
-  $messageArea.empty();
-  $resultArea.empty();
-  if (clearInput) $query.val('');
-  $query.removeClass('is-invalid');
-}
-
-// --- Escaping helpers ---
-function escapeHtml(str) {
+function escape(str) {
   return String(str ?? '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -385,6 +41,319 @@ function escapeHtml(str) {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
-function escapeAttr(str) {
-  return escapeHtml(str).replaceAll('`', '&#96;');
+
+
+function init() {
+  fetch(DATA_URL)
+    .then((res) => res.json())
+    .then((data) => {
+      if (!Array.isArray(data)) {
+        showMessage("danger", "Invalid student dataset.");
+        return;
+      }
+
+      // ✅ NORMALIZE DATA ONCE
+      students = data.map((s) => ({
+        ...s,
+        agegroup: normalizeAgeGroup(s.agegroup)
+      }));
+
+      buildIndexes(students);
+      populateDropdowns(students);
+    });
+
+  document
+    .getElementById("searchForm")
+    .addEventListener("submit", handleSearch);
+
+  // Auto‑apply filters
+  ["filterGrade", "filterClass", "filterGender", "filterAgeGroup"].forEach(
+    (id) => document.getElementById(id).addEventListener("change", runSearch),
+  );
+
+  document
+    .getElementById("clearFilters")
+    .addEventListener("click", resetFilters);
 }
+
+/* =====================
+   INDEXING
+===================== */
+
+function buildIndexes(data) {
+  data.forEach((s) => {
+    adminIndex.set(s.adminNo.toLowerCase(), s);
+
+    const klass = s.class.toLowerCase();
+    if (!classIndex.has(klass)) classIndex.set(klass, []);
+    classIndex.get(klass).push(s);
+  });
+}
+
+/* =====================
+   SEARCH FLOW
+===================== */
+
+function handleSearch(e) {
+  e.preventDefault();
+  runSearch();
+}
+
+function runSearch() {
+  clearUI(false);
+
+  const queryEl = document.getElementById("query");
+  const raw = queryEl.value.trim().toLowerCase();
+
+  if (!raw) {
+    queryEl.classList.add("is-invalid");
+    return;
+  }
+  queryEl.classList.remove("is-invalid");
+
+  const field = window.getSelectedField ? window.getSelectedField() : "auto";
+
+  let results = searchStudents(raw, field);
+  results = applyFilters(results);
+
+  displayResults(results);
+}
+
+/* =====================
+   SEARCH LOGIC
+===================== */
+
+function searchStudents(query, field) {
+  // Admin number (exact)
+  if (field === "admin" || field === "auto") {
+    const hit = adminIndex.get(query);
+    if (hit) return [hit];
+  }
+
+  // Class
+  if (field === "class") {
+    return classIndex.get(query) || [];
+  }
+
+  // Name / fallback
+  return students.filter((s) => {
+    const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
+
+    if (field === "name") {
+      return fullName.includes(query);
+    }
+
+    // auto
+    return fullName.includes(query) || s.class.toLowerCase().includes(query);
+  });
+}
+
+/* =====================
+   FILTER LOGIC
+===================== */
+
+function applyFilters(list) {
+  const grade = getVal("filterGrade");
+  const klass = getVal("filterClass");
+  const gender = getVal("filterGender");
+  const ageGroup = getVal("filterAgeGroup");
+
+  return list.filter((s) => {
+    if (grade && s.grade !== grade) return false;
+    if (klass && s.class !== klass) return false;
+    if (gender && s.gender !== gender) return false;
+    if (ageGroup && s.agegroup !== ageGroup) return false;
+    return true;
+  });
+}
+
+function getVal(id) {
+  return document.getElementById(id)?.value || "";
+}
+
+/* =====================
+   UI HELPERS
+===================== */
+
+function displayResults(list) {
+  const area = document.getElementById("resultArea");
+  area.innerHTML = "";
+
+  if (list.length === 0) {
+    area.innerHTML = `<div class="alert alert-warning">No students found.</div>`;
+    return;
+  }
+
+  area.innerHTML = `<p class="text-muted">${list.length} student(s) found</p>`;
+
+  list.forEach((s) => {
+    console.log("RAW agegroup:", s.agegroup);
+
+    const photoSrc = getStudentPhoto(s);
+
+    area.innerHTML += `
+      <div class="card mb-2">
+        <div class="card-body d-flex align-items-start gap-3">
+          
+          <img
+            src="${photoSrc}"
+            alt="Photo of ${escape(s.firstName)} ${escape(s.lastName)}"
+            class="rounded border"
+            style="width:90px; height:120px; object-fit:cover;"
+            onerror="this.src='${PLACEHOLDER_IMG}'"
+          >
+
+          <div>
+          
+            <strong>${escape(s.firstName)} ${escape(s.lastName)}</strong><br>
+            <p class="mb-1">
+                <strong>Gender:</strong>
+                ${escape(s.gender ?? "—")}
+              </p>
+            Admin: ${escape(s.adminNo)}<br>
+            Class: ${escape(s.class)} · Grade: ${escape(s.grade)}
+          </div>
+
+           <div class="col-sm-6">
+           <p class="mb-1">
+                <strong>Date of Birth:</strong>
+                ${escape(s.birthdate ?? "—")}
+              </p>
+           <p class="mb-1">
+                <strong>Age Group:</strong>
+                ${s.agegroup ?? '-'}
+              </p>
+            
+              
+            </div>   
+        </div>
+      </div>
+    `;
+  });
+}
+
+function displaySingleStudent(student) {
+  const area = document.getElementById("resultArea");
+  const photoSrc = getStudentPhoto(student);
+
+  area.innerHTML = `
+    <div class="card shadow-sm">
+      <div class="card-body row g-3 align-items-center">
+
+        <!-- Photo -->
+        <div class="col-md-3 text-center">
+          <img
+            src="${photoSrc}"
+            alt="Photo of ${escape(student.firstName)} ${escape(student.lastName)}"
+            class="img-fluid rounded border"
+            style="max-width:160px; object-fit:cover;"
+            onerror="this.src='${PLACEHOLDER_IMG}'"
+          >
+        </div>
+
+        <!-- Profile Info -->
+        <div class="col-md-9">
+          <h4 class="mb-2">
+            ${escape(student.firstName)} ${escape(student.lastName)}
+          </h4>
+
+          <div class="row">
+            <div class="col-sm-6">
+              <p class="mb-1"><strong>Admin No:</strong> ${escape(student.adminNo)}</p>
+              <p class="mb-1"><strong>Grade:</strong> ${escape(student.grade)}</p>
+              <p class="mb-1"><strong>Class:</strong> ${escape(student.class)}</p>
+            </div>
+
+            <div class="col-sm-6">
+              <p class="mb-1">
+                <strong>Gender:</strong>
+                ${escape(student.gender ?? "—")}
+              </p>
+              <p class="mb-1">
+                <strong>Age Group:</strong>
+                ${escape(decodeURIComponent(student.agegroup ?? '—'))}
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showMessage(type, msg) {
+  document.getElementById("messageArea").innerHTML =
+    `<div class="alert alert-${type}">${msg}</div>`;
+}
+
+function clearUI(clearInput) {
+  document.getElementById("messageArea").innerHTML = "";
+  document.getElementById("resultArea").innerHTML = "";
+  if (clearInput) document.getElementById("query").value = "";
+}
+
+function resetFilters() {
+  ["filterGrade", "filterClass", "filterGender", "filterAgeGroup"].forEach(
+    (id) => (document.getElementById(id).value = ""),
+  );
+
+  runSearch();
+}
+
+/* =====================
+   DROPDOWNS
+===================== */
+function populateSelect(id, values) {
+  const select = document.getElementById(id);
+  if (!select) return;
+
+  // Keep first option ("All")
+  const first = select.options[0];
+  select.innerHTML = '';
+  select.appendChild(first);
+
+  [...values]
+    .sort()
+    .forEach(value => {
+      const opt = document.createElement('option');
+
+      // ✅ DO NOT encode
+      opt.value = value;
+      opt.textContent = value;
+
+      select.appendChild(opt);
+    });
+}
+
+
+function populateDropdowns(students) {
+  const classSet = new Set();
+  const ageGroupSet = new Set();
+
+  students.forEach((s) => {
+    if (s.class) {
+      classSet.add(s.class.trim());
+    }
+    if (s.agegroup) {
+      ageGroupSet.add(s.agegroup.trim());
+    }
+  });
+
+  populateSelect("filterClass", classSet);
+  populateSelect("filterAgeGroup", ageGroupSet);
+}
+
+function fillSelect(id, values) {
+  const el = document.getElementById(id);
+  values.forEach((v) => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    el.appendChild(opt);
+  });
+}
+
+/* =====================
+   SECURITY
+===================== */
