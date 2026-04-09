@@ -357,3 +357,22 @@ function fillSelect(id, values) {
 /* =====================
    SECURITY
 ===================== */
+
+function __setStudentsForTest(data) {
+  students = data;
+  adminIndex.clear();
+  classIndex.clear();
+  buildIndexes(students);
+}
+
+
+
+module.exports = {
+  normalizeAgeGroup,
+  getStudentPhoto,
+  buildIndexes,
+  searchStudents,
+  applyFilters,
+  __setStudentsForTest
+};
+

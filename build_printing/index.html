@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teacher Printing & Photocopy Booking System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="container">
+  <h1>Teacher Printing & Photocopy Booking System</h1>
+
+  <!-- Role Selection -->
+  <div class="card">
+    <label>User Role</label>
+   
+<select id="roleSelect">
+  <option value="requester">Requesting Teacher</option>
+  <option value="admin">Admin</option>
+  <option value="weekly-report">Weekly Report</option>
+</select>
+
+<div id="weeklyReportControls" class="hidden">
+  <button id="saveWeeklyReportBtn">Save Weekly Report</button>
+  <button id="saveMonthlyJsonBtn">Save Monthly JSON</button>
+<button id="saveTenWeekJsonBtn">Save 10‑Week JSON</button>
+
+</div>
+
+
+
+  </div>
+
+  <!-- Admin Settings -->
+  <div id="adminSettings" class="card hidden">
+    <h2>Admin Settings</h2>
+
+    <label>Load teacher list (.txt)</label>
+    <input type="file" id="teacherFile" accept=".txt" />
+
+    <label>Load unfinished jobs (todo_*.txt)</label>
+    <input type="file" id="todoFile" accept=".txt" />
+
+    <label>Time per page (seconds)</label>
+    <input type="number" id="timePerPage" value="5" />
+
+    <label>Task loading time (seconds)</label>
+    <input type="number" id="loadTime" value="60" />
+
+    <label>Checking time (seconds)</label>
+    <input type="number" id="checkTime" value="120" />
+
+    <button id="saveTodoBtn">Save unfinished jobs</button>
+    <button id="saveCompletedBtn">Save completed jobs</button>
+  </div>
+
+  <!-- New Print Request -->
+  <div class="card">
+    <h2>New Print Request</h2>
+
+    <label>Requesting teacher</label>
+    <select id="teacherSelect" disabled>
+      <option value="">No teachers loaded</option>
+    </select>
+
+    <label>Number of original pages</label>
+    <input type="number" id="pages" />
+
+    <label>Number of copies</label>
+    <input type="number" id="copies" value="1" />
+
+    <label>Printing type</label>
+    <select id="printType">
+      <option value="normal">Normal</option>
+      <option value="twoinone">Two‑in‑One (2 pages onto 1)</option>
+    </select>
+
+    <label>Sides</label>
+    <select id="sides">
+      <option value="single">Single‑sided</option>
+      <option value="double">Double‑sided</option>
+    </select>
+
+    <label>Required by (date & time)</label>
+    <input type="datetime-local" id="scheduledFor" />
+
+    <p class="muted">
+      Effective pages: <strong><span id="effectivePages">0</span></strong><br>
+      Estimated time: <strong><span id="estimate">0</span></strong> seconds
+    </p>
+
+    <button id="submitBtn">Queue Print Job</button>
+  </div>
+
+  <!-- Queue -->
+  <div class="card">
+    <h2>Print Queue</h2>
+    <div id="queue"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
