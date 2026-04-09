@@ -1,7 +1,12 @@
+// FULL MERGED HIGH-PERFORMANCE SYSTEM + WEEKLY CALENDAR VIEW
+
 /*************************************************
- * GLOBAL STATE
+ * STATE (OPTIMIZED)
  *************************************************/
-const jobs = [];
+let jobs = new Map();
+let sortedCache = [];
+let cacheDirty = true;
+let idCounter = 0;
 
 /*************************************************
  * DOM ELEMENTS
@@ -25,7 +30,7 @@ const timePerPageInput = document.getElementById("timePerPage");
 const loadTimeInput = document.getElementById("loadTime");
 const checkTimeInput = document.getElementById("checkTime");
 
-const effectivePagesSpan = document.getElementById("effectivePages");
+const totalPagesSpan = document.getElementById("totalPages");
 const estimateSpan = document.getElementById("estimate");
 
 const submitBtn = document.getElementById("submitBtn");
@@ -35,7 +40,31 @@ const saveMonthlyJsonBtn = document.getElementById("saveMonthlyJsonBtn");
 const saveTenWeekJsonBtn = document.getElementById("saveTenWeekJsonBtn");
 const saveWeeklyReportBtn = document.getElementById("saveWeeklyReportBtn");
 
+const priorityModeSelect = document.getElementById("priorityMode");
 const queueDiv = document.getElementById("queue");
+
+/*************************************************
+ * CALENDAR VIEW CONTAINER (NEW)
+ *************************************************/
+const calendarDiv = document.createElement("div");
+calendarDiv.className = "card";
+calendarDiv.innerHTML = "<h2>Weekly Calendar View</h2>";
+queueDiv.parentNode.appendChild(calendarDiv);
+
+/*************************************************
+ * NORMALIZATION
+ *************************************************/
+function normalizeImportedJob(data) {
+  if (data.pages !== undefined && data.copies !== undefined) return data;
+
+  const total = data.totalPrintedPages || 0;
+
+  return {
+    ...data,
+    pages: data.originalPages || total,
+    copies: data.copies || 1
+  };
+}
 
 /*************************************************
  * ROLE HANDLING
@@ -44,67 +73,222 @@ roleSelect.addEventListener("change", () => {
   const role = roleSelect.value;
   adminSettings.classList.toggle("hidden", role !== "admin");
   weeklyReportControls.classList.toggle("hidden", role !== "weekly-report");
-  renderQueue();
+
+  if (role === "weekly-report") {
+    renderWeeklyCalendar();
+  } else {
+    calendarDiv.innerHTML = "<h2>Weekly Calendar View</h2>";
+  }
+
+  rerenderAll();
 });
 
 /*************************************************
- * TEACHER LIST (.txt upload)
+ * JOB CREATION
  *************************************************/
-teacherFile.addEventListener("change", () => {
-  const file = teacherFile.files[0];
-  if (!file) return;
+function createJob(data) {
+  const id = ++idCounter;
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const names = reader.result
-      .split(/\r?\n/)
-      .map(n => n.trim())
-      .filter(Boolean);
+  const pages = Number(data.pages || 0);
+  const copies = Number(data.copies || 1);
 
-    teacherSelect.innerHTML = "<option value=''>Select teacher</option>";
-    teacherSelect.disabled = false;
+  const job = {
+    id,
+    teacher: data.teacher,
+    pages,
+    copies,
+    scheduledFor: data.scheduledFor ? new Date(data.scheduledFor).getTime() : null,
+    estimatedSeconds: data.estimatedSeconds || 0,
 
-    names.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      teacherSelect.appendChild(opt);
-    });
+    status: data.status || "Queued",
+    requestedAt: data.requestedAt ? new Date(data.requestedAt).getTime() : Date.now(),
+    startedAt: data.startedAt ? new Date(data.startedAt).getTime() : null,
+    completedAt: data.completedAt ? new Date(data.completedAt).getTime() : null,
+    actualSeconds: data.actualSeconds ?? null,
+
+    printType: data.printType,
+    sides: data.sides
   };
-  reader.readAsText(file);
-});
+
+  jobs.set(id, job);
+  cacheDirty = true;
+
+  renderIncremental(job);
+}
 
 /*************************************************
- * ESTIMATION LOGIC
+ * SORTING
  *************************************************/
-function calculateEffectivePages(pages) {
-  return printTypeSelect.value === "twoinone"
-    ? Math.ceil(pages / 2)
-    : pages;
-}
+function getSortedJobs() {
+  if (!cacheDirty) return sortedCache;
 
-function updateEstimate() {
-  const pages = Number(pagesInput.value || 0);
-  const copies = Number(copiesInput.value || 0);
+  const mode = priorityModeSelect?.value || "fifo";
+  const arr = Array.from(jobs.values());
 
-  const effectivePages = calculateEffectivePages(pages);
-  effectivePagesSpan.textContent = effectivePages;
+  switch (mode) {
+    case "due":
+      arr.sort((a, b) => (a.scheduledFor || Infinity) - (b.scheduledFor || Infinity));
+      break;
+    case "size":
+      arr.sort((a, b) => (a.pages * a.copies) - (b.pages * b.copies));
+      break;
+    default:
+      arr.sort((a, b) => a.requestedAt - b.requestedAt);
+  }
 
-  const timePerPage = Number(timePerPageInput.value || 0);
-  const loadTime = Number(loadTimeInput.value || 0);
-  const checkTime = Number(checkTimeInput.value || 0);
-
-  const estimate =
-    loadTime +
-    checkTime +
-    (effectivePages * copies * timePerPage);
-
-  estimateSpan.textContent = estimate;
-  return estimate;
+  sortedCache = arr;
+  cacheDirty = false;
+  return arr;
 }
 
 /*************************************************
- * ADD PRINT JOB
+ * RENDERING
+ *************************************************/
+function renderIncremental(job) {
+  if (roleSelect.value === "weekly-report" && job.status !== "Completed") return;
+
+  const el = document.createElement("div");
+  el.className = "job";
+  el.dataset.id = job.id;
+
+  updateJobElement(el, job);
+  queueDiv.appendChild(el);
+}
+
+function rerenderAll() {
+  queueDiv.innerHTML = "";
+  const fragment = document.createDocumentFragment();
+
+  getSortedJobs().forEach(job => {
+    if (roleSelect.value === "weekly-report" && job.status !== "Completed") return;
+
+    const el = document.createElement("div");
+    el.className = "job";
+    el.dataset.id = job.id;
+    updateJobElement(el, job);
+    fragment.appendChild(el);
+  });
+
+  queueDiv.appendChild(fragment);
+}
+
+function updateJobElement(el, job) {
+  const totalPages = job.pages * job.copies;
+
+  el.innerHTML = `
+    <strong>${job.teacher}</strong><br>
+    Status: ${job.status}<br>
+    Scheduled: ${job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "—"}<br>
+    Pages: ${totalPages}<br>
+    Estimated: ${job.estimatedSeconds}s<br>
+    Actual: ${job.actualSeconds ?? "—"}<br>
+  `;
+
+  let btn = el.querySelector("button");
+  if (!btn) {
+    btn = document.createElement("button");
+    el.appendChild(btn);
+  }
+
+  if (job.status === "Queued") {
+    btn.textContent = "Start";
+    btn.onclick = () => startJob(job.id);
+  } else if (job.status === "In process") {
+    btn.textContent = "Complete";
+    btn.onclick = () => completeJob(job.id);
+  } else {
+    btn.textContent = "Completed";
+    btn.disabled = true;
+  }
+}
+
+function updateSingle(id) {
+  const el = queueDiv.querySelector(`[data-id="${id}"]`);
+  if (!el) return rerenderAll();
+
+  updateJobElement(el, jobs.get(id));
+}
+
+/*************************************************
+ * ACTIONS
+ *************************************************/
+function startJob(id) {
+  const job = jobs.get(id);
+  job.status = "In process";
+  job.startedAt = Date.now();
+  updateSingle(id);
+}
+
+function completeJob(id) {
+  const job = jobs.get(id);
+  job.completedAt = Date.now();
+  job.actualSeconds = Math.round((job.completedAt - job.startedAt) / 1000);
+  job.status = "Completed";
+  updateSingle(id);
+
+  if (roleSelect.value === "weekly-report") renderWeeklyCalendar();
+}
+
+/*************************************************
+ * WEEKLY CALENDAR VIEW (NEW FEATURE)
+ *************************************************/
+function formatTime(ts) {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function getDayName(ts) {
+  return new Date(ts).toLocaleDateString([], { weekday: 'long' });
+}
+
+function renderWeeklyCalendar() {
+  const weeklyJobs = Array.from(jobs.values()).filter(
+    j => j.status === "Completed" && isThisWeek(j.completedAt)
+  );
+
+  const grouped = {};
+
+  weeklyJobs.forEach(job => {
+    const day = getDayName(job.completedAt);
+    if (!grouped[day]) grouped[day] = [];
+    grouped[day].push(job);
+  });
+
+  calendarDiv.innerHTML = "<h2>Weekly Calendar View</h2>";
+
+  Object.keys(grouped).forEach(day => {
+    const section = document.createElement("div");
+
+    let html = `<h3>${day}</h3>`;
+    html += `
+      <table class="queue-table">
+        <tr>
+          <th>Teacher</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Duration</th>
+        </tr>
+    `;
+
+    grouped[day].forEach(job => {
+      html += `
+        <tr>
+          <td>${job.teacher}</td>
+          <td>${formatTime(job.startedAt)}</td>
+          <td>${formatTime(job.completedAt)}</td>
+          <td>${job.actualSeconds ?? "—"}s</td>
+        </tr>
+      `;
+    });
+
+    html += "</table>";
+    section.innerHTML = html;
+    calendarDiv.appendChild(section);
+  });
+}
+
+/*************************************************
+ * SUBMIT HANDLER
  *************************************************/
 submitBtn.addEventListener("click", () => {
   if (!teacherSelect.value) {
@@ -113,203 +297,94 @@ submitBtn.addEventListener("click", () => {
   }
 
   const pages = Number(pagesInput.value || 0);
+  const copies = Number(copiesInput.value || 1);
+  const total = pages * copies;
 
-  jobs.push({
+  createJob({
     teacher: teacherSelect.value,
-    originalPages: pages,
-    effectivePages: calculateEffectivePages(pages),
-    copies: Number(copiesInput.value || 1),
-    printType: printTypeSelect.value,
-    sides: sidesSelect.value,
+    pages,
+    copies,
     scheduledFor: scheduledForInput.value,
-    requestedAt: new Date().toISOString(),
-    estimatedSeconds: updateEstimate(),
-
-    status: "Queued",
-
-    startedAt: "",
-    completedAt: "",
-    totalDurationSeconds: null
+    estimatedSeconds:
+      Number(loadTimeInput.value || 0) +
+      Number(checkTimeInput.value || 0) +
+      total * Number(timePerPageInput.value || 0),
+    printType: printTypeSelect.value,
+    sides: sidesSelect.value
   });
-
-  renderQueue();
 });
 
 /*************************************************
- * START / COMPLETE JOB (ADMIN)
- *************************************************/
-function handleAdminAction(index) {
-  const job = jobs[index];
-
-  // Start job
-  if (job.status === "Queued") {
-    job.status = "In process";
-    job.startedAt = new Date().toISOString();
-    renderQueue();
-    return;
-  }
-
-  // Complete job
-  if (job.status === "In process") {
-    const confirmDone = confirm(
-      "Confirm that this task has been completed?"
-    );
-
-    if (!confirmDone) return;
-
-    job.completedAt = new Date().toISOString();
-    job.totalDurationSeconds =
-      Math.round(
-        (new Date(job.completedAt) - new Date(job.startedAt)) / 1000
-      );
-
-    job.status = "Completed";
-    renderQueue();
-  }
-}
-
-/*************************************************
- * EXPORT HELPERS
+ * EXPORTS
  *************************************************/
 function downloadFile(content, filename, type = "text/plain") {
   const blob = new Blob([content], { type });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
 }
 
-function exportJSON(filename) {
-  downloadFile(
-    JSON.stringify(jobs, null, 2),
-    filename,
-    "application/json"
-  );
+function getAllJobsArray() {
+  return Array.from(jobs.values());
 }
 
-/*************************************************
- * SAVE TODO & COMPLETED
- *************************************************/
-saveTodoBtn.onclick = () => {
+saveTodoBtn.onclick = () =>
   downloadFile(
-    jobs.filter(j => j.status !== "Completed")
-        .map(j => JSON.stringify(j))
-        .join("\n"),
+    getAllJobsArray().filter(j => j.status !== "Completed").map(j => JSON.stringify(j)).join("\n"),
     `todo_${today()}.txt`
   );
-};
 
-saveCompletedBtn.onclick = () => {
+saveCompletedBtn.onclick = () =>
   downloadFile(
-    jobs.filter(j => j.status === "Completed")
-        .map(j => JSON.stringify(j))
-        .join("\n"),
+    getAllJobsArray().filter(j => j.status === "Completed").map(j => JSON.stringify(j)).join("\n"),
     `completed_${today()}.txt`
   );
-};
 
-/*************************************************
- * LONG‑TERM JSON EXPORTS
- *************************************************/
 saveMonthlyJsonBtn.onclick = () =>
-  exportJSON(`jobs_monthly_${today()}.json`);
+  downloadFile(JSON.stringify(getAllJobsArray(), null, 2), `jobs_monthly_${today()}.json`, "application/json");
 
 saveTenWeekJsonBtn.onclick = () =>
-  exportJSON(`jobs_10week_${today()}.json`);
+  downloadFile(JSON.stringify(getAllJobsArray(), null, 2), `jobs_10week_${today()}.json`, "application/json");
 
 /*************************************************
- * WEEKLY REPORT (MON–FRI, COMPLETED ONLY)
+ * WEEKLY REPORT
  *************************************************/
 saveWeeklyReportBtn.onclick = () => {
-  const completedThisWeek = jobs.filter(
+  const weeklyJobs = getAllJobsArray().filter(
     j => j.status === "Completed" && isThisWeek(j.completedAt)
   );
 
-  const perTeacher = {};
-  completedThisWeek.forEach(j => {
-    if (!perTeacher[j.teacher]) {
-      perTeacher[j.teacher] = 0;
-    }
-    perTeacher[j.teacher] += j.effectivePages * j.copies;
+  const perTeacherTotals = {};
+  weeklyJobs.forEach(j => {
+    perTeacherTotals[j.teacher] =
+      (perTeacherTotals[j.teacher] || 0) + (j.pages * j.copies);
   });
 
   let output = "WEEKLY PRINT REPORT (MON–FRI)\n\n";
-  output += `Jobs completed: ${completedThisWeek.length}\n\n`;
+  output += `Completed jobs: ${weeklyJobs.length}\n\n`;
 
-  output += "Pages per teacher:\n";
-  for (const t in perTeacher) {
-    output += ` - ${t}: ${perTeacher[t]} pages\n`;
+  for (const t in perTeacherTotals) {
+    output += ` - ${t}: ${perTeacherTotals[t]} pages\n`;
   }
-
-  output += "\nCompleted jobs:\n";
-  completedThisWeek.forEach(j => {
-    output += `${j.teacher} | Started: ${j.startedAt} | Completed: ${j.completedAt} | Duration: ${j.totalDurationSeconds}s\n`;
-  });
 
   downloadFile(output, `weekly_report_${today()}.txt`);
 };
 
 /*************************************************
- * IMPORT TODO FILE
+ * IMPORT
  *************************************************/
 todoFile.addEventListener("change", () => {
   const reader = new FileReader();
   reader.onload = () => {
-    reader.result
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .forEach(line => jobs.push(JSON.parse(line)));
-    renderQueue();
+    reader.result.split(/\r?\n/).filter(Boolean).forEach(line => {
+      let data = JSON.parse(line);
+      data = normalizeImportedJob(data);
+      createJob(data);
+    });
   };
   reader.readAsText(todoFile.files[0]);
 });
-
-/*************************************************
- * RENDER QUEUE
- *************************************************/
-function renderQueue() {
-  queueDiv.innerHTML = "";
-
-  jobs.forEach((job, index) => {
-    if (
-      roleSelect.value === "weekly-report" &&
-      job.status !== "Completed"
-    ) return;
-
-    const div = document.createElement("div");
-    div.className = "queue-item";
-
-    div.innerHTML = `
-      <strong>${job.teacher}</strong><br>
-      Status: ${job.status}<br>
-      Requested: ${job.requestedAt}<br>
-      Started: ${job.startedAt || "-"}<br>
-      Completed: ${job.completedAt || "-"}<br>
-      Duration: ${
-        job.totalDurationSeconds !== null
-          ? job.totalDurationSeconds + "s"
-          : "-"
-      }<br>
-      Pages: ${job.originalPages} → ${job.effectivePages}
-    `;
-
-    if (
-      roleSelect.value === "admin" &&
-      job.status !== "Completed"
-    ) {
-      const btn = document.createElement("button");
-      btn.textContent =
-        job.status === "Queued"
-          ? "Start task"
-          : "Task in process – Click to complete";
-
-      btn.onclick = () => handleAdminAction(index);
-      div.appendChild(btn);
-    }
-
-    queueDiv.appendChild(div);
-  });
-}
 
 /*************************************************
  * DATE HELPERS
@@ -318,10 +393,10 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function isThisWeek(dateStr) {
-  if (!dateStr) return false;
+function isThisWeek(ts) {
+  if (!ts) return false;
 
-  const d = new Date(dateStr);
+  const d = new Date(ts);
   const now = new Date();
 
   const monday = new Date(now);
@@ -334,3 +409,11 @@ function isThisWeek(dateStr) {
 
   return d >= monday && d <= friday;
 }
+
+/*************************************************
+ * PRIORITY CHANGE
+ *************************************************/
+priorityModeSelect.addEventListener("change", () => {
+  cacheDirty = true;
+  rerenderAll();
+});
