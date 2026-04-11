@@ -61,14 +61,5 @@
     "buttonText": "React: Print Demo",
     "link": "./demo_print/index.html",
     "buttonClass": "btn-hhs"
-  },
-  {
-    "badge": "Support Staff",
-    "badgeClass": "bg-primary",
-    "title": "Print Demo",
-    "description": "Print Requests: Vanilla.",
-    "buttonText": "Vanilla: Print Demo",
-    "link": "./build_printing/index.html",
-    "buttonClass": "btn-hhs"
   }
 ]
