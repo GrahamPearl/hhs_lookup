@@ -66,6 +66,57 @@ function normalizeImportedJob(data) {
   };
 }
 
+
+// Calculate effective (printed) pages
+function calculateEffectivePages(pages, copies) {
+  return pages * copies;
+}
+
+// Calculate estimated time in seconds
+function calculateEstimatedTime(effectivePages) {
+  return (
+    Number(loadTimeInput.value || 0) +
+    Number(checkTimeInput.value || 0) +
+    effectivePages * Number(timePerPageInput.value || 0)
+  );
+}
+
+// Update the preview shown in the Print Requests card
+function updateEstimatePreview() {
+  const pages = Number(pagesInput.value || 0);
+  const copies = Number(copiesInput.value || 0);
+
+  const effectivePages = calculateEffectivePages(pages, copies);
+  const estimatedSeconds = calculateEstimatedTime(effectivePages);
+
+  document.getElementById("effectivePages").textContent = effectivePages;
+  document.getElementById("estimate").textContent = estimatedSeconds;
+}
+
+
+// Load teacher list from .txt file into requesting teacher comboBox
+teacherFile.addEventListener("change", () => {
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    teacherSelect.innerHTML = "";
+    teacherSelect.disabled = false;
+
+    reader.result
+      .split(/\r?\n/)
+      .map(name => name.trim())
+      .filter(Boolean)
+      .forEach(name => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        teacherSelect.appendChild(option);
+      });
+  };
+
+  reader.readAsText(teacherFile.files[0]);
+});
+
 /*************************************************
  * ROLE HANDLING
  *************************************************/
@@ -176,13 +227,60 @@ function updateJobElement(el, job) {
   const totalPages = job.pages * job.copies;
 
   el.innerHTML = `
-    <strong>${job.teacher}</strong><br>
-    Status: ${job.status}<br>
-    Scheduled: ${job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "—"}<br>
-    Pages: ${totalPages}<br>
-    Estimated: ${job.estimatedSeconds}s<br>
-    Actual: ${job.actualSeconds ?? "—"}<br>
-  `;
+  <table class="queue-table">
+    <tbody>
+      <tr>
+        <th>Teacher</th>
+        <td><strong>${job.teacher}</strong></td>
+      </tr>
+      <tr>
+        <th>Status</th>
+        <td>${job.status}</td>
+      </tr>
+      <tr>
+        <th>Original pages</th>
+        <td>${job.pages}</td>
+      </tr>
+      <tr>
+        <th>Copies</th>
+        <td>${job.copies}</td>
+      </tr>
+      <tr>
+        <th>Sides</th>
+        <td>${job.sides}</td>
+      </tr>
+      <tr>
+        <th>Printing type</th>
+        <td>${job.printType}</td>
+      </tr>
+      <tr>
+        <th>Printed pages</th>
+        <td>${job.totalPrintedPages}</td>
+      </tr>
+      <tr>
+        <th>Scheduled for</th>
+        <td>${job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "—"}</td>
+      </tr>
+      <tr>
+        <th>Estimated time</th>
+        <td>${job.estimatedSeconds}s</td>
+      </tr>
+      <tr>
+        <th>Actual time</th>
+        <td>${job.actualSeconds ?? "—"}</td>
+      </tr>
+      <tr>
+        <th>Started</th>
+        <td>${job.startedAt || "—"}</td>
+      </tr>
+      <tr>
+        <th>Completed</th>
+        <td>${job.completedAt || "—"}</td>
+      </tr>
+    </tbody>
+  </table>
+`;
+
 
   let btn = el.querySelector("button");
   if (!btn) {
@@ -417,3 +515,15 @@ priorityModeSelect.addEventListener("change", () => {
   cacheDirty = true;
   rerenderAll();
 });
+
+
+// Recalculate whenever the requesting teacher changes inputs
+[
+  pagesInput,
+  copiesInput,
+  printTypeSelect,
+  sidesSelect,
+  timePerPageInput,
+  loadTimeInput,
+  checkTimeInput
+].forEach(el => el.addEventListener("input", updateEstimatePreview));

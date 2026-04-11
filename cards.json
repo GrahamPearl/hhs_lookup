@@ -52,5 +52,14 @@
     "buttonText": "Open Cover Teacher Timetable Builder",
     "link": "./build_cover/index.html",
     "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Support Staff",
+    "badgeClass": "bg-primary",
+    "title": "Print Demo",
+    "description": "Print Requests: React.",
+    "buttonText": "React: Print Demo",
+    "link": "./demo_print/index.html",
+    "buttonClass": "btn-hhs"
   }
 ]
