@@ -285,7 +285,7 @@ function getSortedJobs() {
  * RENDERING
  *************************************************/
 function statusBadgeHTML(status) {
-  const cls = status === "Queued" ? "badge-secondary" : status === "In process" ? "badge-primary" : "badge-success";
+  const cls = status === "Queued" ? "badge-queued" : status === "In process" ? "badge-in-progress" : "badge-completed";
   return `<span class="badge ${cls}">${status}</span>`;
 }
 
@@ -296,23 +296,11 @@ function isUrgent(job) {
   return hoursLeft <= 3 && hoursLeft > 0;
 }
 
-function isOverdue(job) {
-  if (job.status === "Completed") return false;
-  if (!job.scheduledFor) return false;
-  const hoursLeft = (job.scheduledFor - Date.now()) / 3600000;
-  return hoursLeft < 0;
-}
-
 function renderIncremental(job) {
   if (roleSelect.value === "weekly-report" && job.status !== "Completed") return;
 
   const el = document.createElement("div");
-   let statusClass = "";
-  if (job.status === "Completed") statusClass = " job-completed";
-  else if (isOverdue(job)) statusClass = " job-overdue";
-  else if (isUrgent(job)) statusClass = " job-urgent";
-  
-  el.className = "job" + statusClass;
+  el.className = "job" + (job.status === "Completed" ? " job-completed" : isUrgent(job) ? " job-urgent" : "");
   el.dataset.id = job.id;
   updateJobElement(el, job);
   queueDiv.appendChild(el);
@@ -325,12 +313,7 @@ function rerenderAll() {
   getSortedJobs().forEach(job => {
     if (roleSelect.value === "weekly-report" && job.status !== "Completed") return;
     const el = document.createElement("div");
-    let statusClass = "";
-    if (job.status === "Completed") statusClass = " job-completed";
-    else if (isOverdue(job)) statusClass = " job-overdue";
-    else if (isUrgent(job)) statusClass = " job-urgent";
-
-    el.className = "job" + statusClass;
+    el.className = "job" + (job.status === "Completed" ? " job-completed" : isUrgent(job) ? " job-urgent" : "");
     el.dataset.id = job.id;
     updateJobElement(el, job);
     fragment.appendChild(el);
@@ -374,7 +357,9 @@ function updateJobElement(el, job) {
     btn.onclick = () => startJob(job.id);
     el.appendChild(btn);
   } else if (job.status === "In process") {
-    btn.className = "btn btn-outline-success btn-sm";
+    btn.className = "btn btn-outline btn-sm";
+    btn.style.borderColor = "var(--success)";
+    btn.style.color = "var(--success)";
     btn.textContent = "✓ Complete";
     btn.onclick = () => completeJob(job.id);
     el.appendChild(btn);
@@ -385,13 +370,8 @@ function updateSingle(id) {
   const el = queueDiv.querySelector(`[data-id="${id}"]`);
   const job = jobs.get(id);
   if (!el || !job) return rerenderAll();
- let statusClass = "";
-    if (job.status === "Completed") statusClass = " job-completed";
-    else if (isOverdue(job)) statusClass = " job-overdue";
-    else if (isUrgent(job)) statusClass = " job-urgent";
-
-    el.className = "job" + statusClass;
-    updateJobElement(el, job);
+  el.className = "job" + (job.status === "Completed" ? " job-completed" : isUrgent(job) ? " job-urgent" : "");
+  updateJobElement(el, job);
 }
 
 function updateJobCount() {
@@ -621,7 +601,7 @@ teacherEmailFile.addEventListener("change", () => {
   reader.onload = () => {
     const lines = reader.result.split(/\r?\n/).filter(Boolean);
     lines.forEach(line => {
-      const match = line.match(/^(.+?),\s*(\S+@\S+)$/);
+      const match = line.match(/^(.+?)\s+(\S+@\S+)$/);
       if (match) {
         teacherEmails[match[1].trim()] = match[2].trim();
       }
