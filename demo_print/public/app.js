@@ -13,6 +13,84 @@ const STORAGE_KEYS = {
   ID_COUNTER: "printqueue_idcounter"
 };
 
+let ADMIN_EMAILS = [];
+
+
+fetch("./admin.env")
+  .then(r => r.text())
+  .then(text => {
+    ADMIN_EMAILS = text
+      .split(/\r?\n/)
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+  })
+  .catch(() => {
+    console.warn("Admin email list not loaded");
+  });
+
+const ROLES = {
+  ADMIN: "admin",
+  USER: "user"
+};
+
+let currentUser = {
+  email: null,
+  role: null,
+  authenticated: false
+};
+
+const loginBtn = document.getElementById("loginBtn");
+const emailInput = document.getElementById("emailInput");
+const passwordInput = document.getElementById("passwordInput");
+const loginError = document.getElementById("loginError");
+const loginCard = document.getElementById("loginCard");
+const logoutBtn = document.getElementById("logoutBtn");
+
+function showLoginError(msg) {
+  if (loginError) {
+    loginError.textContent = msg;
+    loginError.classList.remove("hidden");
+  } else {
+    alert(msg);
+  }
+}
+
+loginBtn.onclick = () => {
+  const email = emailInput.value.trim().toLowerCase();
+  const password = passwordInput.value;
+
+  if (!email) {
+    showLoginError("Please enter an email address");
+    return;
+  }
+
+  let role = ROLES.USER;
+
+  const isAdminEmail = ADMIN_EMAILS.includes(email);
+  const isAdminPassword = password === "D1x0n";
+
+  if (isAdminEmail || isAdminPassword) {
+    role = ROLES.ADMIN;
+  }
+
+  authenticateUser(email, role);
+};
+
+
+function authenticateUser(email, role) {
+  currentUser = {
+    email,
+    role,
+    authenticated: true
+  };
+
+  sessionStorage.setItem("printqueue_session", JSON.stringify(currentUser));
+
+  applyRolePermissions();
+  startSessionTimer();
+}
+
+
 function persistJobs() {
   localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(Array.from(jobs.values())));
 }
@@ -109,6 +187,7 @@ function loadPersistedData() {
 /*************************************************
  * STATE
  *************************************************/
+const appContainer = document.getElementById("appContainer");
 let jobs = new Map();
 let sortedCache = [];
 let cacheDirty = true;
@@ -203,24 +282,6 @@ function normalizeImportedJob(data) {
   return { ...data, pages: data.originalPages || total, copies: data.copies || 1 };
 }
 
-/*************************************************
- * ROLE HANDLING
- *************************************************/
-roleSelect.addEventListener("change", () => {
-  const role = roleSelect.value;
-  adminSettings.classList.toggle("hidden", role !== "admin");
-  weeklyReportControls.classList.toggle("hidden", role !== "weekly-report");
-
-  if (role === "weekly-report") {
-    calendarDiv.classList.remove("hidden");
-    renderWeeklyCalendar();
-  } else {
-    calendarDiv.classList.add("hidden");
-    calendarDiv.innerHTML = "<h2>📅 Weekly Calendar View</h2>";
-  }
-
-  rerenderAll();
-});
 
 /*************************************************
  * JOB CREATION
@@ -296,11 +357,20 @@ function isUrgent(job) {
   return hoursLeft <= 3 && hoursLeft > 0;
 }
 
+function isOverdue(job) {
+  if (job.status === "Completed") return false;
+  if (!job.scheduledFor) return false;
+  const hoursLeft = (job.scheduledFor - Date.now()) / 3600000;
+  return hoursLeft < 0;
+}
+
+
 function renderIncremental(job) {
-  if (roleSelect.value === "weekly-report" && job.status !== "Completed") return;
+  if (currentUser.role !== ROLES.ADMIN && job.status !== "Completed") return;
 
   const el = document.createElement("div");
   el.className = "job" + (job.status === "Completed" ? " job-completed" : isUrgent(job) ? " job-urgent" : "");
+  el.className = "job" + (job.status === "Completed" ? " job-completed" : isOverdue(job) ? " job-overdue" : "");
   el.dataset.id = job.id;
   updateJobElement(el, job);
   queueDiv.appendChild(el);
@@ -311,9 +381,11 @@ function rerenderAll() {
   const fragment = document.createDocumentFragment();
 
   getSortedJobs().forEach(job => {
-    if (roleSelect.value === "weekly-report" && job.status !== "Completed") return;
+    if (currentUser.role !== ROLES.ADMIN && job.status !== "Completed") return;
     const el = document.createElement("div");
     el.className = "job" + (job.status === "Completed" ? " job-completed" : isUrgent(job) ? " job-urgent" : "");
+    el.className = "job" + (job.status === "Completed" ? " job-completed" : isOverdue(job) ? " job-overdue" : "");
+
     el.dataset.id = job.id;
     updateJobElement(el, job);
     fragment.appendChild(el);
@@ -322,6 +394,7 @@ function rerenderAll() {
   queueDiv.appendChild(fragment);
   updateJobCount();
 }
+  
 
 function taskLabel(task) {
   if (task === "trimming") return "✂️ Trimming";
@@ -368,7 +441,6 @@ function updateSingle(id) {
   const el = queueDiv.querySelector(`[data-id="${id}"]`);
   const job = jobs.get(id);
   if (!el || !job) return rerenderAll();
-  el.className = "job" + (job.status === "Completed" ? " job-completed" : isUrgent(job) ? " job-urgent" : "");
   updateJobElement(el, job);
 }
 
@@ -385,24 +457,6 @@ function startJob(id) {
   job.startedAt = Date.now();
   persistJobs();
   updateSingle(id);
-}
-
-function completeJob(id) {
-  const job = jobs.get(id);
-  job.completedAt = Date.now();
-  job.actualSeconds = Math.round((job.completedAt - job.startedAt) / 1000);
-  job.status = "Completed";
-  persistJobs();
-  updateSingle(id);
-  if (roleSelect.value === "weekly-report") renderWeeklyCalendar();
-
-  // Offer to email the requesting teacher
-  const email = teacherEmails[job.teacher];
-  if (email) {
-    const subject = encodeURIComponent("Your print job is complete");
-    const body = encodeURIComponent(`Hi ${job.teacher},\n\nYour print job (${job.pages * job.copies} pages) has been completed.\n\nRegards,\nPrint Room`);
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_blank");
-  }
 }
 
 /*************************************************
@@ -687,6 +741,105 @@ priorityModeSelect.addEventListener("change", () => {
   cacheDirty = true;
   rerenderAll();
 });
+
+function applyRolePermissions() {
+  loginCard.classList.add("hidden");
+  if (logoutBtn) logoutBtn.classList.remove("hidden");
+  if (appContainer) appContainer.classList.remove("hidden");
+
+  // Admin UI
+  adminSettings.classList.toggle(
+    "hidden",
+    currentUser.role !== ROLES.ADMIN
+  );
+
+  // Weekly report controls
+  weeklyReportControls.classList.toggle(
+    "hidden",
+    currentUser.role !== ROLES.ADMIN
+  );
+
+  if (currentUser.role === ROLES.ADMIN) {
+    calendarDiv.classList.remove("hidden");
+    renderWeeklyCalendar();
+  } else {
+    calendarDiv.classList.add("hidden");
+  }
+
+  rerenderAll();
+}
+
+
+function requireAdmin() {
+  if (currentUser.role !== ROLES.ADMIN) {
+    alert("Admin access required");
+    throw new Error("Unauthorized");
+  }
+}
+
+function restoreSession() {
+  const saved = sessionStorage.getItem("printqueue_session");
+  if (!saved) return;
+
+  try {
+    currentUser = JSON.parse(saved);
+    if (currentUser.authenticated) {
+      applyRolePermissions();
+    }
+  } catch {}
+}
+
+if (logoutBtn) {
+  logoutBtn.onclick = () => {
+    endSession();
+  };
+}
+
+function endSession() {
+  sessionStorage.removeItem("printqueue_session");
+
+  currentUser = {
+    email: null,
+    role: null,
+    authenticated: false
+  };
+
+  loginCard.classList.remove("hidden");
+  if (logoutBtn) logoutBtn.classList.add("hidden");
+  if (appContainer) appContainer.classList.add("hidden");
+
+  adminSettings.classList.add("hidden");
+  weeklyReportControls.classList.add("hidden");
+
+  rerenderAll();
+}
+
+/*************************************************
+ * SESSION TIMEOUT (AUTO LOGOUT)
+ *************************************************/
+let sessionTimer = null;
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
+
+function startSessionTimer() {
+  if (sessionTimer) clearTimeout(sessionTimer);
+
+  sessionTimer = setTimeout(() => {
+    alert("Session expired. Logging out...");
+    endSession();
+  }, SESSION_TIMEOUT_MS);
+}
+
+// Reset timer on activity
+["click", "keydown", "mousemove"].forEach(evt => {
+  document.addEventListener(evt, () => {
+    if (currentUser.authenticated) {
+      startSessionTimer();
+    }
+  });
+});
+
+restoreSession();
+
 
 /*************************************************
  * BOOT — Load persisted data

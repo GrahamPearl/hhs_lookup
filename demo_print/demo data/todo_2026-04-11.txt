@@ -1,0 +1,1 @@
+{"id":4,"teacher":"Pearl G","authoriser":"","pages":4,"copies":50,"additionalTask":"trimming","scheduledFor":1775910600000,"estimatedSeconds":1180,"status":"Queued","requestedAt":1775910445917,"startedAt":null,"completedAt":null,"actualSeconds":null,"printType":"normal","sides":"single"}

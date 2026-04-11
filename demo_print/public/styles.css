@@ -33,6 +33,14 @@
 }
 .job-urgent:hover { background: #fff3cd; }
 
+.job-overdue {
+  border-color: #8b0500;
+  background: #fff8e1;
+}
+.job-overdue:hover { background: #fff3cd; }
+
+
+
 .job-completed {
   background: #e9ecef;
   border-color: #ced4da;
