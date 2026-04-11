@@ -21,19 +21,19 @@
     "badge": "Teams",
     "badgeClass": "bg-primary",
     "title": "School Activity Team Manager",
-    "description": "Browse sport information, codes and resources.",
+    "description": "Browse team information, codes and resources.",
     "buttonText": "Open School Activity Manager",
     "link": "./build_team/index.html",
     "buttonClass": "btn-hhs"
   },
   {
     "badge": "Sports",
-    "badgeClass": "bg-secondary",
+    "badgeClass": "bg-primary",
     "title": "Sports Lookup",
     "description": "Browse sport information, codes and resources.",
     "buttonText": "Open Sport Lookup",
     "link": "./find_sports/index.html",
-    "buttonClass": "btn-accent"
+    "buttonClass": "btn-hhs"
   },
   {
     "badge": "Teachers",
@@ -60,6 +60,15 @@
     "description": "Print Requests: React.",
     "buttonText": "React: Print Demo",
     "link": "./demo_print/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Support Staff",
+    "badgeClass": "bg-primary",
+    "title": "Print Demo",
+    "description": "Print Requests: Vanilla.",
+    "buttonText": "Vanilla: Print Demo",
+    "link": "./build_printing/index.html",
     "buttonClass": "btn-hhs"
   }
 ]
