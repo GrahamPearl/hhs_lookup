@@ -285,7 +285,7 @@ function getSortedJobs() {
  * RENDERING
  *************************************************/
 function statusBadgeHTML(status) {
-  const cls = status === "Queued" ? "badge-queued" : status === "In process" ? "badge-in-progress" : "badge-completed";
+  const cls = status === "Queued" ? "badge-secondary" : status === "In process" ? "badge-primary" : "badge-success";
   return `<span class="badge ${cls}">${status}</span>`;
 }
 
@@ -357,9 +357,7 @@ function updateJobElement(el, job) {
     btn.onclick = () => startJob(job.id);
     el.appendChild(btn);
   } else if (job.status === "In process") {
-    btn.className = "btn btn-outline btn-sm";
-    btn.style.borderColor = "var(--success)";
-    btn.style.color = "var(--success)";
+    btn.className = "btn btn-outline-success btn-sm";
     btn.textContent = "✓ Complete";
     btn.onclick = () => completeJob(job.id);
     el.appendChild(btn);
@@ -601,7 +599,7 @@ teacherEmailFile.addEventListener("change", () => {
   reader.onload = () => {
     const lines = reader.result.split(/\r?\n/).filter(Boolean);
     lines.forEach(line => {
-      const match = line.match(/^(.+?)\s+(\S+@\S+)$/);
+      const match = line.match(/^(.+?),\s*(\S+@\S+)$/);
       if (match) {
         teacherEmails[match[1].trim()] = match[2].trim();
       }
