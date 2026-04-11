@@ -1,0 +1,67 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1100px;
+  margin: auto;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+label {
+  font-weight: bold;
+  display: block;
+  margin-top: 10px;
+}
+
+input, select, button {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+}
+
+button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1e40af;
+}
+
+.queue-item {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.queue-actions button {
+  margin-top: 6px;
+  background: #16a34a;
+}
+
+.queue-actions button:hover {
+  background: #15803d;
+}
+
+.muted {
+  color: #555;
+  font-size: 0.9em;
+}
+
+.hidden {
+  display: none;
+}
