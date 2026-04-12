@@ -2,315 +2,335 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Teacher Print Queue - Booking System</title>
+    <title>Teacher Print Queue - Enhanced Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Manage teacher printing and photocopy requests with a shared queue system"
-    />
-    <!-- Bootstrap 4 CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-    />
-    <link rel="stylesheet" href="./public/styles.css" />
+    <link rel="stylesheet" href="./bootstrap.min.css" />
+    <link rel="stylesheet" href="./styles.css">
+    <style>
+      .hidden {
+        display: none !important;
+      }
+      body {
+        background-color: #f8f9fa;
+      }
+      .admin-only {
+        border: 2px solid #ffc107 !important;
+      }
+      .card {
+        border-radius: 8px;
+        border: none;
+      }
+      .table-responsive {
+        border-radius: 8px;
+      }
+    </style>
   </head>
   <body>
-    <div class="container py-3" style="max-width: 760px">
-      <header class="d-flex align-items-center mb-3">
-        <span class="mr-2" style="font-size: 1.75rem">🖨️</span>
-        <h1 class="h4 mb-0 font-weight-bold">Teacher Print Queue</h1>
+    <div class="container py-3" style="max-width: 850px">
+      <header class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0 font-weight-bold">🖨️ Teacher Print Queue</h1>
+        <button id="logoutBtn" class="btn btn-sm btn-outline-danger hidden">
+          Logout
+        </button>
       </header>
 
-      <button
-        id="logoutBtn"
-        class="btn btn-outline-danger btn-block mt-2 hidden"
-      >
-        🚪 Logout
-      </button>
-
-      <!-- Role Selection -->
-      <div class="card mb-3">
+      <div id="requestForm" class="card shadow-sm mb-3">
         <div class="card-body">
-          <div class="form-group mb-2">
-            <label for="roleSelect">User Role</label>
-            <!-- Login -->
-            <div id="loginCard" class="card mb-3">
-              <div class="card-body">
-                <h2 class="h5 font-weight-bold mb-3">🔐 Login</h2>
-
-                <div class="form-group">
-                  <label for="emailInput">Email address</label>
-                  <input type="email" id="emailInput" class="form-control" />
-                </div>
-
-                <div class="form-group">
-                  <label for="passwordInput">Password</label>
-                  <input
-                    type="password"
-                    id="passwordInput"
-                    class="form-control"
-                  />
-                </div>
-
-                <button id="loginBtn" class="btn btn-primary btn-block">
-                  🔐 Sign in with Microsoft
-                </button>
-
-                <div id="loginError" class="text-danger mt-2 hidden"></div>
-              </div>
-            </div>
-          </div>
-
-          <div id="weeklyReportControls" class="hidden">
-            <div class="btn-group flex-wrap mt-2">
-              <button
-                id="saveWeeklyReportBtn"
-                class="btn btn-outline-secondary btn-sm"
-              >
-                📄 Weekly Report
-              </button>
-              <button
-                id="saveMonthlyJsonBtn"
-                class="btn btn-outline-secondary btn-sm"
-              >
-                📦 Monthly JSON
-              </button>
-              <button
-                id="saveTenWeekJsonBtn"
-                class="btn btn-outline-secondary btn-sm"
-              >
-                📦 10‑Week JSON
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Admin Settings -->
-      <div id="adminSettings" class="card mb-3 hidden">
-        <div class="card-body">
-          <h2 class="h5 font-weight-bold mb-3">⚙️ Admin Settings</h2>
-
+          <h5 class="font-weight-bold mb-3">New Print Request</h5>
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label for="teacherFile">Load teacher list (.txt)</label>
-              <input
-                type="file"
-                id="teacherFile"
-                accept=".txt"
-                class="form-control-file"
-              />
-            </div>
-            <div class="form-group col-md-6">
-              <label for="authTeacherFile"
-                >Load authorising teachers (.txt)</label
-              >
-              <input
-                type="file"
-                id="authTeacherFile"
-                accept=".txt"
-                class="form-control-file"
-              />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="todoFile">Load unfinished jobs (.txt)</label>
-              <input
-                type="file"
-                id="todoFile"
-                accept=".txt"
-                class="form-control-file"
-              />
-            </div>
-            <div class="form-group col-md-6">
-              <label for="teacherEmailFile">Load teacher emails (.txt)</label>
-              <input
-                type="file"
-                id="teacherEmailFile"
-                accept=".txt"
-                class="form-control-file"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="priorityMode">Queue prioritisation</label>
-            <select id="priorityMode" class="form-control">
-              <option value="fifo">First‑in, first‑out</option>
-              <option value="due">Earliest due time</option>
-              <option value="size">Smallest job first</option>
-            </select>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-md-4">
-              <label for="timePerPage">Time/page (s)</label>
-              <input
-                type="number"
-                id="timePerPage"
-                value="5"
-                class="form-control"
-              />
-            </div>
-            <div class="form-group col-md-4">
-              <label for="loadTime">Load time (s)</label>
-              <input
-                type="number"
-                id="loadTime"
-                value="60"
-                class="form-control"
-              />
-            </div>
-            <div class="form-group col-md-4">
-              <label for="checkTime">Check time (s)</label>
-              <input
-                type="number"
-                id="checkTime"
-                value="120"
-                class="form-control"
-              />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="trimmingTime">Trimming time (s)</label>
-              <input
-                type="number"
-                id="trimmingTime"
-                value="0"
-                class="form-control"
-              />
-            </div>
-            <div class="form-group col-md-6">
-              <label for="staplingTime">Stapling time (s)</label>
-              <input
-                type="number"
-                id="staplingTime"
-                value="0"
-                class="form-control"
-              />
-            </div>
-          </div>
-
-          <div class="d-flex flex-wrap mt-2" style="gap: 0.5rem">
-            <button id="saveTodoBtn" class="btn btn-outline-secondary btn-sm">
-              💾 Save Unfinished
-            </button>
-            <button
-              id="saveCompletedBtn"
-              class="btn btn-outline-secondary btn-sm"
-            >
-              💾 Save Completed
-            </button>
-            <button id="clearQueueBtn" class="btn btn-outline-danger btn-sm">
-              🗑️ Clear Queue
-            </button>
-            <button id="clearStorageBtn" class="btn btn-outline-danger btn-sm">
-              🗑️ Clear Storage
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- New Print Request -->
-      <div class="card mb-3">
-        <div class="card-body">
-          <h2 class="h5 font-weight-bold mb-3">🖨️ New Print Request</h2>
-
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="teacherSelect">Requesting teacher</label>
+              <label for="teacherSelect">Teacher</label>
               <select id="teacherSelect" class="form-control" disabled>
-                <option value="">No teachers loaded</option>
+                <option value="">Loading list...</option>
               </select>
             </div>
             <div class="form-group col-md-6">
-              <label for="authTeacherSelect">Authorised by</label>
+              <label for="authTeacherSelect">Authoriser</label>
               <select id="authTeacherSelect" class="form-control" disabled>
-                <option value="">No authorisers loaded</option>
+                <option value="">None</option>
               </select>
             </div>
           </div>
-
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="pages">Original pages</label>
-              <input type="number" id="pages" class="form-control" />
+          <div class="form-row small">
+            <div class="form-group col-md-3">
+              <label>Pages</label
+              ><input type="number" id="pages" class="form-control" value="4" />
             </div>
-            <div class="form-group col-md-6">
-              <label for="copies">Copies</label>
-              <input type="number" id="copies" value="1" class="form-control" />
+            <div class="form-group col-md-3">
+              <label>Copies</label
+              ><input
+                type="number"
+                id="copies"
+                class="form-control"
+                value="50"
+              />
             </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="printType">Print type</label>
-              <select id="printType" class="form-control">
+            <div class="form-group col-md-3">
+              <label>Type</label
+              ><select id="printType" class="form-control">
                 <option value="normal">Normal</option>
-                <option value="twoinone">Two‑in‑One</option>
+                <option value="twoinone">2-in-1</option>
               </select>
             </div>
-            <div class="form-group col-md-6">
-              <label for="sides">Sides</label>
-              <select id="sides" class="form-control">
-                <option value="single">Single‑sided</option>
-                <option value="double">Double‑sided</option>
+            <div class="form-group col-md-3">
+              <label>Sides</label
+              ><select id="sides" class="form-control">
+                <option value="single">Single</option>
+                <option value="double">Double</option>
               </select>
             </div>
           </div>
-
-          <div class="form-row">
+          <div class="form-row small">
             <div class="form-group col-md-6">
-              <label for="additionalTask">Additional tasks</label>
-              <select id="additionalTask" class="form-control">
+              <label>Task</label
+              ><select id="additionalTask" class="form-control">
                 <option value="none">None</option>
                 <option value="trimming">Trimming</option>
                 <option value="stapling">Stapling</option>
-                <option value="trimming_stapling">Trimming and Stapling</option>
+                <option value="trimming_stapling">Both</option>
               </select>
             </div>
             <div class="form-group col-md-6">
-              <label for="scheduledFor">Required by</label>
-              <input
+              <label>Required by</label
+              ><input
                 type="datetime-local"
                 id="scheduledFor"
                 class="form-control"
               />
             </div>
           </div>
-
-          <div class="alert alert-info py-2 mb-3">
-            Effective pages:
-            <strong><span id="effectivePages">0</span></strong> · Estimated:
-            <strong><span id="estimate">0</span></strong> seconds
+          <div class="alert alert-info py-2 mb-3 small">
+            Effective: <span id="effectivePages">0</span> | Est:
+            <span id="estimate">0</span>s
           </div>
-
           <button id="submitBtn" class="btn btn-primary btn-block">
             Queue Print Job
           </button>
         </div>
       </div>
 
-      <!-- Queue -->
-      <div class="card mb-3">
+      <div class="card shadow-sm mb-3">
         <div class="card-body">
-          <h2 class="h5 font-weight-bold mb-3">
-            📋 Print Queue
-            <span id="jobCount" class="badge badge-secondary">0 jobs</span>
-          </h2>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="font-weight-bold mb-0">
+              📋 Active Queue
+              <span id="jobCount" class="badge badge-secondary">0 jobs</span>
+            </h5>
+            <input
+              type="text"
+              id="searchInput"
+              class="form-control form-control-sm w-50"
+              placeholder="Search teacher..."
+            />
+          </div>
           <div id="queue"></div>
+          <div
+            class="d-flex justify-content-between align-items-center mt-3 small"
+          >
+            <button id="prevPageBtn" class="btn btn-sm btn-outline-secondary">
+              Previous
+            </button>
+            <span id="pageInfo" class="text-muted">Page 1 of 1</span>
+            <button id="nextPageBtn" class="btn btn-sm btn-outline-secondary">
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4" />
+
+      <div id="loginCard" class="card shadow-sm mb-3 border-info">
+        <div class="card-body">
+          <h6 class="text-info font-weight-bold">Admin Login</h6>
+          <div class="form-row mt-2">
+            <div class="col-md-5 mb-2">
+              <input
+                type="email"
+                id="emailInput"
+                class="form-control form-control-sm"
+                placeholder="Email"
+              />
+            </div>
+            <div class="col-md-4 mb-2">
+              <input
+                type="password"
+                id="passwordInput"
+                class="form-control form-control-sm"
+                placeholder="Password"
+              />
+            </div>
+            <div class="col-md-3">
+              <button id="loginBtn" class="btn btn-info btn-sm btn-block">
+                Sign In
+              </button>
+            </div>
+          </div>
+          <div id="loginError" class="text-danger small mt-2 hidden">
+            Invalid credentials.
+          </div>
+        </div>
+      </div>
+
+      <div id="adminSettings" class="card shadow-sm mb-3 admin-only hidden">
+        <div class="card-body">
+          <h5 class="text-warning font-weight-bold">⚙️ Settings & Files</h5>
+          <div class="form-row small">
+            <div class="form-group col-md-6">
+              <label>Priority</label
+              ><select id="priorityMode" class="form-control form-control-sm">
+                <option
+                  value="fifo"
+                  title="Processes jobs in the order they were submitted (fair and predictable)"
+                >
+                  FIFO (First In, First Out)
+                </option>
+
+                <option
+                  value="due"
+                  title="Sorts jobs by earliest required-by date first"
+                >
+                  Due Time
+                </option>
+
+                <option
+                  value="overdue"
+                  title="Shows overdue jobs first, then the rest"
+                >
+                  Overdue First
+                </option>
+
+                <option
+                  value="estimate"
+                  title="Sorts by shortest estimated print duration first"
+                >
+                  Estimated Print Time
+                </option>
+
+                <option
+                  value="quick"
+                  title="Prioritises very small, fast jobs to clear the queue quickly"
+                >
+                  Quick Jobs First
+                </option>
+
+                <option
+                  value="size"
+                  title="Sorts by total job size (pages × copies)"
+                >
+                  Job Size (Pages × Copies)
+                </option>
+              </select>
+
+              <small id="priorityHelp" class="form-text text-muted">
+                Jobs are processed in the order they are submitted.
+              </small>
+            </div>
+            <div class="form-group col-md-6">
+              <label>Secs/Page</label
+              ><input
+                type="number"
+                id="timePerPage"
+                class="form-control form-control-sm"
+                step="0.1"
+              />
+            </div>
+          </div>
+          <div class="form-row small">
+            <div class="form-group col-md-3">
+              <label>Load(s)</label
+              ><input
+                type="number"
+                id="loadTime"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="form-group col-md-3">
+              <label>Check(s)</label
+              ><input
+                type="number"
+                id="checkTime"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="form-group col-md-3">
+              <label>Trim(s)</label
+              ><input
+                type="number"
+                id="trimmingTime"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="form-group col-md-3">
+              <label>Staple(s)</label
+              ><input
+                type="number"
+                id="staplingTime"
+                class="form-control form-control-sm"
+              />
+            </div>
+          </div>
+          <hr />
+          <div class="form-group small">
+            <label>Teacher List (.txt)</label
+            ><input
+              type="file"
+              id="teacherFile"
+              class="form-control-file"
+              accept=".txt"
+            />
+          </div>
+          <div class="form-group small">
+            <label>Import To-Do (.txt)</label
+            ><input
+              type="file"
+              id="todoFile"
+              class="form-control-file"
+              accept=".txt"
+            />
+          </div>
+          <div class="btn-group btn-group-sm w-100">
+            <button id="saveTodoBtn" class="btn btn-outline-secondary">
+              Export To-Do
+            </button>
+            <button id="saveCompletedBtn" class="btn btn-outline-secondary">
+              Export Completed
+            </button>
+            <button id="clearQueueBtn" class="btn btn-outline-danger">
+              Clear All
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="weeklyReportControls" class="card shadow-sm mb-3 hidden">
+        <div class="card-body">
+          <h5 class="font-weight-bold">📊 Weekly Summary & Analytics</h5>
+
+          <div class="row mt-4">
+            <div class="col-md-6">
+              <h6 class="small font-weight-bold text-center">
+                Total Pages by Teacher
+              </h6>
+              <canvas id="teacherChart"></canvas>
+            </div>
+            <div class="col-md-6">
+              <h6 class="small font-weight-bold text-center">
+                Job Timeline (Time of Day)
+              </h6>
+              <canvas id="timeChart"></canvas>
+            </div>
+          </div>
+
+          <div
+            id="weeklySummaryContent"
+            class="mt-4 small table-responsive"
+          ></div>
         </div>
       </div>
     </div>
 
-    <!-- Bootstrap 4 JS dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
-    <script src="./public/app.js"></script>
+    <script src="./chart.js"></script>
+    <script src="app.js" defer></script>
   </body>
 </html>
