@@ -9,12 +9,15 @@ const STORAGE_KEYS = {
   SETTINGS: "printqueue_settings",
   TEACHERS: "printqueue_teachers",
   ID_COUNTER: "printqueue_idcounter",
+  TEACHER_EMAILS: "printqueue_teacher_emails",
+  EMAIL_ENABLED: "printqueue_email_enabled",
 };
 
 let ADMIN_CREDENTIALS = [];
 let jobs = new Map();
 let idCounter = 0;
 let currentUser = { email: null, role: null, authenticated: false };
+let dueDateFilter = "all";
 
 let currentPage = 1;
 const ITEMS_PER_PAGE = 5;
@@ -100,6 +103,10 @@ fetch("./admin.env")
       });
   })
   .catch(() => console.warn("admin.env not found"));
+
+function isEmailNotificationEnabled() {
+  return localStorage.getItem(STORAGE_KEYS.EMAIL_ENABLED) === "true";
+}
 
 function exportJobsToFile(jobsArray, defaultFilename) {
   if (!jobsArray.length) {
@@ -300,6 +307,31 @@ function updateCharts(completedJobs) {
 }
 
 /* ================= FILE IMPORTS ================= */
+function handleTeacherEmailUpload(file) {
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const map = {};
+
+    e.target.result
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .forEach((line) => {
+        const [name, email] = line.split(";").map((x) => x.trim());
+        if (name && email) {
+          map[name] = email;
+        }
+      });
+
+    localStorage.setItem(STORAGE_KEYS.TEACHER_EMAILS, JSON.stringify(map));
+
+    alert("Teacher email list imported successfully.");
+  };
+
+  reader.readAsText(file);
+}
+
 function loadTeacherDropdowns() {
   const list = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEACHERS)) || [];
   if (list.length > 0) {
@@ -350,6 +382,20 @@ function handleTodoUpload(file) {
 
 /* ================= RENDERING ================= */
 function generateJobCardHtml(j, isCompleted = false) {
+  let statusBadgeClass;
+  let statusText;
+
+  if (isCompleted) {
+    statusBadgeClass = "badge-success";
+    statusText = "Finished";
+  } else if (j.status === "In process") {
+    statusBadgeClass = "badge-primary";
+    statusText = j.status;
+  } else {
+    statusBadgeClass = "badge-secondary";
+    statusText = j.status;
+  }
+
   const estTime = calculateJobEstimate(j);
   const dueTime = j.scheduledFor
     ? new Date(j.scheduledFor).toLocaleString()
@@ -368,9 +414,48 @@ function generateJobCardHtml(j, isCompleted = false) {
         actions += `<button class="btn btn-success" onclick="updateStatus(${j.id}, 'Completed')">Finish</button>`;
       if (currentUser.role === "admin")
         actions += `<button class="btn btn-danger ml-2" onclick="deleteJob(${j.id})">Delete</button>`;
+    } else {
     }
   }
 
+  let notificationBadge = "";
+
+  if (isCompleted) {
+    if (j.notificationStatus === "sent") {
+      notificationBadge =
+        "<span class='badge badge-success ml-2'>Email Sent</span>";
+    } else if (j.notificationStatus === "skipped") {
+      notificationBadge =
+        "<span class='badge badge-warning ml-2'>No Email</span>";
+    } else if (j.notificationStatus === "disabled") {
+      notificationBadge =
+        "<span class='badge badge-secondary ml-2'>Email Disabled</span>";
+    }
+  }
+
+  return `
+  <div class="card-body p-3">
+    <div class="d-flex justify-content-between mb-2">
+      <strong>${j.teacher}</strong>
+      <div>
+        <span class="badge ${statusBadgeClass}">
+          ${statusText}
+        </span>
+        ${notificationBadge}
+      </div>
+    </div>
+
+    <div class="small mb-2">
+        Requested: ${reqTime}<br>
+        ${isCompleted ? `Completed: ${doneTime}<br>` : ""}
+        Due by Date: ${dueTime}
+      </div>
+      <div class="small mb-2">EST: ${estTime}s | VOL: ${j.pages}p × ${j.copies}c TASKS: ${j.additionalTask} </div>
+      ${actions}
+  </div>
+`;
+
+  /*
   return `
     <div class="card-body p-3">
       <div class="d-flex justify-content-between mb-2">
@@ -385,7 +470,7 @@ function generateJobCardHtml(j, isCompleted = false) {
       <div class="small mb-2">EST: ${estTime}s | VOL: ${j.pages}p × ${j.copies}c TASKS: ${j.additionalTask} </div>
       ${actions}
     </div>
-  `;
+  `;*/
 }
 
 const scheduledInput = elements.scheduledFor;
@@ -403,6 +488,37 @@ function rerenderAll() {
   const all = Array.from(jobs.values());
 
   let active = all.filter((j) => j.status !== "Completed");
+  const now = new Date();
+
+  active = active.filter((j) => {
+    if (!j.scheduledFor) return dueDateFilter === "all"; // ASAP jobs
+
+    const due = new Date(j.scheduledFor);
+
+    switch (dueDateFilter) {
+      case "today":
+        return due.toDateString() === now.toDateString();
+
+      case "tomorrow": {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        return due.toDateString() === tomorrow.toDateString();
+      }
+
+      case "week": {
+        const weekEnd = new Date(now);
+        weekEnd.setDate(now.getDate() + 7);
+        return due >= now && due <= weekEnd;
+      }
+
+      case "overdue":
+        return isOverdue(j);
+
+      default:
+        return true; // "all"
+    }
+  });
+
   let completed = all.filter((j) => j.status === "Completed");
 
   if (searchQuery) {
@@ -547,6 +663,65 @@ function rerenderAll() {
 }
 
 /* ================= GLOBAL METHODS ================= */
+function sendCompletionEmailViaMailto(job) {
+  if (!isEmailNotificationEnabled()) return false;
+
+  if (!job || !job.teacher) return;
+
+  const emailMap = JSON.parse(
+    localStorage.getItem(STORAGE_KEYS.TEACHER_EMAILS) || "{}",
+  );
+
+  const teacherEmail = emailMap[job.teacher];
+  if (!teacherEmail) {
+    console.warn(`No email address found for ${job.teacher}`);
+    return true;
+  }
+
+  const subject = encodeURIComponent("Your print job has been completed");
+
+  const body = encodeURIComponent(
+    [
+      `Dear ${job.teacher},`,
+      "",
+      "Your print / photocopy job has now been completed.",
+      "",
+      `Job ID: ${job.id}`,
+      `Pages: ${job.pages}`,
+      `Copies: ${job.copies}`,
+      job.scheduledFor
+        ? `Due: ${new Date(job.scheduledFor).toLocaleString()}`
+        : "Due: ASAP",
+      "",
+      "Regards,",
+      "Print Room",
+    ].join("\n"),
+  );
+
+  window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+}
+
+function maybeSendCompletionEmail(job) {
+  const enabled = localStorage.getItem(STORAGE_KEYS.EMAIL_ENABLED) === "true";
+  if (!enabled) return;
+
+  const emailMap = JSON.parse(
+    localStorage.getItem(STORAGE_KEYS.TEACHER_EMAILS) || "{}",
+  );
+
+  const email = emailMap[job.teacher];
+  if (!email) {
+    console.warn("No email found for teacher:", job.teacher);
+    return;
+  }
+
+  // ✅ STUB: this is where real email sending plugs in later
+  console.info(
+    `[EMAIL QUEUED] To: ${email}`,
+    `Job #${job.id} has been completed.`,
+  );
+}
+
 window.updateStatus = (id, status) => {
   const job = jobs.get(id);
   if (!job) return;
@@ -554,6 +729,14 @@ window.updateStatus = (id, status) => {
 
   if (status === "Completed") {
     job.completedAt = Date.now();
+
+    if (!isEmailNotificationEnabled()) {
+      job.notificationStatus = "disabled";
+    } else {
+      const sent = sendCompletionEmailViaMailto(job);
+      job.notificationStatus = sent ? "sent" : "skipped";
+    }
+
     completedPage = 1;
   }
 
@@ -573,6 +756,12 @@ window.deleteJob = (id) => {
 document.addEventListener("DOMContentLoaded", () => {
   AppState.load();
   loadTeacherDropdowns();
+
+  const emailToggle = document.getElementById("emailNotificationsEnabled");
+
+  emailToggle.checked =
+    localStorage.getItem(STORAGE_KEYS.EMAIL_ENABLED) === "true";
+
   document.getElementById("loginBtn").onclick = handleLogin;
   document.getElementById("logoutBtn").onclick = handleLogout;
 
@@ -621,6 +810,21 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    document.querySelectorAll("#dueDateFilters button").forEach((btn) => {
+      btn.onclick = () => {
+        dueDateFilter = btn.dataset.filter;
+
+        // Visual active state
+        document
+          .querySelectorAll("#dueDateFilters button")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        currentPage = 1; // reset pagination
+        rerenderAll();
+      };
+    });
+
     if (!elements.teacherSelect.value) return alert("Select teacher");
     idCounter++;
     jobs.set(idCounter, {
@@ -644,6 +848,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     rerenderAll();
+  };
+
+  document.getElementById("teacherEmailFile").onchange = (e) =>
+    handleTeacherEmailUpload(e.target.files[0]);
+
+  emailToggle.onchange = () => {
+    localStorage.setItem(
+      STORAGE_KEYS.EMAIL_ENABLED,
+      emailToggle.checked.toString(),
+    );
   };
 
   document.getElementById("saveTodoBtn").onclick = () => {

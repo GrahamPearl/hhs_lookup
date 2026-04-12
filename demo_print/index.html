@@ -5,7 +5,7 @@
     <title>Teacher Print Queue - Enhanced Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./bootstrap.min.css" />
-    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./styles.css" />
     <style>
       .hidden {
         display: none !important;
@@ -109,6 +109,8 @@
         </div>
       </div>
 
+      
+
       <div class="card shadow-sm mb-3">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
@@ -123,6 +125,13 @@
               placeholder="Search teacher..."
             />
           </div>
+                <div class="btn-group btn-group-sm mb-3" id="dueDateFilters">
+  <button class="btn btn-outline-secondary active" data-filter="all">All</button>
+  <button class="btn btn-outline-secondary" data-filter="today">Today</button>
+  <button class="btn btn-outline-secondary" data-filter="tomorrow">Tomorrow</button>
+  <button class="btn btn-outline-secondary" data-filter="week">This Week</button>
+  <button class="btn btn-outline-secondary" data-filter="overdue">Overdue</button>
+</div>
           <div id="queue"></div>
           <div
             class="d-flex justify-content-between align-items-center mt-3 small"
@@ -134,6 +143,11 @@
             <button id="nextPageBtn" class="btn btn-sm btn-outline-secondary">
               Next
             </button>
+          </div>
+          <div class="small mb-2">
+            <span class="badge badge-warning mr-2">Urgent</span> Due within 3
+            hours <span class="badge badge-danger ml-3 mr-2">Overdue</span> Past
+            due time
           </div>
         </div>
       </div>
@@ -175,6 +189,23 @@
       <div id="adminSettings" class="card shadow-sm mb-3 admin-only hidden">
         <div class="card-body">
           <h5 class="text-warning font-weight-bold">⚙️ Settings & Files</h5>
+          <hr />
+
+          <div class="form-group small">
+            <div class="custom-control custom-switch">
+              <input
+                type="checkbox"
+                class="custom-control-input"
+                id="emailNotificationsEnabled"
+              />
+              <label
+                class="custom-control-label"
+                for="emailNotificationsEnabled"
+              >
+                Send email to teacher when job is completed
+              </label>
+            </div>
+          </div>
           <div class="form-row small">
             <div class="form-group col-md-6">
               <label>Priority</label
@@ -279,6 +310,18 @@
               class="form-control-file"
               accept=".txt"
             />
+          </div>
+          <div class="form-group small">
+            <label>Teacher Emails (.txt)</label>
+            <input
+              type="file"
+              id="teacherEmailFile"
+              class="form-control-file"
+              accept=".txt"
+            />
+            <small class="form-text text-muted">
+              One per line: <code>Teacher Name; email@example.com</code>
+            </small>
           </div>
           <div class="form-group small">
             <label>Import To-Do (.txt)</label
