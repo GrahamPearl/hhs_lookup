@@ -1,7 +1,17 @@
 /**
  * TEACHER PRINTING & PHOTOCOPY BOOKING SYSTEM
  * Canonical app.js with extended analytics (strict reconstitution)
+ * UPDATED: Web Workers, Debounced Search, Intersection Observer, Memoized Estimates
  */
+
+/* ================= UTILITIES ================= */
+const debounce = (func, delay) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), delay);
+  };
+};
 
 /* ================= PERSISTENCE & GLOBAL STATE ================= */
 const STORAGE_KEYS = {
@@ -13,6 +23,8 @@ const STORAGE_KEYS = {
   EMAIL_ENABLED: "printqueue_email_enabled",
 };
 
+const NOTES_KEY = "printqueue_notes";
+
 let ADMIN_CREDENTIALS = [];
 let jobs = new Map();
 let idCounter = 0;
@@ -22,8 +34,10 @@ let dueDateFilter = "all";
 let currentPage = 1;
 const ITEMS_PER_PAGE = 5;
 
-let completedPage = 1;
-const COMPLETED_PER_PAGE = 5;
+// Replaced completed pagination with Infinite Scroll
+let completedJobsLimit = 10;
+const COMPLETED_INCREMENT = 10;
+let observer = null;
 
 let searchQuery = "";
 
@@ -43,7 +57,11 @@ const AppState = {
       const savedJobs = JSON.parse(localStorage.getItem(STORAGE_KEYS.JOBS));
       if (savedJobs) {
         jobs.clear();
-        savedJobs.forEach((j) => jobs.set(j.id, j));
+        savedJobs.forEach((j) => {
+          // Memoize estimate if missing from older saves
+          if (j.estimate === undefined) j.estimate = calculateJobEstimate(j);
+          jobs.set(j.id, j);
+        });
       }
       const savedSettings = JSON.parse(
         localStorage.getItem(STORAGE_KEYS.SETTINGS),
@@ -63,7 +81,7 @@ const AppState = {
   },
 };
 
-/* ================= DOM ELEMENTS ================= */
+/* ================= DOM ELEMENTS (CACHED) ================= */
 const elements = {
   teacherSelect: document.getElementById("teacherSelect"),
   authTeacherSelect: document.getElementById("authTeacherSelect"),
@@ -88,6 +106,30 @@ const elements = {
   priorityMode: document.getElementById("priorityMode"),
   todoFile: document.getElementById("todoFile"),
   teacherFile: document.getElementById("teacherFile"),
+  jobCount: document.getElementById("jobCount"),
+  dueDateFiltersContainer: document.getElementById("dueDateFilters"),
+  jobNotes: document.getElementById("jobNotes"),
+  emailInput: document.getElementById("emailInput"),
+  passwordInput: document.getElementById("passwordInput"),
+  submitBtn: document.getElementById("submitBtn"),
+  emailNotificationsEnabled: document.getElementById(
+    "emailNotificationsEnabled",
+  ),
+  priorityHelp: document.getElementById("priorityHelp"),
+  saveTodoBtn: document.getElementById("saveTodoBtn"),
+  saveCompletedBtn: document.getElementById("saveCompletedBtn"),
+  clearQueueBtn: document.getElementById("clearQueueBtn"),
+  teacherEmailFile: document.getElementById("teacherEmailFile"),
+  loginBtn: document.getElementById("loginBtn"),
+  setting_timePerPage: document.getElementById("setting_timePerPage"),
+  setting_loadTime: document.getElementById("setting_loadTime"),
+  setting_checkTime: document.getElementById("setting_checkTime"),
+  setting_trimmingTime: document.getElementById("setting_trimmingTime"),
+  setting_staplingTime: document.getElementById("setting_staplingTime"),
+  completedFile: document.getElementById("completedFile"),
+  weeklyCalendarContainer: document.getElementById("weeklyCalendarContainer"),
+  openWeeklyCalendarBtn: document.getElementById("openWeeklyCalendarBtn"),
+  openGanttViewBtn: document.getElementById("openGanttViewBtn"),
 };
 
 /* ================= AUTH ================= */
@@ -108,6 +150,12 @@ function isEmailNotificationEnabled() {
   return localStorage.getItem(STORAGE_KEYS.EMAIL_ENABLED) === "true";
 }
 
+function saveJobNotes(reference, text) {
+  const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
+  notes[reference] = text;
+  localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+}
+
 function exportJobsToFile(jobsArray, defaultFilename) {
   if (!jobsArray.length) {
     alert("No jobs to export.");
@@ -119,7 +167,7 @@ function exportJobsToFile(jobsArray, defaultFilename) {
     defaultFilename.replace(".txt", ""),
   );
 
-  if (!userFilename) return; // user cancelled
+  if (!userFilename) return;
 
   const filename = userFilename.endsWith(".txt")
     ? userFilename
@@ -140,6 +188,34 @@ function exportJobsToFile(jobsArray, defaultFilename) {
   URL.revokeObjectURL(url);
 }
 
+function generateJobReference() {
+  const today = new Date().toISOString().slice(0, 10);
+  const todayCount = Array.from(jobs.values()).filter(
+    (j) => j.reference && j.reference.startsWith(today),
+  ).length;
+  return `${today}-${todayCount + 1}`;
+}
+
+function getJobNotes(reference) {
+  const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
+  return notes[reference] || "";
+}
+
+function jobHasNotes(reference) {
+  return getJobNotes(reference).trim().length > 0;
+}
+
+window.downloadNotes = (reference) => {
+  const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
+  if (!notes[reference]) return alert("No notes for this job.");
+
+  const blob = new Blob([notes[reference]], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${reference}-notes.txt`;
+  a.click();
+};
+
 function isUrgent(job) {
   if (job.status === "Completed") return false;
   if (!job.scheduledFor) return false;
@@ -155,21 +231,14 @@ function isOverdue(job) {
 }
 
 function wasOverdue(job) {
-  // Only meaningful for completed jobs
   if (job.status !== "Completed") return false;
-
-  // If there was no due date, it cannot be overdue
   if (!job.scheduledFor || !job.completedAt) return false;
-
   return new Date(job.completedAt) > new Date(job.scheduledFor);
 }
 
 function handleLogin() {
-  const email = document
-    .getElementById("emailInput")
-    .value.trim()
-    .toLowerCase();
-  const password = document.getElementById("passwordInput").value;
+  const email = elements.emailInput.value.trim().toLowerCase();
+  const password = elements.passwordInput.value;
   const match = ADMIN_CREDENTIALS.find(
     (c) => c.email === email && c.password === password,
   );
@@ -194,7 +263,7 @@ function handleLogout() {
   rerenderAll();
 }
 
-/* ================= CALCULATIONS ================= */
+/* ================= CALCULATIONS (MEMOIZED) ================= */
 function calculateJobEstimate(job) {
   let effective = job.pages;
   if (job.printType === "twoinone") effective = Math.ceil(effective / 2);
@@ -233,7 +302,37 @@ function updateEstimate() {
   });
 }
 
-/* ================= ANALYTICS & CHARTS ================= */
+/* ================= WEB WORKER & ANALYTICS ================= */
+let analyticsWorker;
+function getAnalyticsWorker() {
+  if (!analyticsWorker) {
+    const workerCode = `
+      self.onmessage = function(e) {
+        const completedJobs = e.data;
+        const pagesByTeacher = {};
+        const onTime = new Array(24).fill(0);
+        const late = new Array(24).fill(0);
+
+        completedJobs.forEach((j) => {
+          pagesByTeacher[j.teacher] = (pagesByTeacher[j.teacher] || 0) + j.pages * j.copies;
+          if (j.completedAt) {
+            const hour = new Date(j.completedAt).getHours();
+            if (j.scheduledFor && new Date(j.completedAt) > new Date(j.scheduledFor)) {
+              late[hour]++;
+            } else {
+              onTime[hour]++;
+            }
+          }
+        });
+        self.postMessage({ pagesByTeacher, onTime, late });
+      };
+    `;
+    const blob = new Blob([workerCode], { type: "application/javascript" });
+    analyticsWorker = new Worker(URL.createObjectURL(blob));
+  }
+  return analyticsWorker;
+}
+
 function updateCharts(completedJobs) {
   if (currentUser.role !== "admin") return;
 
@@ -241,79 +340,65 @@ function updateCharts(completedJobs) {
   const timeCanvas = document.getElementById("timeChart");
   if (!teacherCanvas || !timeCanvas) return;
 
-  const pagesByTeacher = {};
-  const onTime = new Array(24).fill(0); // whole numbers only
-  const late = new Array(24).fill(0); // whole numbers only
+  // Utilize Web Worker to prevent UI blocking during heavy iteration
+  const worker = getAnalyticsWorker();
 
-  completedJobs.forEach((j) => {
-    pagesByTeacher[j.teacher] =
-      (pagesByTeacher[j.teacher] || 0) + j.pages * j.copies;
+  worker.onmessage = function (e) {
+    const { pagesByTeacher, onTime, late } = e.data;
 
-    if (j.completedAt) {
-      const hour = new Date(j.completedAt).getHours();
-      if (
-        j.scheduledFor &&
-        new Date(j.completedAt) > new Date(j.scheduledFor)
-      ) {
-        late[hour]++; // completed past due
-      } else {
-        onTime[hour]++; // completed on time or no due date
-      }
-    }
-  });
+    if (window.teacherChartInstance) window.teacherChartInstance.destroy();
+    if (window.timeChartInstance) window.timeChartInstance.destroy();
 
-  if (window.teacherChartInstance) window.teacherChartInstance.destroy();
-  if (window.timeChartInstance) window.timeChartInstance.destroy();
-
-  window.teacherChartInstance = new Chart(teacherCanvas, {
-    type: "bar",
-    data: {
-      labels: Object.keys(pagesByTeacher),
-      datasets: [
-        {
-          label: "Total Pages Printed",
-          data: Object.values(pagesByTeacher),
-          backgroundColor: "#28a745",
-        },
-      ],
-    },
-    options: { responsive: true },
-  });
-
-  window.timeChartInstance = new Chart(timeCanvas, {
-    type: "bar",
-    data: {
-      labels: [...Array(24).keys()].map((h) => `${h}:00`),
-      datasets: [
-        {
-          label: "Completed On Time",
-          data: onTime,
-          backgroundColor: "#007bff",
-        },
-        {
-          label: "Completed Late",
-          data: late,
-          backgroundColor: "#dc3545",
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      scales: {
-        yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }],
+    window.teacherChartInstance = new Chart(teacherCanvas, {
+      type: "bar",
+      data: {
+        labels: Object.keys(pagesByTeacher),
+        datasets: [
+          {
+            label: "Total Pages Printed",
+            data: Object.values(pagesByTeacher),
+            backgroundColor: "#28a745",
+          },
+        ],
       },
-    },
-  });
+      options: { responsive: true },
+    });
+
+    window.timeChartInstance = new Chart(timeCanvas, {
+      type: "bar",
+      data: {
+        labels: [...Array(24).keys()].map((h) => `${h}:00`),
+        datasets: [
+          {
+            label: "Completed On Time",
+            data: onTime,
+            backgroundColor: "#007bff",
+          },
+          {
+            label: "Completed Late",
+            data: late,
+            backgroundColor: "#dc3545",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }],
+        },
+      },
+    });
+  };
+
+  worker.postMessage(completedJobs);
 }
 
 /* ================= FILE IMPORTS ================= */
 function handleTeacherEmailUpload(file) {
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = (e) => {
     const map = {};
-
     e.target.result
       .split(/\r?\n/)
       .filter(Boolean)
@@ -323,12 +408,9 @@ function handleTeacherEmailUpload(file) {
           map[name] = email;
         }
       });
-
     localStorage.setItem(STORAGE_KEYS.TEACHER_EMAILS, JSON.stringify(map));
-
     alert("Teacher email list imported successfully.");
   };
-
   reader.readAsText(file);
 }
 
@@ -346,6 +428,103 @@ function loadTeacherDropdowns() {
   }
 }
 
+const handleCompletedUpload = (file) => {
+  if (!file) return;
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    try {
+      const lines = e.target.result.split("\n").filter((line) => line.trim());
+      let importCount = 0;
+
+      lines.forEach((line) => {
+        let completedJob;
+
+        // ✅ TRY JSON FIRST
+        try {
+          const data = JSON.parse(line);
+
+          completedJob = {
+            ...data,
+
+            // ✅ normalize critical fields
+            id: data.id || ++idCounter,
+            status: "Completed",
+            requestedAt: data.requestedAt || Date.now(),
+            completedAt: data.completedAt || Date.now(),
+
+            // ✅ FIX DATE TYPE
+            scheduledFor: data.scheduledFor
+              ? new Date(data.scheduledFor).getTime()
+              : Date.now(),
+          };
+        } catch {
+          // 🔁 FALLBACK: pipe format (your old format)
+          const parts = line.split("|").map((p) => p.trim());
+          if (parts.length < 8) return;
+
+          const [
+            id,
+            teacher,
+            auth,
+            pages,
+            copies,
+            type,
+            sides,
+            tasks,
+            due,
+            notes,
+          ] = parts;
+
+          completedJob = {
+            id: parseInt(id) || ++idCounter,
+            teacher: teacher || "Unknown",
+            authoriser: auth || "",
+            pages: parseInt(pages) || 1,
+            copies: parseInt(copies) || 1,
+            printType: type || "normal",
+            sides: sides || "single",
+            additionalTask: tasks || "none",
+
+            scheduledFor: due ? new Date(due).getTime() : Date.now(),
+            requestedAt: Date.now(),
+            completedAt: Date.now(),
+
+            jobNotes: notes || "",
+            status: "Completed",
+          };
+        }
+
+        // ✅ prevent overwrite
+        if (jobs.has(completedJob.id)) {
+          completedJob.id = ++idCounter;
+        }
+
+        jobs.set(completedJob.id, completedJob);
+
+        if (completedJob.id >= idCounter) {
+          idCounter = completedJob.id + 1;
+        }
+
+        importCount++;
+      });
+
+      AppState.save();
+      rerenderAll();
+
+      console.log("Imported jobs:", importCount);
+      console.log("Jobs Map:", jobs);
+
+      alert(`Successfully imported ${importCount} completed jobs.`);
+    } catch (err) {
+      console.error("Import Error:", err);
+      alert("Error parsing file.");
+    }
+  };
+
+  reader.readAsText(file);
+};
+
 function handleTodoUpload(file) {
   if (!file) return;
   const reader = new FileReader();
@@ -357,7 +536,7 @@ function handleTodoUpload(file) {
         try {
           const data = JSON.parse(line);
           idCounter++;
-          jobs.set(idCounter, {
+          const newJob = {
             id: idCounter,
             teacher: data.teacher || "Unknown",
             authoriser: data.authoriser || "",
@@ -370,7 +549,10 @@ function handleTodoUpload(file) {
             status: data.status || "Queued",
             requestedAt: data.requestedAt || Date.now(),
             completedAt: data.completedAt || null,
-          });
+          };
+          // Memoize imported job estimate
+          newJob.estimate = calculateJobEstimate(newJob);
+          jobs.set(idCounter, newJob);
         } catch {}
       });
     AppState.save();
@@ -380,7 +562,25 @@ function handleTodoUpload(file) {
   reader.readAsText(file);
 }
 
-/* ================= RENDERING ================= */
+/* ================= RENDERING & INFINITE SCROLL ================= */
+function setupInfiniteScroll() {
+  if (observer) observer.disconnect();
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        completedJobsLimit += COMPLETED_INCREMENT;
+        rerenderAll();
+      }
+    },
+    { threshold: 1.0 },
+  );
+
+  const sentinel = document.getElementById("summary-sentinel");
+  if (sentinel) {
+    observer.observe(sentinel);
+  }
+}
+
 function generateJobCardHtml(j, isCompleted = false) {
   let statusBadgeClass;
   let statusText;
@@ -396,7 +596,9 @@ function generateJobCardHtml(j, isCompleted = false) {
     statusText = j.status;
   }
 
-  const estTime = calculateJobEstimate(j);
+  // Use memoized estimate directly
+  const estTime =
+    j.estimate !== undefined ? j.estimate : calculateJobEstimate(j);
   const dueTime = j.scheduledFor
     ? new Date(j.scheduledFor).toLocaleString()
     : "ASAP";
@@ -409,12 +611,11 @@ function generateJobCardHtml(j, isCompleted = false) {
   if (currentUser.role == "admin") {
     if (!isCompleted) {
       if (j.status === "Queued")
-        actions += `<button class="btn btn-outline-primary" onclick="updateStatus(${j.id}, 'In process')">Start</button>`;
+        actions += `<button class="btn btn-outline-primary" data-action="updateStatus" data-id="${j.id}" data-status="In process">Start</button>`;
       else if (j.status === "In process")
-        actions += `<button class="btn btn-success" onclick="updateStatus(${j.id}, 'Completed')">Finish</button>`;
+        actions += `<button class="btn btn-success" data-action="updateStatus" data-id="${j.id}" data-status="Completed">Finish</button>`;
       if (currentUser.role === "admin")
-        actions += `<button class="btn btn-danger ml-2" onclick="deleteJob(${j.id})">Delete</button>`;
-    } else {
+        actions += `<button class="btn btn-danger ml-2" data-action="deleteJob" data-id="${j.id}">Delete</button>`;
     }
   }
 
@@ -433,10 +634,30 @@ function generateJobCardHtml(j, isCompleted = false) {
     }
   }
 
+  const notesText = getJobNotes(j.reference);
+
+  const notesHtml = notesText
+    ? `
+      <div class="mt-2 small bg-light border rounded p-2">
+        <strong>Notes:</strong><br>
+        ${notesText.replace(/\n/g, "<br>")}
+      </div>
+    `
+    : "";
+
+  const notesBtnClass = jobHasNotes(j.reference)
+    ? "btn-outline-primary"
+    : "btn-outline-secondary";
+
+  /*<div class="mt-2">
+        <button class="btn btn-sm ${notesBtnClass}" data-action="downloadNotes" data-ref="${j.reference}">Notes</button>
+      </div>
+  */
   return `
   <div class="card-body p-3">
     <div class="d-flex justify-content-between mb-2">
-      <strong>${j.teacher}</strong>
+    <small class="text-muted">Ref: ${j.reference || "—"}</small>
+    <strong>${j.teacher}</strong>
       <div>
         <span class="badge ${statusBadgeClass}">
           ${statusText}
@@ -450,38 +671,191 @@ function generateJobCardHtml(j, isCompleted = false) {
         ${isCompleted ? `Completed: ${doneTime}<br>` : ""}
         Due by Date: ${dueTime}
       </div>
-      <div class="small mb-2">EST: ${estTime}s | VOL: ${j.pages}p × ${j.copies}c TASKS: ${j.additionalTask} </div>
+      ${notesHtml}
+
+      <div><strong>Type:</strong> ${j.printType} | <strong>Side:</strong> ${j.sides}</div>
+      <div class="small mb-2 mt-2">EST: ${estTime}s | VOL: ${j.pages}p × ${j.copies}c TASKS: ${j.additionalTask} </div>
       ${actions}
   </div>
 `;
-
-  /*
-  return `
-    <div class="card-body p-3">
-      <div class="d-flex justify-content-between mb-2">
-        <strong>${j.teacher}</strong>
-        <span class="badge ${isCompleted ? "badge-success" : j.status === "In process" ? "badge-primary" : "badge-secondary"}">${isCompleted ? "Finished" : j.status}</span>
-      </div>
-      <div class="small mb-2">
-        Requested: ${reqTime}<br>
-        ${isCompleted ? `Completed: ${doneTime}<br>` : ""}
-        Due by Date: ${dueTime}
-      </div>
-      <div class="small mb-2">EST: ${estTime}s | VOL: ${j.pages}p × ${j.copies}c TASKS: ${j.additionalTask} </div>
-      ${actions}
-    </div>
-  `;*/
 }
 
-const scheduledInput = elements.scheduledFor;
-
-if (scheduledInput && !scheduledInput.value) {
+if (elements.scheduledFor && !elements.scheduledFor.value) {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(12, 0, 0, 0);
+  elements.scheduledFor.value = tomorrow.toISOString().slice(0, 16);
+}
 
-  // datetime-local requires YYYY-MM-DDTHH:MM
-  scheduledInput.value = tomorrow.toISOString().slice(0, 16);
+function renderGanttTimeline(completedJobs, targetElement) {
+  const container = targetElement;
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!completedJobs.length) {
+    container.innerHTML = "<p class='text-muted'>No completed jobs found.</p>";
+    return;
+  }
+
+  // Normalize + sort by start time
+  const jobs = completedJobs
+    .map((j) => ({
+      ...j,
+      start: j.requestedAt || j.completedAt,
+      end: j.completedAt,
+    }))
+    .filter((j) => j.start && j.end)
+    .sort((a, b) => a.start - b.start);
+
+  const minTime = Math.min(...jobs.map((j) => j.start));
+  const maxTime = Math.max(...jobs.map((j) => j.end));
+  const totalSpan = maxTime - minTime || 1;
+
+  let html = `
+    <div style="position: relative; width: 100%;">
+  `;
+
+  jobs.forEach((j) => {
+    const left = ((j.start - minTime) / totalSpan) * 100;
+    const width = ((j.end - j.start) / totalSpan) * 100;
+
+    const startTime = new Date(j.start).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const endTime = new Date(j.end).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    html += `
+      <div style="margin-bottom: 8px;">
+        <div class="small">
+          <strong>${j.teacher}</strong> (${j.pages}p × ${j.copies})
+          <span class="text-muted"> ${startTime} → ${endTime}</span>
+        </div>
+
+        <div style="position: relative; height: 20px; background: #eee; border-radius: 4px;">
+          <div style="
+            position: absolute;
+            left: ${left}%;
+            width: ${Math.max(width, 1)}%;
+            height: 100%;
+            background: #007bff;
+            border-radius: 4px;
+          "></div>
+        </div>
+      </div>
+    `;
+  });
+
+  html += "</div>";
+
+  container.innerHTML = html;
+}
+
+function renderWeeklyCalendar(completedJobs, targetElement) {
+  const container = targetElement;
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!completedJobs.length) {
+    container.innerHTML = "<p class='text-muted'>No completed jobs found.</p>";
+    return;
+  }
+
+  // Group jobs by day name
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const grouped = {};
+
+  completedJobs.forEach((job) => {
+    if (!job.completedAt) return;
+
+    const date = new Date(job.completedAt);
+    const dayName = days[date.getDay()];
+
+    if (!grouped[dayName]) grouped[dayName] = [];
+
+    grouped[dayName].push(job);
+  });
+
+  // Build table
+  let html = `
+    <table class="table table-sm table-bordered">
+      <thead class="thead-light">
+        <tr>
+          <th>Day</th>
+          <th>Jobs</th>
+          <th>Details</th>
+          <th>Total Time</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  days.forEach((day) => {
+    const jobs = grouped[day] || [];
+
+    if (jobs.length === 0) {
+      html += `
+        <tr>
+          <td>${day}</td>
+          <td>0</td>
+          <td class="text-muted">—</td>
+          <td>0s</td>
+        </tr>
+      `;
+      return;
+    }
+
+    // Sort jobs by start time
+    jobs.sort((a, b) => (a.requestedAt || 0) - (b.requestedAt || 0));
+
+    let totalTime = 0;
+
+    const details = jobs
+      .map((j) => {
+        const start = new Date(j.requestedAt || j.completedAt);
+        const end = new Date(j.completedAt);
+
+        const duration = Math.max(0, (end - start) / 1000);
+        totalTime += duration;
+
+        return `
+        <div>
+          <strong>${j.teacher}</strong> |
+          ${start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          →
+          ${end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          | ${j.pages}p × ${j.copies}c
+        </div>
+      `;
+      })
+      .join("");
+
+    html += `
+      <tr>
+        <td><strong>${day}</strong></td>
+        <td>${jobs.length}</td>
+        <td>${details}</td>
+        <td><strong>${Math.round(totalTime)}s</strong></td>
+      </tr>
+    `;
+  });
+
+  html += "</tbody></table>";
+
+  container.innerHTML = html;
 }
 
 function rerenderAll() {
@@ -491,31 +865,27 @@ function rerenderAll() {
   const now = new Date();
 
   active = active.filter((j) => {
-    if (!j.scheduledFor) return dueDateFilter === "all"; // ASAP jobs
+    if (!j.scheduledFor) return dueDateFilter === "all";
 
     const due = new Date(j.scheduledFor);
 
     switch (dueDateFilter) {
       case "today":
         return due.toDateString() === now.toDateString();
-
       case "tomorrow": {
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1);
         return due.toDateString() === tomorrow.toDateString();
       }
-
       case "week": {
         const weekEnd = new Date(now);
         weekEnd.setDate(now.getDate() + 7);
         return due >= now && due <= weekEnd;
       }
-
       case "overdue":
         return isOverdue(j);
-
       default:
-        return true; // "all"
+        return true;
     }
   });
 
@@ -525,29 +895,12 @@ function rerenderAll() {
     active = active.filter((j) =>
       j.teacher.toLowerCase().includes(searchQuery),
     );
-
     completed = completed.filter((j) =>
       j.teacher.toLowerCase().includes(searchQuery),
     );
   }
 
-  document.getElementById("jobCount").textContent =
-    `${active.length} job${active.length === 1 ? "" : "s"}`;
-
-  const completedTotalPages = Math.max(
-    1,
-    Math.ceil(completed.length / COMPLETED_PER_PAGE),
-  );
-
-  const completedPageItems = completed.slice(
-    (completedPage - 1) * COMPLETED_PER_PAGE,
-    completedPage * COMPLETED_PER_PAGE,
-  );
-
-  if (searchQuery)
-    active = active.filter((j) =>
-      j.teacher.toLowerCase().includes(searchQuery),
-    );
+  elements.jobCount.textContent = `${active.length} job${active.length === 1 ? "" : "s"}`;
 
   const mode = AppState.settings.priorityMode;
 
@@ -555,25 +908,21 @@ function rerenderAll() {
     active.sort((a, b) => {
       const aOverdue = isOverdue(a) ? 0 : 1;
       const bOverdue = isOverdue(b) ? 0 : 1;
-
       if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-      return a.requestedAt - b.requestedAt; // FIFO tie‑breaker
+      return a.requestedAt - b.requestedAt;
     });
   } else if (mode === "estimate") {
     active.sort((a, b) => {
-      const aTime = calculateJobEstimate(a);
-      const bTime = calculateJobEstimate(b);
-
+      const aTime = a.estimate; // utilizing memoization
+      const bTime = b.estimate;
       if (aTime !== bTime) return aTime - bTime;
       return a.requestedAt - b.requestedAt;
     });
   } else if (mode === "quick") {
-    const QUICK_THRESHOLD = 300; // seconds (5 minutes)
-
+    const QUICK_THRESHOLD = 300;
     active.sort((a, b) => {
-      const aQuick = calculateJobEstimate(a) <= QUICK_THRESHOLD ? 0 : 1;
-      const bQuick = calculateJobEstimate(b) <= QUICK_THRESHOLD ? 0 : 1;
-
+      const aQuick = a.estimate <= QUICK_THRESHOLD ? 0 : 1;
+      const bQuick = b.estimate <= QUICK_THRESHOLD ? 0 : 1;
       if (aQuick !== bQuick) return aQuick - bQuick;
       return a.requestedAt - b.requestedAt;
     });
@@ -584,7 +933,6 @@ function rerenderAll() {
   } else if (mode === "size") {
     active.sort((a, b) => a.pages * a.copies - b.pages * b.copies);
   } else {
-    // FIFO
     active.sort((a, b) => a.requestedAt - b.requestedAt);
   }
 
@@ -595,66 +943,55 @@ function rerenderAll() {
   );
 
   elements.queue.innerHTML = "";
+  const queueFragment = document.createDocumentFragment();
 
   pageItems.forEach((j) => {
     const card = document.createElement("div");
     card.className = "card mb-2 job";
-
-    // ✅ Apply urgency / overdue styling (Active Queue only)
     if (isOverdue(j)) {
       card.classList.add("job-overdue");
     } else if (isUrgent(j)) {
       card.classList.add("job-urgent");
     }
-
     card.innerHTML = generateJobCardHtml(j, false);
-    elements.queue.appendChild(card);
+    queueFragment.appendChild(card);
   });
 
-  if (currentUser.role === "admin") {
-    elements.weeklySummary.innerHTML = "";
+  elements.queue.appendChild(queueFragment);
 
-    completedPageItems.forEach((j) => {
+  if (elements.weeklySummary) {
+    // Sort completed jobs chronologically (newest first)
+    completed.sort(
+      (a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0),
+    );
+
+    // Apply limit based on Intersection Observer
+    const visibleCompleted = completed.slice(0, completedJobsLimit);
+
+    elements.weeklySummary.innerHTML = "";
+    const completedFragment = document.createDocumentFragment();
+
+    visibleCompleted.forEach((j) => {
       const card = document.createElement("div");
       card.className = "card mb-2";
-
       if (wasOverdue(j)) {
         card.classList.add("border-warning", "bg-light");
       }
-
       card.innerHTML = generateJobCardHtml(j, true);
-      elements.weeklySummary.appendChild(card);
+      completedFragment.appendChild(card);
     });
 
-    const pagination = document.createElement("div");
-    pagination.className =
-      "d-flex justify-content-between align-items-center mt-2 small";
+    elements.weeklySummary.appendChild(completedFragment);
 
-    pagination.innerHTML = `
-  <button class="btn btn-sm btn-outline-secondary" ${completedPage === 1 ? "disabled" : ""}>
-    Previous
-  </button>
-  <span class="text-muted">
-    Page ${completedPage} of ${completedTotalPages}
-  </span>
-  <button class="btn btn-sm btn-outline-secondary" ${completedPage === completedTotalPages ? "disabled" : ""}>
-    Next
-  </button>
-`;
-
-    const [prevBtn, , nextBtn] = pagination.children;
-
-    prevBtn.onclick = () => {
-      completedPage--;
-      rerenderAll();
-    };
-
-    nextBtn.onclick = () => {
-      completedPage++;
-      rerenderAll();
-    };
-
-    elements.weeklySummary.appendChild(pagination);
+    // Create and attach sentinel for Infinite Scroll
+    if (completed.length > completedJobsLimit) {
+      const sentinel = document.createElement("div");
+      sentinel.id = "summary-sentinel";
+      sentinel.className = "text-center p-3 text-muted";
+      sentinel.innerHTML = "<em>Loading more...</em>";
+      elements.weeklySummary.appendChild(sentinel);
+      setupInfiniteScroll();
+    }
 
     updateCharts(completed);
   }
@@ -665,13 +1002,11 @@ function rerenderAll() {
 /* ================= GLOBAL METHODS ================= */
 function sendCompletionEmailViaMailto(job) {
   if (!isEmailNotificationEnabled()) return false;
-
   if (!job || !job.teacher) return;
 
   const emailMap = JSON.parse(
     localStorage.getItem(STORAGE_KEYS.TEACHER_EMAILS) || "{}",
   );
-
   const teacherEmail = emailMap[job.teacher];
   if (!teacherEmail) {
     console.warn(`No email address found for ${job.teacher}`);
@@ -679,7 +1014,6 @@ function sendCompletionEmailViaMailto(job) {
   }
 
   const subject = encodeURIComponent("Your print job has been completed");
-
   const body = encodeURIComponent(
     [
       `Dear ${job.teacher},`,
@@ -701,27 +1035,6 @@ function sendCompletionEmailViaMailto(job) {
   window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
 }
 
-function maybeSendCompletionEmail(job) {
-  const enabled = localStorage.getItem(STORAGE_KEYS.EMAIL_ENABLED) === "true";
-  if (!enabled) return;
-
-  const emailMap = JSON.parse(
-    localStorage.getItem(STORAGE_KEYS.TEACHER_EMAILS) || "{}",
-  );
-
-  const email = emailMap[job.teacher];
-  if (!email) {
-    console.warn("No email found for teacher:", job.teacher);
-    return;
-  }
-
-  // ✅ STUB: this is where real email sending plugs in later
-  console.info(
-    `[EMAIL QUEUED] To: ${email}`,
-    `Job #${job.id} has been completed.`,
-  );
-}
-
 window.updateStatus = (id, status) => {
   const job = jobs.get(id);
   if (!job) return;
@@ -729,19 +1042,16 @@ window.updateStatus = (id, status) => {
 
   if (status === "Completed") {
     job.completedAt = Date.now();
-
     if (!isEmailNotificationEnabled()) {
       job.notificationStatus = "disabled";
     } else {
       const sent = sendCompletionEmailViaMailto(job);
       job.notificationStatus = sent ? "sent" : "skipped";
     }
-
-    completedPage = 1;
+    completedJobsLimit = 10; // reset scroll state
   }
 
   AppState.save();
-
   rerenderAll();
 };
 
@@ -755,21 +1065,69 @@ window.deleteJob = (id) => {
 /* ================= INIT ================= */
 document.addEventListener("DOMContentLoaded", () => {
   AppState.load();
+
+  // Sync Modal Inputs with AppState
+  const settingsMap = {
+    timePerPage: elements.setting_timePerPage,
+    loadTime: elements.setting_loadTime,
+    checkTime: elements.setting_checkTime,
+    trimmingTime: elements.setting_trimmingTime,
+    staplingTime: elements.setting_staplingTime,
+  };
+
+  Object.entries(settingsMap).forEach(([key, el]) => {
+    if (el) {
+      // Set initial value from AppState
+      el.value = AppState.settings[key];
+
+      // Save on change
+      el.oninput = () => {
+        AppState.settings[key] = parseInt(el.value) || 0;
+        AppState.save();
+        updateEstimate(); // Recalculate any live estimates on the main form
+      };
+    }
+  });
+
   loadTeacherDropdowns();
 
-  const emailToggle = document.getElementById("emailNotificationsEnabled");
-
-  emailToggle.checked =
+  elements.emailNotificationsEnabled.checked =
     localStorage.getItem(STORAGE_KEYS.EMAIL_ENABLED) === "true";
 
-  document.getElementById("loginBtn").onclick = handleLogin;
-  document.getElementById("logoutBtn").onclick = handleLogout;
+  elements.loginBtn.onclick = handleLogin;
+  elements.logoutBtn.onclick = handleLogout;
+
+  elements.openWeeklyCalendarBtn?.addEventListener("click", () => {
+    const completed = Array.from(jobs.values())
+      .filter((j) => j.status === "Completed")
+      .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+
+    document.querySelector("#weeklyCalendarModal .modal-title").textContent = "Weekly Calendar View";  
+    renderWeeklyCalendar(completed, elements.weeklyCalendarContainer);
+
+    // Show modal (Bootstrap 4)
+    $("#weeklyCalendarModal").modal("show");
+  });
+
+  elements.openGanttViewBtn?.addEventListener("click", () => {
+    const completed = Array.from(jobs.values())
+      .filter((j) => j.status === "Completed")
+      .sort((a, b) => new Date(a.requestedAt) - new Date(b.requestedAt));
+
+    document.querySelector("#weeklyCalendarModal .modal-title").textContent = "Gantt Timeline View";  
+    renderGanttTimeline(completed, elements.weeklyCalendarContainer);
+
+    $("#weeklyCalendarModal").modal("show");
+  });
 
   elements.priorityMode.onchange = () => {
     AppState.settings.priorityMode = elements.priorityMode.value;
     AppState.save();
     rerenderAll();
   };
+
+  elements.completedFile.onchange = (e) =>
+    handleCompletedUpload(e.target.files[0]);
 
   const priorityHelpText = {
     fifo: "Jobs are processed in the order they were submitted (fair and predictable).",
@@ -781,54 +1139,87 @@ document.addEventListener("DOMContentLoaded", () => {
     size: "Jobs are sorted by total size (pages × copies).",
   };
 
-  const helpEl = document.getElementById("priorityHelp");
-
-  // ✅ SAFELY attach without overwriting existing handlers
   elements.priorityMode.addEventListener("change", () => {
     const mode = elements.priorityMode.value;
-
-    if (helpEl && priorityHelpText[mode]) {
-      helpEl.textContent = priorityHelpText[mode];
+    if (elements.priorityHelp && priorityHelpText[mode]) {
+      elements.priorityHelp.textContent = priorityHelpText[mode];
     }
   });
 
-  // ✅ Initialise on page load
-  if (helpEl && priorityHelpText[AppState.settings.priorityMode]) {
-    helpEl.textContent = priorityHelpText[AppState.settings.priorityMode];
+  if (
+    elements.priorityHelp &&
+    priorityHelpText[AppState.settings.priorityMode]
+  ) {
+    elements.priorityHelp.textContent =
+      priorityHelpText[AppState.settings.priorityMode];
   }
 
-  document.getElementById("submitBtn").onclick = () => {
+  // --- EVENT DELEGATION SETUP --- //
+
+  elements.queue.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const id = parseInt(btn.dataset.id);
+
+    if (action === "updateStatus") window.updateStatus(id, btn.dataset.status);
+    else if (action === "deleteJob") window.deleteJob(id);
+    else if (action === "downloadNotes") window.downloadNotes(btn.dataset.ref);
+  });
+
+  elements.weeklySummary.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+
+    if (action === "downloadNotes") {
+      window.downloadNotes(btn.dataset.ref);
+    }
+  });
+
+  elements.dueDateFiltersContainer?.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-filter]");
+    if (!btn) return;
+
+    dueDateFilter = btn.dataset.filter;
+
+    elements.dueDateFiltersContainer
+      .querySelectorAll("button")
+      .forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    currentPage = 1;
+    rerenderAll();
+  });
+
+  // ------------------------------ //
+
+  elements.submitBtn.onclick = () => {
+    elements.submitBtn.disabled = true;
     const scheduledValue = elements.scheduledFor.value;
 
     if (scheduledValue) {
       const scheduledTime = new Date(scheduledValue).getTime();
       const now = Date.now();
-
       if (scheduledTime < now) {
         alert("You cannot schedule a print job in the past.");
+        elements.submitBtn.disabled = false;
         return;
       }
     }
 
-    document.querySelectorAll("#dueDateFilters button").forEach((btn) => {
-      btn.onclick = () => {
-        dueDateFilter = btn.dataset.filter;
+    if (!elements.teacherSelect.value) {
+      alert("Select teacher");
+      elements.submitBtn.disabled = false;
+      return;
+    }
 
-        // Visual active state
-        document
-          .querySelectorAll("#dueDateFilters button")
-          .forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-
-        currentPage = 1; // reset pagination
-        rerenderAll();
-      };
-    });
-
-    if (!elements.teacherSelect.value) return alert("Select teacher");
     idCounter++;
-    jobs.set(idCounter, {
+    const reference = generateJobReference();
+
+    const newJob = {
       id: idCounter,
+      reference,
       teacher: elements.teacherSelect.value,
       authoriser: elements.authTeacherSelect.value,
       pages: +elements.pages.value,
@@ -840,7 +1231,17 @@ document.addEventListener("DOMContentLoaded", () => {
       status: "Queued",
       requestedAt: Date.now(),
       completedAt: null,
-    });
+    };
+
+    // Memoize on creation
+    newJob.estimate = calculateJobEstimate(newJob);
+    jobs.set(idCounter, newJob);
+
+    const notesText = elements.jobNotes.value.trim();
+    if (notesText) {
+      saveJobNotes(reference, notesText);
+    }
+
     AppState.save();
 
     if (elements.priorityMode) {
@@ -848,36 +1249,75 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     rerenderAll();
+    elements.jobNotes.value = "";
+    elements.submitBtn.disabled = false;
+
+    alert(`Job ${reference} has been added to the queue.`);
   };
 
-  document.getElementById("teacherEmailFile").onchange = (e) =>
-    handleTeacherEmailUpload(e.target.files[0]);
+  /**
+   * Unified Import: Handles "Name" or "Name;email@example.com"
+   */
+  const handleUnifiedTeacherImport = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
 
-  emailToggle.onchange = () => {
-    localStorage.setItem(
-      STORAGE_KEYS.EMAIL_ENABLED,
-      emailToggle.checked.toString(),
-    );
+    reader.onload = (e) => {
+      const lines = e.target.result
+        .split(/\r?\n/)
+        .filter((line) => line.trim());
+      const teacherList = [];
+      const emailMap =
+        JSON.parse(localStorage.getItem(STORAGE_KEYS.TEACHER_EMAILS)) || {};
+
+      lines.forEach((line) => {
+        // Split by semicolon to check for email
+        const [name, email] = line.split(";").map((item) => item.trim());
+
+        if (name) {
+          teacherList.push(name);
+          if (email) {
+            emailMap[name] = email;
+          }
+        }
+      });
+
+      // Save both sets of data
+      localStorage.setItem(STORAGE_KEYS.TEACHERS, JSON.stringify(teacherList));
+      localStorage.setItem(
+        STORAGE_KEYS.TEACHER_EMAILS,
+        JSON.stringify(emailMap),
+      );
+
+      // Refresh UI
+      loadTeacherDropdowns();
+      alert(
+        `Imported ${teacherList.length} teachers and updated email records.`,
+      );
+    };
+    reader.readAsText(file);
   };
 
-  document.getElementById("saveTodoBtn").onclick = () => {
+  // Register the listener
+  elements.teacherFile.onchange = (e) =>
+    handleUnifiedTeacherImport(e.target.files[0]);
+
+  elements.saveTodoBtn.onclick = () => {
     const todoJobs = Array.from(jobs.values()).filter(
       (j) => j.status !== "Completed",
     );
-
     exportJobsToFile(todoJobs, "todo.txt");
   };
 
-  document.getElementById("saveCompletedBtn").onclick = () => {
+  elements.saveCompletedBtn.onclick = () => {
     const completedJobs = Array.from(jobs.values()).filter(
       (j) => j.status === "Completed",
     );
-
     exportJobsToFile(completedJobs, "completed.txt");
   };
 
-  document.getElementById("clearQueueBtn").onclick = () => {
-    completedPage = 1;
+  elements.clearQueueBtn.onclick = () => {
+    completedJobsLimit = 10;
     if (
       !confirm(
         "This will permanently delete ALL jobs (queued and completed). Continue?",
@@ -885,36 +1325,27 @@ document.addEventListener("DOMContentLoaded", () => {
     ) {
       return;
     }
-
-    jobs.clear(); // Clear the Map (active + completed)
-    idCounter = 0; // Reset ID counter
-    AppState.save(); // Persist empty state to localStorage
-    rerenderAll(); // Refresh UI
+    jobs.clear();
+    idCounter = 0;
+    AppState.save();
+    rerenderAll();
   };
 
   elements.todoFile.onchange = (e) => handleTodoUpload(e.target.files[0]);
 
-  elements.teacherFile.onchange = (e) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      localStorage.setItem(
-        STORAGE_KEYS.TEACHERS,
-        JSON.stringify(ev.target.result.split(/\r?\n/).filter(Boolean)),
-      );
-      loadTeacherDropdowns();
-    };
-    reader.readAsText(e.target.files[0]);
-  };
-
-  elements.searchInput.oninput = (e) => {
+  // Debounced search input
+  elements.searchInput.oninput = debounce((e) => {
     searchQuery = e.target.value.toLowerCase();
     currentPage = 1;
+    completedJobsLimit = 10; // reset infinite scroll on search
     rerenderAll();
-  };
+  }, 250);
+
   elements.prevPageBtn.onclick = () => {
     currentPage--;
     rerenderAll();
   };
+
   elements.nextPageBtn.onclick = () => {
     currentPage++;
     rerenderAll();
@@ -927,6 +1358,11 @@ document.addEventListener("DOMContentLoaded", () => {
     elements.sides,
     elements.additionalTask,
   ].forEach((el) => (el.oninput = updateEstimate));
+
   updateEstimate();
   rerenderAll();
+});
+
+$("#weeklyCalendarModal").on("hidden.bs.modal", function () {
+  elements.weeklyCalendarContainer.innerHTML = "";
 });

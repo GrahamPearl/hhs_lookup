@@ -20,8 +20,19 @@
         border-radius: 8px;
         border: none;
       }
-      .table-responsive {
-        border-radius: 8px;
+
+      /* Priority Status Styles */
+      .job-urgent {
+        border-left: 5px solid #fd7e14 !important;
+        background-color: #fffaf5;
+      }
+      .job-overdue {
+        border-left: 5px solid #dc3545 !important;
+        background-color: #fff5f5;
+      }
+
+      #summary-sentinel {
+        min-height: 20px;
       }
     </style>
   </head>
@@ -37,302 +48,234 @@
       <div id="requestForm" class="card shadow-sm mb-3">
         <div class="card-body">
           <h5 class="font-weight-bold mb-3">New Print Request</h5>
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="teacherSelect">Teacher</label>
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label>Teacher</label>
               <select id="teacherSelect" class="form-control" disabled>
-                <option value="">Loading list...</option>
+                <option value="">Loading teachers...</option>
               </select>
             </div>
-            <div class="form-group col-md-6">
-              <label for="authTeacherSelect">Authoriser</label>
+            <div class="col-md-6 form-group">
+              <label>Authoriser</label>
               <select id="authTeacherSelect" class="form-control" disabled>
-                <option value="">None</option>
+                <option value="">— Select —</option>
               </select>
             </div>
           </div>
-          <div class="form-row small">
-            <div class="form-group col-md-3">
-              <label>Pages</label
-              ><input type="number" id="pages" class="form-control" value="4" />
+
+          <div class="row">
+            <div class="col-md-3 form-group">
+              <label>Pages</label>
+              <input
+                type="number"
+                id="pages"
+                class="form-control"
+                value="1"
+                min="1"
+              />
             </div>
-            <div class="form-group col-md-3">
-              <label>Copies</label
-              ><input
+            <div class="col-md-3 form-group">
+              <label>Copies</label>
+              <input
                 type="number"
                 id="copies"
                 class="form-control"
-                value="50"
+                value="1"
+                min="1"
               />
             </div>
-            <div class="form-group col-md-3">
-              <label>Type</label
-              ><select id="printType" class="form-control">
+            <div class="col-md-3 form-group">
+              <label>Type</label>
+              <select id="printType" class="form-control">
                 <option value="normal">Normal</option>
                 <option value="twoinone">2-in-1</option>
               </select>
             </div>
-            <div class="form-group col-md-3">
-              <label>Sides</label
-              ><select id="sides" class="form-control">
+            <div class="col-md-3 form-group">
+              <label>Sides</label>
+              <select id="sides" class="form-control">
                 <option value="single">Single</option>
                 <option value="double">Double</option>
               </select>
             </div>
           </div>
-          <div class="form-row small">
-            <div class="form-group col-md-6">
-              <label>Task</label
-              ><select id="additionalTask" class="form-control">
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label>Finishing Tasks</label>
+              <select id="additionalTask" class="form-control">
                 <option value="none">None</option>
-                <option value="trimming">Trimming</option>
                 <option value="stapling">Stapling</option>
-                <option value="trimming_stapling">Both</option>
+                <option value="trimming">Trimming</option>
+                <option value="stapling,trimming">Both</option>
               </select>
             </div>
-            <div class="form-group col-md-6">
-              <label>Required by</label
-              ><input
+            <div class="col-md-6 form-group">
+              <label>Needed By</label>
+              <input
                 type="datetime-local"
                 id="scheduledFor"
                 class="form-control"
               />
             </div>
           </div>
-          <div class="alert alert-info py-2 mb-3 small">
-            Effective: <span id="effectivePages">0</span> | Est:
-            <span id="estimate">0</span>s
+
+          <div class="form-group">
+            <label>Job Notes</label>
+            <textarea
+              id="jobNotes"
+              class="form-control"
+              rows="2"
+              placeholder="Specific instructions..."
+            ></textarea>
           </div>
-          <button id="submitBtn" class="btn btn-primary btn-block">
-            Queue Print Job
+
+          <div
+            class="d-flex justify-content-between align-items-center bg-light p-3 rounded"
+          >
+            <div class="small">
+              Estimate: <strong><span id="estimate">0</span>s</strong> | Total
+              Volume: <strong><span id="effectivePages">0</span></strong> sheets
+            </div>
+            <button id="submitBtn" class="btn btn-primary">Submit Job</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <input
+          type="text"
+          id="searchInput"
+          class="form-control mb-2"
+          placeholder="Search by teacher name..."
+        />
+        <div id="dueDateFilters" class="btn-group btn-group-sm w-100">
+          <button class="btn btn-outline-secondary active" data-filter="all">
+            All
+          </button>
+          <button class="btn btn-outline-secondary" data-filter="today">
+            Today
+          </button>
+          <button class="btn btn-outline-secondary" data-filter="tomorrow">
+            Tomorrow
+          </button>
+          <button class="btn btn-outline-secondary" data-filter="week">
+            Next 7 Days
+          </button>
+          <button class="btn btn-outline-danger" data-filter="overdue">
+            Overdue
           </button>
         </div>
       </div>
 
-      
-
       <div class="card shadow-sm mb-3">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="font-weight-bold mb-0">
-              📋 Active Queue
-              <span id="jobCount" class="badge badge-secondary">0 jobs</span>
-            </h5>
-            <input
-              type="text"
-              id="searchInput"
-              class="form-control form-control-sm w-50"
-              placeholder="Search teacher..."
-            />
+          <h5 class="font-weight-bold mb-3">
+            Active Queue (<span id="jobCount">0</span>)
+          </h5>
+          <div id="queue">
+            <p class="text-muted small">Queue is empty.</p>
           </div>
-                <div class="btn-group btn-group-sm mb-3" id="dueDateFilters">
-  <button class="btn btn-outline-secondary active" data-filter="all">All</button>
-  <button class="btn btn-outline-secondary" data-filter="today">Today</button>
-  <button class="btn btn-outline-secondary" data-filter="tomorrow">Tomorrow</button>
-  <button class="btn btn-outline-secondary" data-filter="week">This Week</button>
-  <button class="btn btn-outline-secondary" data-filter="overdue">Overdue</button>
-</div>
-          <div id="queue"></div>
-          <div
-            class="d-flex justify-content-between align-items-center mt-3 small"
-          >
-            <button id="prevPageBtn" class="btn btn-sm btn-outline-secondary">
+
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <button id="prevPageBtn" class="btn btn-sm btn-outline-primary">
               Previous
             </button>
-            <span id="pageInfo" class="text-muted">Page 1 of 1</span>
-            <button id="nextPageBtn" class="btn btn-sm btn-outline-secondary">
+            <span id="pageInfo" class="small text-muted">Page 1 of 1</span>
+            <button id="nextPageBtn" class="btn btn-sm btn-outline-primary">
               Next
             </button>
           </div>
-          <div class="small mb-2">
-            <span class="badge badge-warning mr-2">Urgent</span> Due within 3
-            hours <span class="badge badge-danger ml-3 mr-2">Overdue</span> Past
-            due time
-          </div>
         </div>
       </div>
 
-      <hr class="my-4" />
-
-      <div id="loginCard" class="card shadow-sm mb-3 border-info">
+      <div id="loginCard" class="card shadow-sm mb-3">
         <div class="card-body">
-          <h6 class="text-info font-weight-bold">Admin Login</h6>
-          <div class="form-row mt-2">
-            <div class="col-md-5 mb-2">
-              <input
-                type="email"
-                id="emailInput"
-                class="form-control form-control-sm"
-                placeholder="Email"
-              />
-            </div>
-            <div class="col-md-4 mb-2">
-              <input
-                type="password"
-                id="passwordInput"
-                class="form-control form-control-sm"
-                placeholder="Password"
-              />
-            </div>
-            <div class="col-md-3">
-              <button id="loginBtn" class="btn btn-info btn-sm btn-block">
-                Sign In
-              </button>
-            </div>
-          </div>
-          <div id="loginError" class="text-danger small mt-2 hidden">
-            Invalid credentials.
-          </div>
-        </div>
-      </div>
-
-      <div id="adminSettings" class="card shadow-sm mb-3 admin-only hidden">
-        <div class="card-body">
-          <h5 class="text-warning font-weight-bold">⚙️ Settings & Files</h5>
-          <hr />
-
-          <div class="form-group small">
-            <div class="custom-control custom-switch">
-              <input
-                type="checkbox"
-                class="custom-control-input"
-                id="emailNotificationsEnabled"
-              />
-              <label
-                class="custom-control-label"
-                for="emailNotificationsEnabled"
-              >
-                Send email to teacher when job is completed
-              </label>
-            </div>
-          </div>
-          <div class="form-row small">
-            <div class="form-group col-md-6">
-              <label>Priority</label
-              ><select id="priorityMode" class="form-control form-control-sm">
-                <option
-                  value="fifo"
-                  title="Processes jobs in the order they were submitted (fair and predictable)"
-                >
-                  FIFO (First In, First Out)
-                </option>
-
-                <option
-                  value="due"
-                  title="Sorts jobs by earliest required-by date first"
-                >
-                  Due Time
-                </option>
-
-                <option
-                  value="overdue"
-                  title="Shows overdue jobs first, then the rest"
-                >
-                  Overdue First
-                </option>
-
-                <option
-                  value="estimate"
-                  title="Sorts by shortest estimated print duration first"
-                >
-                  Estimated Print Time
-                </option>
-
-                <option
-                  value="quick"
-                  title="Prioritises very small, fast jobs to clear the queue quickly"
-                >
-                  Quick Jobs First
-                </option>
-
-                <option
-                  value="size"
-                  title="Sorts by total job size (pages × copies)"
-                >
-                  Job Size (Pages × Copies)
-                </option>
-              </select>
-
-              <small id="priorityHelp" class="form-text text-muted">
-                Jobs are processed in the order they are submitted.
-              </small>
-            </div>
-            <div class="form-group col-md-6">
-              <label>Secs/Page</label
-              ><input
-                type="number"
-                id="timePerPage"
-                class="form-control form-control-sm"
-                step="0.1"
-              />
-            </div>
-          </div>
-          <div class="form-row small">
-            <div class="form-group col-md-3">
-              <label>Load(s)</label
-              ><input
-                type="number"
-                id="loadTime"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="form-group col-md-3">
-              <label>Check(s)</label
-              ><input
-                type="number"
-                id="checkTime"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="form-group col-md-3">
-              <label>Trim(s)</label
-              ><input
-                type="number"
-                id="trimmingTime"
-                class="form-control form-control-sm"
-              />
-            </div>
-            <div class="form-group col-md-3">
-              <label>Staple(s)</label
-              ><input
-                type="number"
-                id="staplingTime"
-                class="form-control form-control-sm"
-              />
-            </div>
-          </div>
-          <hr />
-          <div class="form-group small">
-            <label>Teacher List (.txt)</label
-            ><input
-              type="file"
-              id="teacherFile"
-              class="form-control-file"
-              accept=".txt"
-            />
-          </div>
-          <div class="form-group small">
-            <label>Teacher Emails (.txt)</label>
+          <h6 class="font-weight-bold mb-2">Admin Login</h6>
+          <div class="input-group input-group-sm mb-2">
             <input
-              type="file"
-              id="teacherEmailFile"
-              class="form-control-file"
-              accept=".txt"
+              type="email"
+              id="emailInput"
+              class="form-control"
+              placeholder="Email"
             />
-            <small class="form-text text-muted">
-              One per line: <code>Teacher Name; email@example.com</code>
-            </small>
-          </div>
-          <div class="form-group small">
-            <label>Import To-Do (.txt)</label
-            ><input
-              type="file"
-              id="todoFile"
-              class="form-control-file"
-              accept=".txt"
+            <input
+              type="password"
+              id="passwordInput"
+              class="form-control"
+              placeholder="Password"
             />
+            <div class="input-group-append">
+              <button id="loginBtn" class="btn btn-dark">Login</button>
+            </div>
           </div>
-          <div class="btn-group btn-group-sm w-100">
+        </div>
+      </div>
+
+      <div id="adminSettings" class="card shadow-sm mb-3 hidden">
+        <div class="card-body">
+          <h5 class="font-weight-bold">Settings & Management</h5>
+
+          <div class="form-group mt-3">
+            <label>Priority Mode</label>
+            <select id="priorityMode" class="form-control">
+              <option value="fifo">FIFO (Order Received)</option>
+              <option value="due">Due Date (Earliest First)</option>
+              <option value="overdue">Overdue First</option>
+              <option value="estimate">Shortest Job First</option>
+              <option value="quick">Quick Clear (Small Jobs)</option>
+              <option value="size">Total Volume</option>
+            </select>
+            <small id="priorityHelp" class="form-text text-muted mb-2"></small>
+          </div>
+
+          <div class="form-check mb-3">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="emailNotificationsEnabled"
+            />
+            <label class="form-check-label"
+              >Enable mailto: completion emails</label
+            >
+          </div>
+
+          <div class="row small mb-3">
+            <div class="col-4">
+              <label>Import Teachers & Emails (.txt)</label>
+              <input type="file" id="teacherFile" class="form-control-file" />
+              <small class="text-muted"
+                >Format: <code>Teacher Name</code> OR
+                <code>Teacher Name; email@school.com</code></small
+              >
+            </div>
+            <div class="col-4">
+              <label>Import To-Do (.txt)</label>
+              <input
+                type="file"
+                id="todoFile"
+                class="form-control-file"
+                accept=".txt"
+              />
+            </div>
+            <div class="col-4">
+              <label class="font-weight-bold"
+                >Import History (Completed Jobs)</label
+              >
+              <input
+                type="file"
+                id="completedFile"
+                class="form-control-file"
+                accept=".txt"
+              />
+              <small class="text-muted"
+                >Importing here will mark all jobs in the file as
+                "Completed".</small
+              >
+            </div>
+          </div>
+
+          <div class="btn-group btn-group-sm w-100 mt-2">
             <button id="saveTodoBtn" class="btn btn-outline-secondary">
               Export To-Do
             </button>
@@ -344,36 +287,171 @@
             </button>
           </div>
         </div>
+        <div class="mt-3">
+          <button
+            type="button"
+            class="btn btn-sm btn-info btn-block"
+            data-toggle="modal"
+            data-target="#timeSettingsModal"
+          >
+            ⚙️ Adjust Time Calibration
+          </button>
+        </div>
       </div>
 
       <div id="weeklyReportControls" class="card shadow-sm mb-3 hidden">
         <div class="card-body">
-          <h5 class="font-weight-bold">📊 Weekly Summary & Analytics</h5>
+          <h5 class="font-weight-bold">📊 Analytics & History</h5>
 
-          <div class="row mt-4">
-            <div class="col-md-6">
-              <h6 class="small font-weight-bold text-center">
-                Total Pages by Teacher
-              </h6>
-              <canvas id="teacherChart"></canvas>
-            </div>
-            <div class="col-md-6">
-              <h6 class="small font-weight-bold text-center">
-                Job Timeline (Time of Day)
-              </h6>
-              <canvas id="timeChart"></canvas>
-            </div>
+          <button
+            id="openWeeklyCalendarBtn"
+            class="btn btn-outline-primary btn-sm"
+          >
+            Weekly Calendar View
+          </button>
+
+          <button
+            id="openGanttViewBtn"
+            class="btn btn-outline-secondary btn-sm"
+          >
+            Gantt Timeline View
+          </button>
+
+          <div class="row mt-3">
+            <div class="col-md-6"><canvas id="teacherChart"></canvas></div>
+            <div class="col-md-6"><canvas id="timeChart"></canvas></div>
           </div>
-
-          <div
-            id="weeklySummaryContent"
-            class="mt-4 small table-responsive"
-          ></div>
+          <hr />
+          <h6 class="font-weight-bold">
+            Completed Job History (Infinite Scroll)
+          </h6>
+          <div id="weeklySummaryContent" class="mt-3"></div>
         </div>
       </div>
     </div>
 
+    <script src="./jquery-3.5.1.slim.min.js"></script>
+    <script src="./bootstrap.bundle.min.js"></script>
     <script src="./chart.js"></script>
     <script src="app.js" defer></script>
+
+    <div class="modal fade" id="weeklyCalendarModal" tabindex="-1">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Weekly Calendar View</h5>
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div id="weeklyCalendarContainer"></div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-dismiss="modal">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="timeSettingsModal"
+      tabindex="-1"
+      aria-labelledby="timeSettingsModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-info text-white">
+            <h5 class="modal-title" id="timeSettingsModalLabel">
+              Time Calibration Settings
+            </h5>
+            <button
+              type="button"
+              class="close text-white"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted mb-4">
+              These values control the estimated seconds calculated for every
+              new print request.
+            </p>
+
+            <div class="form-group row">
+              <label class="col-sm-7 col-form-label">Seconds Per Page</label>
+              <div class="col-sm-5">
+                <input
+                  type="number"
+                  id="setting_timePerPage"
+                  class="form-control"
+                />
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="col-sm-7 col-form-label"
+                >Base Load Time (Sec)</label
+              >
+              <div class="col-sm-5">
+                <input
+                  type="number"
+                  id="setting_loadTime"
+                  class="form-control"
+                />
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="col-sm-7 col-form-label"
+                >Quality Check Time (Sec)</label
+              >
+              <div class="col-sm-5">
+                <input
+                  type="number"
+                  id="setting_checkTime"
+                  class="form-control"
+                />
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="col-sm-7 col-form-label">Trimming Time (Sec)</label>
+              <div class="col-sm-5">
+                <input
+                  type="number"
+                  id="setting_trimmingTime"
+                  class="form-control"
+                />
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="col-sm-7 col-form-label">Stapling Time (Sec)</label>
+              <div class="col-sm-5">
+                <input
+                  type="number"
+                  id="setting_staplingTime"
+                  class="form-control"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              Close & Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

@@ -47,6 +47,22 @@
 .job-completed:hover { background: #dee2e6; }
 .job-completed .job-teacher { color: #6c757d; }
 
+/* Enhanced Priority Indicators */
+.job-urgent {
+  border-left: 5px solid #fd7e14 !important; /* Orange */
+  background-color: #fffaf5 !important;
+}
+
+.job-overdue {
+  border-left: 5px solid #dc3545 !important; /* Red */
+  background-color: #fff5f5 !important;
+}
+
+/* Ensure text remains dark on priority backgrounds */
+.job-urgent .job-teacher, .job-overdue .job-teacher {
+  color: #212529;
+}
+
 /* ===== STATUS BADGES ===== */
 .badge-queued { background: #f8f9fa; color: #6c757d; }
 .badge-in-progress { background: #cce5ff; color: #004085; }
@@ -84,4 +100,49 @@
   color: #6c757d;
   padding: 2rem 0;
   font-size: 0.9rem;
+}
+
+#jobNotes {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;        /* allow vertical resize only */
+  min-height: 120px;       /* reasonable default height */
+}
+
+/* ===== MODAL STYLES ===== */
+#timeSettingsModal .modal-header {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+#timeSettingsModal .modal-footer {
+  border-top: 1px solid #dee2e6;
+}
+
+/* Ensure numeric inputs are consistent */
+#timeSettingsModal .form-control {
+  text-align: right;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+/* Small labels for the calibration rows */
+#timeSettingsModal .col-form-label {
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+/* Infinite Scroll Sentinel */
+#summary-sentinel {
+  height: 20px;
+  margin-top: 10px;
+  visibility: hidden;
+}
+
+/* Loading state for history */
+.history-loading {
+  text-align: center;
+  padding: 1rem;
+  color: #6c757d;
+  font-style: italic;
 }
