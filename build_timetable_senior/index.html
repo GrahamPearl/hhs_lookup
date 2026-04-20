@@ -5,22 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Senior Management Timetable Administration</title>
 
-  <!-- Bootstrap CSS (local, consistent with existing Timetable Builder structure) -->
   <link href="./../css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
-
-  <!-- Font Awesome -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  />
-
-  <!-- Custom CSS (optional; can reuse existing styles.css if present) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="css/styles.css" />
 
   <style>
-    /* Minimal scaffolding helpers (keep light; styling can be moved to styles.css later) */
     .role-badge { letter-spacing: .02em; }
     .panel-hint { font-size: .85rem; color: #6c757d; }
     .teacher-chip { display:inline-flex; align-items:center; gap:.35rem; padding:.25rem .5rem; border:1px solid #dee2e6; border-radius: 999px; margin:.15rem .25rem 0 0; }
@@ -30,12 +19,34 @@
     .list-scroll { max-height: 260px; overflow:auto; }
     .sticky-actions { position: sticky; bottom: 0; background: #fff; padding-top: .5rem; }
     .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #f1f3f5; border: 1px solid #e9ecef; border-bottom-width: 2px; padding: .05rem .35rem; border-radius: .35rem; }
+
+    /* App shell to remove page-level scrolling */
+    :root { --topbar-h: 72px; }
+    .app-shell { height: calc(100vh - var(--topbar-h)); overflow: hidden; }
+    .scroll-pane { height: calc(100vh - var(--topbar-h) - 1.25rem); overflow-y: auto; overscroll-behavior: contain; }
+
+    /* Slim left nav */
+    .side-nav { position: sticky; top: calc(var(--topbar-h) - 56px); }
+    .side-nav .nav-link { padding: .55rem .6rem; text-align: center; }
+    .side-nav .nav-link i { font-size: 1rem; }
+    .side-nav .nav-link small { display:block; font-size: .65rem; line-height: 1.1; }
+
+    @media (max-width: 767.98px) {
+      .app-shell { height: auto; overflow: visible; }
+      .scroll-pane { height: auto; overflow: visible; }
+      .side-nav { position: static; }
+      .side-nav .nav-link { text-align: left; }
+      .side-nav .nav-link small { display:inline; margin-left:.4rem; font-size:.8rem; }
+    }
+
+    /* Command palette */
+    .cmd-item { cursor: pointer; }
+    .cmd-item.active { background: #e9ecef; }
   </style>
 </head>
 
 <body class="bg-light">
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary" style="height: var(--topbar-h);">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">
         <i class="fa-solid fa-calendar-days me-2"></i>
@@ -43,430 +54,469 @@
       </a>
 
       <div class="d-flex align-items-center gap-2 ms-auto">
+        <button id="cmdPaletteBtn" class="btn btn-sm btn-outline-light" type="button" aria-label="Command Palette" title="Command Palette (Ctrl/⌘+K)">
+          <i class="fa-solid fa-magnifying-glass me-1"></i>
+          <span class="d-none d-md-inline">Commands</span>
+          <span class="ms-1 badge bg-light text-dark d-none d-md-inline">Ctrl/⌘ K</span>
+        </button>
+
         <span class="badge bg-warning text-dark role-badge">
           <i class="fa-solid fa-shield-halved me-1"></i>
           Senior Management Mode
         </span>
+
         <button id="helpBtn" class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="modal" data-bs-target="#helpModal">
-          <i class="fa-solid fa-circle-info me-1"></i>Help
+          <i class="fa-solid fa-circle-info me-1"></i>
+          <span class="d-none d-md-inline">Help</span>
         </button>
       </div>
     </div>
   </nav>
 
-  <!-- Main content -->
-  <main class="container mb-5">
+  <main class="container-fluid pt-3 app-shell">
     <div class="row g-3">
 
-      <!-- LEFT COLUMN: Senior Management Controls -->
-      <div class="col-12 col-lg-4">
+      <!-- COLUMN 1: Slim Sticky Nav -->
+      <div class="col-12 col-md-1 col-lg-1">
+        <nav class="nav nav-pills flex-md-column gap-1 side-nav" id="sideNav" aria-label="Section navigation">
+          <a class="nav-link active" href="#section-find" data-target="section-find" title="Find Teacher">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <small>Find</small>
+          </a>
+          <a class="nav-link" href="#section-dashboard" data-target="section-dashboard" title="Completeness Dashboard">
+            <i class="fa-solid fa-gauge-high"></i>
+            <small>Score</small>
+          </a>
+          <a class="nav-link" href="#section-bulk" data-target="section-bulk" title="Bulk Upload">
+            <i class="fa-solid fa-folder-open"></i>
+            <small>Bulk</small>
+          </a>
+          <a class="nav-link" href="#section-identity" data-target="section-identity" title="Identity Tools">
+            <i class="fa-solid fa-id-card"></i>
+            <small>Names</small>
+          </a>
+          <a class="nav-link" href="#section-dnd" data-target="section-dnd" title="Bulk DND">
+            <i class="fa-solid fa-ban"></i>
+            <small>DND</small>
+          </a>
+          <a class="nav-link" href="#section-autofill" data-target="section-autofill" title="Auto-fill">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <small>Fill</small>
+          </a>
+          <a class="nav-link" href="#section-setup" data-target="section-setup" title="Setup Timetable">
+            <i class="fa-solid fa-table-cells-large"></i>
+            <small>Setup</small>
+          </a>
+          <a class="nav-link" href="#section-data" data-target="section-data" title="Data & Storage">
+            <i class="fa-solid fa-database"></i>
+            <small>Data</small>
+          </a>
+        </nav>
+      </div>
 
-        <!-- QUICK SEARCH + SELECT (Enhanced) -->
-        <div class="card shadow-sm mb-3">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <strong><i class="fa-solid fa-magnifying-glass me-2"></i>Find Teacher</strong>
-            <small class="text-muted">Partial match</small>
-          </div>
-          <div class="card-body">
-            <label for="teacherSearchInput" class="form-label">Search teacher timetables</label>
-            <input
-              type="text"
-              id="teacherSearchInput"
-              class="form-control"
-              placeholder="Type part of a name (e.g. 'Pearl', 'Smith')"
-              autocomplete="off"
-            />
-            <div class="panel-hint mt-2">
-              Tip: Use <span class="kbd">↑</span>/<span class="kbd">↓</span> to navigate results and <span class="kbd">Enter</span> to load (planned).
-            </div>
+      <!-- COLUMN 2: Actions (scrollable) -->
+      <div class="col-12 col-md-4 col-lg-4">
+        <div class="scroll-pane pe-md-2" id="actionsScroll" tabindex="0">
 
-            <hr class="my-3" />
-
-            <label for="teacherSelect" class="form-label">Saved timetables</label>
-            <select id="teacherSelect" class="form-select">
-              <option value="">-- No saved timetables yet --</option>
-            </select>
-
-            <div class="mt-2 panel-hint">
-              Loaded teacher: <span id="currentTeacherLabel" class="fw-semibold">None</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- BULK UPLOAD (Folder) -->
-        <div class="card shadow-sm mb-3">
-          <div class="card-header">
-            <strong><i class="fa-solid fa-folder-open me-2"></i>Bulk Upload</strong>
-          </div>
-          <div class="card-body">
-            <p class="panel-hint mb-2">
-              Import multiple teacher timetable <code>.json</code> files in one action by selecting a folder.
-            </p>
-
-            <div class="d-grid gap-2">
-              <button id="bulkFolderBtn" class="btn btn-outline-primary" type="button">
-                <i class="fa-solid fa-upload me-1"></i>
-                Select Folder & Import
-              </button>
-              <input id="bulkFolderInput" type="file" class="d-none" webkitdirectory directory multiple />
-
-              <div class="alert alert-light border mb-0" role="status">
-                <div class="small text-muted">Bulk import status</div>
-                <div id="bulkStatus" class="fw-semibold">No import performed yet.</div>
-                <div id="bulkStatusDetail" class="small text-muted"></div>
+          <!-- FIND -->
+          <section id="section-find">
+            <div class="card shadow-sm mb-3">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <strong><i class="fa-solid fa-magnifying-glass me-2"></i>Find Teacher</strong>
+                <small class="text-muted">Partial match</small>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TEACHER IDENTITY TOOLS -->
-        <div class="card shadow-sm mb-3">
-          <div class="card-header">
-            <strong><i class="fa-solid fa-id-card me-2"></i>Teacher Identity Tools</strong>
-          </div>
-          <div class="card-body">
-            <label for="teacherNameInput" class="form-label">Teacher name (display / key)</label>
-            <input
-              type="text"
-              id="teacherNameInput"
-              class="form-control"
-              placeholder="e.g. Mr G Pearl"
-            />
-            <div class="panel-hint mt-2">
-              This name is used to store the timetable. Senior Management can rename and normalise names.
-            </div>
-
-            <div class="d-grid gap-2 mt-3">
-              <button id="renameTeacherBtn" class="btn btn-outline-secondary" type="button">
-                <i class="fa-solid fa-pen-to-square me-1"></i>
-                Rename Teacher (Replace)
-              </button>
-              <button id="removeTitlesBtn" class="btn btn-outline-warning" type="button">
-                <i class="fa-solid fa-eraser me-1"></i>
-                Bulk Remove Titles (Mr/Mrs/Miss/Ms/Dr)
-              </button>
-            </div>
-
-            <hr class="my-3" />
-
-            <!-- Teacher-level policy: Last Resort -->
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" role="switch" id="lastResortSwitch">
-              <label class="form-check-label" for="lastResortSwitch">
-                Mark as <strong>Last Resort</strong>
-              </label>
-            </div>
-            <div class="panel-hint mt-1">
-              Last Resort teachers are only used for cover when no standard eligible teachers exist (enforced in Cover Dashboard).
-            </div>
-
-            <div class="mt-3">
-              <div class="small text-muted">Policy badges (preview)</div>
-              <div id="policyBadges" class="mt-1">
-                <span class="teacher-chip chip-muted"><i class="fa-regular fa-circle"></i>Normal</span>
-                <span class="teacher-chip chip-warning"><i class="fa-solid fa-triangle-exclamation"></i>Last Resort</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- DND BULK MARKING -->
-        <div class="card shadow-sm mb-3">
-          <div class="card-header">
-            <strong><i class="fa-solid fa-ban me-2"></i>Bulk DND (Do Not Disturb)</strong>
-          </div>
-          <div class="card-body">
-            <p class="panel-hint mb-2">
-              Select a day and period to list teachers with meetings in that slot. Check teachers to mark/unmark as DND.
-            </p>
-
-            <div class="row g-2">
-              <div class="col-6">
-                <label for="dndDaySelect" class="form-label">Day</label>
-                <select id="dndDaySelect" class="form-select">
-                  <option value="0">Day 1</option>
-                  <option value="1">Day 2</option>
-                  <option value="2">Day 3</option>
-                  <option value="3">Day 4</option>
-                  <option value="4">Day 5</option>
+              <div class="card-body">
+                <label for="teacherSearchInput" class="form-label">Search teacher timetables</label>
+                <input type="text" id="teacherSearchInput" class="form-control" placeholder="Type part of a name (e.g. 'Pearl', 'Smith')" autocomplete="off" />
+                <div class="panel-hint mt-2">
+                  Tip: Use <span class="kbd">Enter</span> to load when only one match remains.
+                </div>
+                <hr class="my-3" />
+                <label for="teacherSelect" class="form-label">Saved timetables</label>
+                <select id="teacherSelect" class="form-select">
+                  <option value="">-- No saved timetables yet --</option>
                 </select>
-              </div>
-              <div class="col-6">
-                <label for="dndPeriodSelect" class="form-label">Period</label>
-                <select id="dndPeriodSelect" class="form-select">
-                  <option value="0">P1</option>
-                  <option value="1">P2</option>
-                  <option value="2">P3</option>
-                  <option value="3">P4</option>
-                  <option value="4">P5</option>
-                  <option value="5">P6</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="d-grid gap-2 mt-3">
-              <button id="dndLoadTeachersBtn" class="btn btn-outline-primary" type="button">
-                <i class="fa-solid fa-list-check me-1"></i>
-                Load Teachers for Slot
-              </button>
-            </div>
-
-            <div class="mt-3">
-              <div class="d-flex justify-content-between align-items-center">
-                <div class="small text-muted">Teachers with meetings in selected slot</div>
-                <div class="btn-group btn-group-sm" role="group" aria-label="Select helpers">
-                  <button id="dndSelectAllBtn" type="button" class="btn btn-outline-secondary">Select all</button>
-                  <button id="dndSelectNoneBtn" type="button" class="btn btn-outline-secondary">Select none</button>
+                <div class="mt-2 panel-hint">
+                  Loaded teacher: <span id="currentTeacherLabel" class="fw-semibold">None</span>
                 </div>
               </div>
+            </div>
+          </section>
 
-              <div id="dndTeacherList" class="list-group list-scroll mt-2" aria-label="DND teacher checklist">
-                <!-- Populated by JS: list-group-item with checkbox per teacher -->
-                <div class="text-muted small p-2">No slot loaded yet.</div>
-              </div>
-
-              <div class="sticky-actions mt-2 d-grid gap-2">
-                <button id="applyDndBtn" class="btn btn-danger" type="button" disabled>
-                  <i class="fa-solid fa-ban me-1"></i>
-                  Apply DND to Selected
-                </button>
-                <button id="removeDndBtn" class="btn btn-outline-danger" type="button" disabled>
-                  <i class="fa-solid fa-rotate-left me-1"></i>
-                  Remove DND from Selected
+          <!-- COMPLETENESS DASHBOARD -->
+          <section id="section-dashboard">
+            <div class="card shadow-sm mb-3" id="completenessDashboardCard">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <strong><i class="fa-solid fa-gauge-high me-2"></i>Completeness Dashboard</strong>
+                <button id="refreshCompletenessBtn" class="btn btn-sm btn-outline-secondary" type="button">
+                  <i class="fa-solid fa-rotate"></i>
                 </button>
               </div>
+              <div class="card-body">
+                <div class="row g-2">
+                  <div class="col-12">
+                    <label for="completenessSearchInput" class="form-label">Filter teachers</label>
+                    <input id="completenessSearchInput" class="form-control" placeholder="Search within dashboard (partial match)" />
+                  </div>
+                  <div class="col-12">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="completenessIncompleteOnly" />
+                      <label class="form-check-label" for="completenessIncompleteOnly">Show incomplete only</label>
+                    </div>
+                  </div>
+                </div>
 
-              <div class="alert alert-light border mt-3 mb-0" role="status">
-                <div class="small text-muted">DND action status</div>
-                <div id="dndStatus" class="fw-semibold">No DND changes applied yet.</div>
+                <div class="alert alert-light border mt-3 mb-2" role="status">
+                  <div class="small text-muted">Summary</div>
+                  <div id="completenessSummary" class="fw-semibold">Not loaded.</div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 320px; overflow:auto;">
+                  <table class="table table-sm table-bordered align-middle mb-0" id="completenessTable">
+                    <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                      <tr>
+                        <th>Teacher</th>
+                        <th class="text-center">Score</th>
+                        <th class="text-center">Missing</th>
+                        <th class="text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="completenessTableBody">
+                      <tr><td colspan="4" class="text-muted text-center">No data yet.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="panel-hint mt-2">Score = captured cells / total cells in the saved grid. Teachers with no grid are flagged.</div>
               </div>
             </div>
-          </div>
+          </section>
+
+          <!-- BULK UPLOAD -->
+          <section id="section-bulk">
+            <div class="card shadow-sm mb-3">
+              <div class="card-header">
+                <strong><i class="fa-solid fa-folder-open me-2"></i>Bulk Upload</strong>
+              </div>
+              <div class="card-body">
+                <p class="panel-hint mb-2">Import multiple teacher timetable <code>.json</code> files by selecting a folder.</p>
+                <div class="d-grid gap-2">
+                  <button id="bulkFolderBtn" class="btn btn-outline-primary" type="button">
+                    <i class="fa-solid fa-upload me-1"></i> Select Folder & Import
+                  </button>
+                  <input id="bulkFolderInput" type="file" class="d-none" webkitdirectory directory multiple />
+                  <div class="alert alert-light border mb-0" role="status">
+                    <div class="small text-muted">Bulk import status</div>
+                    <div id="bulkStatus" class="fw-semibold">No import performed yet.</div>
+                    <div id="bulkStatusDetail" class="small text-muted"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- IDENTITY -->
+          <section id="section-identity">
+            <div class="card shadow-sm mb-3">
+              <div class="card-header">
+                <strong><i class="fa-solid fa-id-card me-2"></i>Teacher Identity Tools</strong>
+              </div>
+              <div class="card-body">
+                <label for="teacherNameInput" class="form-label">Teacher name (display / key)</label>
+                <input type="text" id="teacherNameInput" class="form-control" placeholder="e.g. Mr G Pearl" />
+                <div class="panel-hint mt-2">Rename and normalise names for consistent matching.</div>
+
+                <div class="d-grid gap-2 mt-3">
+                  <button id="renameTeacherBtn" class="btn btn-outline-secondary" type="button">
+                    <i class="fa-solid fa-pen-to-square me-1"></i> Rename Teacher (Replace)
+                  </button>
+                  <button id="removeTitlesBtn" class="btn btn-outline-warning" type="button">
+                    <i class="fa-solid fa-eraser me-1"></i> Bulk Remove Titles (Mr/Mrs/Miss/Ms/Dr)
+                  </button>
+                </div>
+
+                <hr class="my-3" />
+
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" role="switch" id="lastResortSwitch">
+                  <label class="form-check-label" for="lastResortSwitch">Mark as <strong>Last Resort</strong></label>
+                </div>
+                <div class="panel-hint mt-1">Last Resort teachers are only used for cover when no standard eligible teachers exist.</div>
+
+                <div class="mt-3">
+                  <div class="small text-muted">Policy badges (preview)</div>
+                  <div id="policyBadges" class="mt-1">
+                    <span class="teacher-chip chip-muted"><i class="fa-regular fa-circle"></i>Normal</span>
+                    <span class="teacher-chip chip-warning"><i class="fa-solid fa-triangle-exclamation"></i>Last Resort</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- DND -->
+          <section id="section-dnd">
+            <div class="card shadow-sm mb-3">
+              <div class="card-header">
+                <strong><i class="fa-solid fa-ban me-2"></i>Bulk DND (Do Not Disturb)</strong>
+              </div>
+              <div class="card-body">
+                <p class="panel-hint mb-2">Select a day and period to list teachers with meetings in that slot and apply/remove DND.</p>
+
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label for="dndDaySelect" class="form-label">Day</label>
+                    <select id="dndDaySelect" class="form-select">
+                      <option value="0">Day 1</option>
+                      <option value="1">Day 2</option>
+                      <option value="2">Day 3</option>
+                      <option value="3">Day 4</option>
+                      <option value="4">Day 5</option>
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <label for="dndPeriodSelect" class="form-label">Period</label>
+                    <select id="dndPeriodSelect" class="form-select">
+                      <option value="0">P1</option>
+                      <option value="1">P2</option>
+                      <option value="2">P3</option>
+                      <option value="3">P4</option>
+                      <option value="4">P5</option>
+                      <option value="5">P6</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-3">
+                  <button id="dndLoadTeachersBtn" class="btn btn-outline-primary" type="button">
+                    <i class="fa-solid fa-list-check me-1"></i> Load Teachers for Slot
+                  </button>
+                </div>
+
+                <div class="mt-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="small text-muted">Teachers with meetings in selected slot</div>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Select helpers">
+                      <button id="dndSelectAllBtn" type="button" class="btn btn-outline-secondary">Select all</button>
+                      <button id="dndSelectNoneBtn" type="button" class="btn btn-outline-secondary">Select none</button>
+                    </div>
+                  </div>
+
+                  <div id="dndTeacherList" class="list-group list-scroll mt-2" aria-label="DND teacher checklist">
+                    <div class="text-muted small p-2">No slot loaded yet.</div>
+                  </div>
+
+                  <div class="sticky-actions mt-2 d-grid gap-2">
+                    <button id="applyDndBtn" class="btn btn-danger" type="button" disabled>
+                      <i class="fa-solid fa-ban me-1"></i> Apply DND to Selected
+                    </button>
+                    <button id="removeDndBtn" class="btn btn-outline-danger" type="button" disabled>
+                      <i class="fa-solid fa-rotate-left me-1"></i> Remove DND from Selected
+                    </button>
+                  </div>
+
+                  <div class="alert alert-light border mt-3 mb-0" role="status">
+                    <div class="small text-muted">DND action status</div>
+                    <div id="dndStatus" class="fw-semibold">No DND changes applied yet.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- AUTOFILL -->
+          <section id="section-autofill">
+            <div class="card shadow-sm mb-3">
+              <div class="card-header">
+                <strong><i class="fa-solid fa-square-check me-2"></i>Completeness & Auto-fill</strong>
+              </div>
+              <div class="card-body">
+                <p class="panel-hint mb-2">Audit uncaptured cells (no entry in JSON) and auto-fill them without overwriting existing entries.</p>
+
+                <div class="d-grid gap-2">
+                  <button id="auditMissingBtn" class="btn btn-outline-secondary" type="button">
+                    <i class="fa-solid fa-magnifying-glass me-1"></i> Audit Missing Cells
+                  </button>
+                </div>
+
+                <div class="mt-3">
+                  <div class="small text-muted">Audit results</div>
+                  <div id="missingSummary" class="fw-semibold">Not audited.</div>
+                  <div id="missingCellChips" class="mt-2"></div>
+                </div>
+
+                <hr class="my-3" />
+
+                <label class="form-label">Auto-fill missing cells as</label>
+                <div class="btn-group w-100" role="group" aria-label="Autofill type">
+                  <input type="radio" class="btn-check" name="autofillType" id="autofillFree" value="free" checked>
+                  <label class="btn btn-outline-success" for="autofillFree"><i class="fa-solid fa-mug-hot me-1"></i>Free</label>
+
+                  <input type="radio" class="btn-check" name="autofillType" id="autofillMeeting" value="meeting">
+                  <label class="btn btn-outline-secondary" for="autofillMeeting"><i class="fa-solid fa-people-group me-1"></i>Meeting</label>
+
+                  <input type="radio" class="btn-check" name="autofillType" id="autofillLesson" value="lesson">
+                  <label class="btn btn-outline-primary" for="autofillLesson"><i class="fa-solid fa-chalkboard-user me-1"></i>Lesson</label>
+                </div>
+
+                <div class="d-grid gap-2 mt-3">
+                  <button id="autofillBtn" class="btn btn-primary" type="button" disabled>
+                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Apply Auto-fill
+                  </button>
+                </div>
+
+                <div class="panel-hint mt-2">Auto-fill only creates entries for missing cells. Existing entries are never overwritten.</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SETUP -->
+          <section id="section-setup">
+            <div class="card shadow-sm mb-3">
+              <div class="card-header">
+                <strong><i class="fa-solid fa-table-cells-large me-2"></i>Setup Timetable</strong>
+              </div>
+              <div class="card-body">
+                <form id="gridForm" class="row gy-3">
+                  <div class="col-6">
+                    <label for="rowsInput" class="form-label">Days (rows)</label>
+                    <input type="number" id="rowsInput" class="form-control" min="1" max="10" value="5" required />
+                  </div>
+                  <div class="col-6">
+                    <label for="colsInput" class="form-label">Periods (columns)</label>
+                    <input type="number" id="colsInput" class="form-control" min="1" max="12" value="6" required />
+                  </div>
+                  <div class="col-12">
+                    <label for="dayNamesInput" class="form-label">Day names (optional, comma separated)</label>
+                    <input type="text" id="dayNamesInput" class="form-control" placeholder="e.g. Mon,Tue,Wed,Thu,Fri" />
+                    <div class="form-text">If left empty, days will be labelled Day 1, Day 2, ...</div>
+                  </div>
+                  <div class="col-12 d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-table-cells-large me-1"></i> Generate Timetable</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <!-- DATA -->
+          <section id="section-data">
+            <div class="card shadow-sm mb-3">
+              <div class="card-header">
+                <strong><i class="fa-solid fa-database me-2"></i>Data & Storage</strong>
+              </div>
+              <div class="card-body d-grid gap-2">
+                <button id="saveBtn" class="btn btn-success"><i class="fa-solid fa-floppy-disk me-1"></i> Save to browser (Local Storage)</button>
+                <button id="loadBtn" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate me-1"></i> Load from browser</button>
+                <button id="clearBtn" class="btn btn-outline-danger"><i class="fa-solid fa-trash-can me-1"></i> Clear timetable</button>
+                <button id="clearAllTeachersBtn" class="btn btn-outline-danger">Clear All Timetables</button>
+
+                <div class="border-top my-2"></div>
+
+                <button id="importBtn" class="btn btn-outline-info"><i class="fa-solid fa-file-import me-1"></i> Import from JSON (single)</button>
+                <input type="file" id="importFileInput" accept="application/json" class="d-none" />
+
+                <button id="exportBtn" class="btn btn-warning"><i class="fa-solid fa-file-export me-1"></i> Export CURRENT teacher as JSON</button>
+
+                <button id="snapshotBtn" class="btn btn-outline-dark"><i class="fa-solid fa-box-archive me-1"></i> Backup Snapshot (ALL teachers)</button>
+                <div id="snapshotStatus" class="panel-hint"></div>
+
+                <button id="copyJsonBtn" class="btn btn-outline-warning"><i class="fa-solid fa-copy me-1"></i> Copy JSON to clipboard</button>
+
+                <textarea id="jsonOutput" class="form-control mt-2" rows="5" placeholder="Exported JSON will appear here..." readonly></textarea>
+
+                <div class="panel-hint">Tip: Use Backup Snapshot before bulk operations.</div>
+              </div>
+            </div>
+          </section>
+
         </div>
-
-        <!-- COMPLETENESS / AUTOFILL -->
-        <div class="card shadow-sm mb-3">
-          <div class="card-header">
-            <strong><i class="fa-solid fa-square-check me-2"></i>Completeness & Auto-fill</strong>
-          </div>
-          <div class="card-body">
-            <p class="panel-hint mb-2">
-              Uncaptured cells are periods that exist in the grid but have no corresponding JSON entry. Use tools below to detect and fill them.
-            </p>
-
-            <div class="d-grid gap-2">
-              <button id="auditMissingBtn" class="btn btn-outline-secondary" type="button">
-                <i class="fa-solid fa-magnifying-glass me-1"></i>
-                Audit Missing Cells
-              </button>
-            </div>
-
-            <div class="mt-3">
-              <div class="small text-muted">Audit results</div>
-              <div id="missingSummary" class="fw-semibold">Not audited.</div>
-              <div id="missingCellChips" class="mt-2">
-                <!-- Chips like Day 2 P4, etc. -->
-              </div>
-            </div>
-
-            <hr class="my-3" />
-
-            <label class="form-label">Auto-fill missing cells as</label>
-            <div class="btn-group w-100" role="group" aria-label="Autofill type">
-              <input type="radio" class="btn-check" name="autofillType" id="autofillFree" value="free" checked>
-              <label class="btn btn-outline-success" for="autofillFree"><i class="fa-solid fa-mug-hot me-1"></i>Free</label>
-
-              <input type="radio" class="btn-check" name="autofillType" id="autofillMeeting" value="meeting">
-              <label class="btn btn-outline-secondary" for="autofillMeeting"><i class="fa-solid fa-people-group me-1"></i>Meeting</label>
-
-              <input type="radio" class="btn-check" name="autofillType" id="autofillLesson" value="lesson">
-              <label class="btn btn-outline-primary" for="autofillLesson"><i class="fa-solid fa-chalkboard-user me-1"></i>Lesson</label>
-            </div>
-
-            <div class="d-grid gap-2 mt-3">
-              <button id="autofillBtn" class="btn btn-primary" type="button" disabled>
-                <i class="fa-solid fa-wand-magic-sparkles me-1"></i>
-                Apply Auto-fill
-              </button>
-            </div>
-
-            <div class="panel-hint mt-2">
-              Note: Auto-fill will only create entries for currently uncaptured cells. Existing entries are never overwritten.
-            </div>
-          </div>
-        </div>
-
-        <!-- SETUP TIMETABLE (kept for SMT) -->
-        <div class="card shadow-sm mb-3">
-          <div class="card-header">
-            <strong><i class="fa-solid fa-table-cells-large me-2"></i>Setup Timetable</strong>
-          </div>
-          <div class="card-body">
-            <form id="gridForm" class="row gy-3">
-              <div class="col-6">
-                <label for="rowsInput" class="form-label">Days (rows)</label>
-                <input type="number" id="rowsInput" class="form-control" min="1" max="10" value="5" required />
-              </div>
-              <div class="col-6">
-                <label for="colsInput" class="form-label">Periods (columns)</label>
-                <input type="number" id="colsInput" class="form-control" min="1" max="12" value="6" required />
-              </div>
-              <div class="col-12">
-                <label for="dayNamesInput" class="form-label">Day names (optional, comma separated)</label>
-                <input type="text" id="dayNamesInput" class="form-control" placeholder="e.g. Mon,Tue,Wed,Thu,Fri" />
-                <div class="form-text">If left empty, days will be labelled Day 1, Day 2, ...</div>
-              </div>
-              <div class="col-12 d-grid gap-2 d-md-flex justify-content-md-end">
-                <button type="submit" class="btn btn-primary">
-                  <i class="fa-solid fa-table-cells-large me-1"></i>
-                  Generate Timetable
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <!-- DATA & STORAGE (kept; expanded) -->
-        <div class="card shadow-sm">
-          <div class="card-header">
-            <strong><i class="fa-solid fa-database me-2"></i>Data & Storage</strong>
-          </div>
-          <div class="card-body d-grid gap-2">
-            <button id="saveBtn" class="btn btn-success">
-              <i class="fa-solid fa-floppy-disk me-1"></i>
-              Save to browser (Local Storage)
-            </button>
-
-            <button id="loadBtn" class="btn btn-outline-secondary">
-              <i class="fa-solid fa-rotate me-1"></i>
-              Load from browser
-            </button>
-
-            <button id="clearBtn" class="btn btn-outline-danger">
-              <i class="fa-solid fa-trash-can me-1"></i>
-              Clear timetable
-            </button>
-
-            <div class="border-top my-2"></div>
-
-            <button id="importBtn" class="btn btn-outline-info">
-              <i class="fa-solid fa-file-import me-1"></i>
-              Import from JSON (single)
-            </button>
-            <input type="file" id="importFileInput" accept="application/json" class="d-none" />
-
-            <button id="exportBtn" class="btn btn-warning">
-              <i class="fa-solid fa-file-export me-1"></i>
-              Export as JSON file
-            </button>
-
-            <button id="copyJsonBtn" class="btn btn-outline-warning">
-              <i class="fa-solid fa-copy me-1"></i>
-              Copy JSON to clipboard
-            </button>
-
-            <textarea
-              id="jsonOutput"
-              class="form-control mt-2"
-              rows="5"
-              placeholder="Exported JSON will appear here..."
-              readonly
-            ></textarea>
-
-            <div class="panel-hint">
-              Senior Management tip: Use Bulk Upload for folder imports; use Export for audits and handovers.
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      <!-- RIGHT COLUMN: Timetable -->
-      <div class="col-12 col-lg-8">
-        <div class="card shadow-sm">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <strong><i class="fa-solid fa-table me-2"></i>Timetable</strong>
-            <div class="d-flex align-items-center gap-2">
-              <small class="text-muted">Click a cell to add / edit an entry</small>
-              <span id="unsavedBadge" class="badge bg-secondary d-none">Unsaved</span>
+      <!-- COLUMN 3: Timetable (scrollable) -->
+      <div class="col-12 col-md-7 col-lg-7">
+        <div class="scroll-pane ps-md-2" id="timetableScroll" tabindex="0">
+          <div class="card shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <strong><i class="fa-solid fa-table me-2"></i>Timetable</strong>
+              <div class="d-flex align-items-center gap-2">
+                <small class="text-muted">Click a cell to add / edit an entry</small>
+                <span id="unsavedBadge" class="badge bg-secondary d-none">Unsaved</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="timetablePlaceholder" class="text-center text-muted">
+                <p class="mb-0"><i class="fa-regular fa-circle-question fa-2x mb-2"></i></p>
+                <p>Use "Setup Timetable" to generate your grid, or load a teacher timetable.</p>
+              </div>
+              <div class="table-responsive" id="timetableWrapper">
+                <table class="table table-bordered table-hover align-middle text-center mb-0" id="timetableTable"></table>
+              </div>
+              <div class="mt-3">
+                <div class="small text-muted">Completeness</div>
+                <div id="completenessHint" class="panel-hint">Missing cells are not stored in JSON. Use the Completeness & Auto-fill panel to audit/fill them.</div>
+              </div>
             </div>
           </div>
 
-          <div class="card-body">
-            <!-- Placeholder before grid is generated -->
-            <div id="timetablePlaceholder" class="text-center text-muted">
-              <p class="mb-0">
-                <i class="fa-regular fa-circle-question fa-2x mb-2"></i>
-              </p>
-              <p>Use "Setup Timetable" to generate your grid, or load a teacher timetable.</p>
-            </div>
-
-            <!-- Responsive table wrapper -->
-            <div class="table-responsive" id="timetableWrapper">
-              <table
-                class="table table-bordered table-hover align-middle text-center mb-0"
-                id="timetableTable"
-              ></table>
-            </div>
-
-            <!-- Completeness hint area -->
-            <div class="mt-3">
-              <div class="small text-muted">Completeness</div>
-              <div id="completenessHint" class="panel-hint">
-                Missing cells are not stored in JSON. Use the Completeness & Auto-fill panel to audit/fill them.
+          <div class="card shadow-sm">
+            <div class="card-header"><strong><i class="fa-solid fa-clipboard-check me-2"></i>Teacher Summary</strong></div>
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <div class="small text-muted">Teacher</div>
+                  <div id="summaryTeacher" class="fw-semibold">—</div>
+                </div>
+                <div class="col-md-4">
+                  <div class="small text-muted">Cells captured</div>
+                  <div id="summaryCaptured" class="fw-semibold">—</div>
+                </div>
+                <div class="col-md-4">
+                  <div class="small text-muted">Uncaptured cells</div>
+                  <div id="summaryUncaptured" class="fw-semibold">—</div>
+                </div>
+              </div>
+              <div class="mt-3">
+                <div class="small text-muted">Notes</div>
+                <div id="summaryNotes" class="panel-hint">No teacher loaded.</div>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Teacher Summary -->
-        <div class="card shadow-sm mt-3">
-          <div class="card-header">
-            <strong><i class="fa-solid fa-clipboard-check me-2"></i>Teacher Summary</strong>
-          </div>
-          <div class="card-body">
-            <div class="row g-2">
-              <div class="col-md-4">
-                <div class="small text-muted">Teacher</div>
-                <div id="summaryTeacher" class="fw-semibold">—</div>
-              </div>
-              <div class="col-md-4">
-                <div class="small text-muted">Cells captured</div>
-                <div id="summaryCaptured" class="fw-semibold">—</div>
-              </div>
-              <div class="col-md-4">
-                <div class="small text-muted">Uncaptured cells</div>
-                <div id="summaryUncaptured" class="fw-semibold">—</div>
-              </div>
-            </div>
-            <div class="mt-3">
-              <div class="small text-muted">Notes</div>
-              <div id="summaryNotes" class="panel-hint">No teacher loaded.</div>
-            </div>
-          </div>
-        </div>
-
       </div>
+
     </div>
   </main>
 
-  <!-- CELL EDIT MODAL (extended with Meeting constraints) -->
+  <!-- COMMAND PALETTE MODAL -->
+  <div class="modal fade" id="cmdPaletteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-terminal me-2"></i>Command Palette</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input id="cmdPaletteInput" class="form-control" placeholder="Type a command (e.g. 'snapshot', 'dnd', 'find')" autocomplete="off" />
+          <div class="list-group mt-3" id="cmdPaletteList" role="listbox" aria-label="Command results"></div>
+          <div class="panel-hint mt-2">Use ↑/↓ then Enter. Esc to close.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CELL EDIT MODAL -->
   <div class="modal fade" id="cellModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fa-solid fa-pen-to-square me-2"></i>
-            Edit Timetable Entry
-          </h5>
+          <h5 class="modal-title"><i class="fa-solid fa-pen-to-square me-2"></i>Edit Timetable Entry</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-
         <div class="modal-body">
           <form id="cellForm">
             <input type="hidden" id="cellRow" />
             <input type="hidden" id="cellCol" />
-
             <div class="mb-3">
               <label class="form-label">Entry Type</label>
               <select id="entryType" class="form-select">
@@ -475,59 +525,38 @@
                 <option value="free">Free Time</option>
               </select>
             </div>
-
             <div id="detailFields">
               <div class="mb-3">
                 <label class="form-label">Title / Subject</label>
                 <input type="text" id="entryTitle" class="form-control" placeholder="Lesson subject or meeting title" />
                 <div class="form-text">For lessons this is used as the subject. For meetings this is the meeting title.</div>
               </div>
-
               <div class="mb-3">
                 <label class="form-label">Class Name</label>
                 <input type="text" id="entryClass" class="form-control" placeholder="e.g. Grade 8A" />
               </div>
-
               <div class="mb-3">
                 <label class="form-label">Venue</label>
                 <input type="text" id="entryVenue" class="form-control" placeholder="Room / Hall" />
               </div>
             </div>
-
-            <!-- Meeting constraints (visible only when Entry Type = meeting) -->
             <div id="meetingConstraints" class="border rounded p-2 d-none">
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <strong><i class="fa-solid fa-lock me-1"></i>Meeting Constraints</strong>
-                  <div class="panel-hint">These rules affect cover allocation.</div>
-                </div>
+              <div>
+                <strong><i class="fa-solid fa-lock me-1"></i>Meeting Constraints</strong>
+                <div class="panel-hint">These rules affect cover allocation.</div>
               </div>
-
               <div class="form-check form-switch mt-2">
                 <input class="form-check-input" type="checkbox" role="switch" id="doNotDisturbSwitch">
-                <label class="form-check-label" for="doNotDisturbSwitch">
-                  Mark this meeting as <strong>Do Not Disturb (DND)</strong>
-                </label>
+                <label class="form-check-label" for="doNotDisturbSwitch">Mark this meeting as <strong>Do Not Disturb (DND)</strong></label>
               </div>
-              <div class="panel-hint">
-                When enabled, the teacher is never eligible for cover during this period.
-              </div>
+              <div class="panel-hint">When enabled, the teacher is never eligible for cover during this period.</div>
             </div>
-
-            <div id="freeTimeHint" class="alert alert-info d-none mt-2">
-              This period will be marked as <strong>Free Time</strong>.
-            </div>
-
+            <div id="freeTimeHint" class="alert alert-info d-none mt-2">This period will be marked as <strong>Free Time</strong>.</div>
             <div class="d-flex justify-content-between mt-3">
-              <button type="button" id="deleteCellBtn" class="btn btn-outline-danger">
-                <i class="fa-solid fa-trash"></i> Delete
-              </button>
-
+              <button type="button" id="deleteCellBtn" class="btn btn-outline-danger"><i class="fa-solid fa-trash"></i> Delete</button>
               <div>
                 <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary">
-                  <i class="fa-solid fa-save me-1"></i> Save
-                </button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save me-1"></i> Save</button>
               </div>
             </div>
           </form>
@@ -575,7 +604,6 @@
             <div><strong>Teachers selected:</strong> <span id="dndConfirmCount">0</span></div>
             <div class="small">DND meetings are a hard constraint: teachers will never be eligible for cover during that period.</div>
           </div>
-          <div class="small text-muted">A detailed change summary can be added later (planned).</div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -594,26 +622,8 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <h6>What’s new in Senior Management Mode?</h6>
-          <ul>
-            <li><strong>Bulk Upload:</strong> Import a folder of teacher timetable JSON files.</li>
-            <li><strong>Identity Tools:</strong> Rename teachers and remove titles in bulk.</li>
-            <li><strong>Bulk DND:</strong> Mark meeting periods as Do Not Disturb for selected teachers.</li>
-            <li><strong>Last Resort:</strong> Flag teachers who may be used only when no standard teachers are available.</li>
-            <li><strong>Completeness Tools:</strong> Detect and auto-fill uncaptured cells without overwriting existing entries.</li>
-          </ul>
-
-          <hr />
-
-          <h6>Policy reminders</h6>
-          <ul>
-            <li><strong>DND meetings</strong> are never eligible for cover allocation.</li>
-            <li><strong>Last Resort</strong> teachers are only used when there are no other eligible teachers.</li>
-          </ul>
-
-          <div class="alert alert-light border mb-0">
-            <div class="small text-muted">Note</div>
-            This interface edits <strong>authoritative timetable data</strong>. Cover planning is performed separately in the Cover Management Dashboard.
+          <div class="panel-hint">
+            Use the left navigation to jump to action blocks. Use the Command Palette (Ctrl/⌘+K) for instant actions.
           </div>
         </div>
         <div class="modal-footer">
@@ -623,11 +633,7 @@
     </div>
   </div>
 
-  <!-- Bootstrap JS -->
   <script src="./../js/bootstrap.bundle.min.js"></script>
-
-  <!-- Senior Management JS (to be implemented next) -->
-  <!-- NOTE: This will extend the existing Timetable Builder logic with bulk actions and constraints. -->
   <script src="./js/smt-script.js"></script>
 </body>
 </html>
