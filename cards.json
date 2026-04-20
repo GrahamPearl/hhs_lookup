@@ -63,6 +63,15 @@
     "buttonClass": "btn-hhs"
   },
   {
+    "badge": "Management",
+    "badgeClass": "bg-primary",
+    "title": "Build Timetable Senior Management",
+    "description": "Browse sport information, codes and resources.",
+    "buttonText": "Senior Management Timetable Editor",
+    "link": "./buld_timetable_senior/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
     "badge": "Eduware",
     "badgeClass": "bg-warning",
     "title": "Demo Python Game",
