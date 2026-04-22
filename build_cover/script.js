@@ -5,11 +5,46 @@ let noCoverNeeded = {};
 let tallies = {};
 let absentTeachers = [];
 let nextPrintAction = null;
-let coverDate = new Date().toISOString().split('T')[0];
+let coverDate = new Date().toISOString().split("T")[0];
+
+// Preview and undo tracking
+let previewAssignments = {};
+let previewNoCoverNeeded = {};
+let preAutoAssignState = null;
 
 const METRICS_KEY = "teacherMetrics";
 const HISTORY_KEY = "coverHistory";
 const TEN_WEEK_START = "tenWeekStart";
+const HISTORY_BACKUP_KEY = "coverHistoryBackup";
+const LAST_AUTO_CLEAR_KEY = "lastAutoCleared";
+const HISTORY_LOG_KEY = "coverHistoryLog";
+const FAIRNESS_SETTINGS_KEY = "fairnessSettings";
+
+// Default fairness settings
+const DEFAULT_FAIRNESS_SETTINGS = {
+  excludeDnd: true,
+  freePeriodsOnly: false,
+  maxCoversPerDay: 2,
+  maxCoversPerWeek: 3,
+  useLastResort: true,
+};
+
+// Load fairness settings
+function loadFairnessSettings() {
+  const stored = localStorage.getItem(FAIRNESS_SETTINGS_KEY);
+  if (stored) {
+    return JSON.parse(stored);
+  }
+  return DEFAULT_FAIRNESS_SETTINGS;
+}
+
+function saveFairnessSettings(settings) {
+  localStorage.setItem(FAIRNESS_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function getFairnessSettings() {
+  return loadFairnessSettings();
+}
 
 // ── [OPT-2] Indexed teacher entry lookup ───────────────────────
 // Maps teacher name → Map("row-col" → entry) for O(1) lookups
@@ -79,8 +114,10 @@ function setCachedTenWeekStart(val) {
 window.addEventListener("storage", (e) => {
   if (e.key === METRICS_KEY) _metricsCache = null;
   else if (e.key === HISTORY_KEY) _historyCache = null;
-  else if (e.key === TEN_WEEK_START) { _tenWeekStartCache = undefined; _startDateObj = null; }
-  else if (e.key && e.key.startsWith(PREFIX)) {
+  else if (e.key === TEN_WEEK_START) {
+    _tenWeekStartCache = undefined;
+    _startDateObj = null;
+  } else if (e.key && e.key.startsWith(PREFIX)) {
     const name = e.key.slice(PREFIX.length);
     delete teacherCache[name];
     delete _entryIndex[name];
@@ -92,7 +129,7 @@ window.addEventListener("storage", (e) => {
 
 function initializeTenWeekPeriod() {
   if (!getCachedTenWeekStart()) {
-    setCachedTenWeekStart(new Date().toISOString().split('T')[0]);
+    setCachedTenWeekStart(new Date().toISOString().split("T")[0]);
   }
 }
 
@@ -104,6 +141,38 @@ function getWeekNumber(dateStr) {
   const diffDays = Math.floor((new Date(dateStr) - _startDateObj) / 86400000);
   const week = Math.floor(diffDays / 7) + 1;
   return Math.min(Math.max(week, 1), 10);
+}
+
+// ── Fairness constraint helpers ────────────────────────────
+
+function isTeacherDnd(teacherName, day, period) {
+  const data = loadTeacher(teacherName);
+  if (!data || !data.entries) return false;
+  const entry = getTeacherEntry(teacherName, day, period);
+  return entry && entry.doNotDisturb === true;
+}
+
+function isLastResortTeacher(teacherName) {
+  const data = loadTeacher(teacherName);
+  return data && data.lastResort === true;
+}
+
+function countCoversForTeacherOnDay(teacherName, day) {
+  const history = loadCoverHistory();
+  const dateStr = coverDate;
+  return history.filter(
+    (h) =>
+      h.coverTeacher === teacherName &&
+      new Date(h.date).toISOString().split("T")[0] === dateStr,
+  ).length;
+}
+
+function countCoversForTeacherThisWeek(teacherName) {
+  const history = loadCoverHistory();
+  const week = getWeekNumber(coverDate);
+  return history.filter(
+    (h) => h.coverTeacher === teacherName && h.week === week,
+  ).length;
 }
 
 // ── Batch history stats ────────────────────────────────────────
@@ -119,9 +188,10 @@ function buildHistoryStats(history, currentWeek) {
     if (h.week <= currentWeek) stats[t].relevantTotal++;
   }
   for (const t in stats) {
-    stats[t].coversPerWeek = currentWeek > 0
-      ? (stats[t].relevantTotal / currentWeek).toFixed(2)
-      : "0.00";
+    stats[t].coversPerWeek =
+      currentWeek > 0
+        ? (stats[t].relevantTotal / currentWeek).toFixed(2)
+        : "0.00";
   }
   return stats;
 }
@@ -132,7 +202,8 @@ function getCoversThisWeek(coverTeacher) {
   const week = getWeekNumber(coverDate);
   let count = 0;
   for (let i = 0, len = history.length; i < len; i++) {
-    if (history[i].coverTeacher === coverTeacher && history[i].week === week) count++;
+    if (history[i].coverTeacher === coverTeacher && history[i].week === week)
+      count++;
   }
   return count;
 }
@@ -151,7 +222,8 @@ function getCoversPerWeekAverage(coverTeacher) {
   const week = getWeekNumber(coverDate);
   let count = 0;
   for (let i = 0, len = history.length; i < len; i++) {
-    if (history[i].coverTeacher === coverTeacher && history[i].week <= week) count++;
+    if (history[i].coverTeacher === coverTeacher && history[i].week <= week)
+      count++;
   }
   return count === 0 ? 0 : (count / week).toFixed(2);
 }
@@ -188,11 +260,60 @@ function ensureTeacherMetrics(name) {
       coversDone: 0,
       coversThisWeek: 0,
       totalCovers: 0,
-      lastCoverDate: null
+      lastCoverDate: null,
     };
     saveMetrics(metrics);
   }
 }
+
+// ── Generate Auto-Assignments (Fair Strategy) ────────────
+
+function generateAutoAssignments() {
+  console.log("generateAutoAssignments:", typeof generateAutoAssignments);
+
+  const day = parseInt(document.getElementById("absenceDaySelect").value);
+  const allAvail = getAllAvailableTeachers(day, absentTeachers);
+  const assignments = {};
+  const metrics = loadMetrics();
+  let assignmentsMade = 0;
+  let conflicts = 0;
+
+  absentTeachers.forEach((teacher) => {
+    const data = loadTeacher(teacher);
+    if (!data) return;
+
+    data.entries
+      .filter((e) => e.row == day && e.type === "lesson")
+      .sort((a, b) => a.col - b.col)
+      .forEach((e) => {
+        if (e.col === 6) return;
+        const key = teacher + ":" + day + "-" + e.col;
+
+        if (coverAssignments[key] || noCoverNeeded[key]) return;
+
+        let availableTeachers = getAvailableTeachers(
+          e.col,
+          day,
+          absentTeachers,
+        ).filter((t) => !Object.values(assignments).includes(t.name));
+
+        if (availableTeachers.length > 0) {
+          const best = availableTeachers[0];
+          assignments[key] = best.name;
+          assignmentsMade++;
+        } else {
+          conflicts++;
+        }
+      });
+  });
+
+  return { assignments, noCoverAssignments: {}, assignmentsMade, conflicts };
+}
+
+document.getElementById("autoAssignBtn").onclick = () => {
+  previewAutoAssign();
+};
+
 
 // ── Pre-compute teacher name list from localStorage ────────────
 
@@ -209,7 +330,15 @@ function getTeacherNames() {
 
 // ── Cover history entry ────────────────────────────────────────
 
-function addCoverHistoryEntry(coveredTeacher, coverTeacher, period, day, subject, className, venue) {
+function addCoverHistoryEntry(
+  coveredTeacher,
+  coverTeacher,
+  period,
+  day,
+  subject,
+  className,
+  venue,
+) {
   const history = loadCoverHistory();
   history.push({
     date: coverDate,
@@ -221,7 +350,7 @@ function addCoverHistoryEntry(coveredTeacher, coverTeacher, period, day, subject
     subject: subject || "Unknown",
     className: className || "Unknown",
     venue: venue || "Unknown",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
   saveCoverHistory(history);
 }
@@ -234,7 +363,7 @@ function autoPruneOldEntries() {
   if (!tenWeekStart) return;
   const cutoff = new Date(tenWeekStart);
   cutoff.setDate(cutoff.getDate() + 70);
-  const pruned = history.filter(h => new Date(h.date) >= cutoff);
+  const pruned = history.filter((h) => new Date(h.date) >= cutoff);
   if (pruned.length !== history.length) saveCoverHistory(pruned);
 }
 
@@ -243,6 +372,7 @@ function autoPruneOldEntries() {
 
 function getAllAvailableTeachers(day, absentList) {
   // Build set of already-assigned covers per period
+  const settings = getFairnessSettings();
   const assignedByPeriod = {}; // period → Set of teacher names
   for (const key in coverAssignments) {
     const idx = key.indexOf(":");
@@ -277,6 +407,8 @@ function getAllAvailableTeachers(day, absentList) {
       // Use indexed O(1) lookup instead of linear scan
       const entry = getTeacherEntry(name, day, p);
       if (entry && (entry.type === "free" || entry.type === "meeting")) {
+        // Filter by Free Periods Only if setting enabled
+        if (settings.freePeriodsOnly && entry.type === "meeting") continue;
         result[p].push({ name, type: entry.type });
       }
     }
@@ -294,7 +426,10 @@ function getAllAvailableTeachers(day, absentList) {
       if (!metrics[tName]) {
         metrics[tName] = {
           freePeriods: calculateFreePeriods(tName),
-          coversDone: 0, coversThisWeek: 0, totalCovers: 0, lastCoverDate: null
+          coversDone: 0,
+          coversThisWeek: 0,
+          totalCovers: 0,
+          lastCoverDate: null,
         };
         metricsChanged = true;
       }
@@ -308,25 +443,74 @@ function getAllAvailableTeachers(day, absentList) {
   const histStats = buildHistoryStats(history, currentWeek);
 
   // Attach stats & sort each period's list
+  // const settings = getFairnessSettings();
   for (let p = 0; p < 6; p++) {
     const list = result[p];
-    for (let j = 0; j < list.length; j++) {
-      const t = list[j];
+
+    // Filter based on fairness settings
+    const filtered = list.filter((t) => {
+      // Exclude DND teachers if setting enabled
+      if (settings.excludeDnd && isTeacherDnd(t.name, day, p)) {
+        return false;
+      }
+
+      // Check daily cap (for auto-assign)
+      const dailyCovers = countCoversForTeacherOnDay(t.name, day);
+      if (dailyCovers >= settings.maxCoversPerDay) {
+        return false;
+      }
+
+      // Check weekly cap (for auto-assign)
+      const weeklyCovers = countCoversForTeacherThisWeek(t.name);
+      if (weeklyCovers >= settings.maxCoversPerWeek) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Separate Last Resort and regular teachers
+    let regularTeachers = [];
+    let lastResortTeachers = [];
+
+    for (let j = 0; j < filtered.length; j++) {
+      const t = filtered[j];
       const m = metrics[t.name] || { freePeriods: 0, coversDone: 0 };
-      const hs = histStats[t.name] || { total: 0, thisWeek: 0, coversPerWeek: "0.00" };
+      const hs = histStats[t.name] || {
+        total: 0,
+        thisWeek: 0,
+        coversPerWeek: "0.00",
+      };
       t.freePeriods = m.freePeriods;
       t.coversDone = m.coversDone || 0;
       t.coversThisWeek = hs.thisWeek;
       t.totalCovers = hs.total;
       t.coversPerWeek = hs.coversPerWeek;
+      t.isLastResort = isLastResortTeacher(t.name);
+
+      if (settings.useLastResort && t.isLastResort) {
+        lastResortTeachers.push(t);
+      } else {
+        regularTeachers.push(t);
+      }
     }
-    list.sort((a, b) => {
+
+    // Sort each group
+    const sortFn = (a, b) => {
       if (a.totalCovers !== b.totalCovers) return a.totalCovers - b.totalCovers;
-      if (a.coversThisWeek !== b.coversThisWeek) return a.coversThisWeek - b.coversThisWeek;
-      const aDiff = parseFloat(a.coversPerWeek), bDiff = parseFloat(b.coversPerWeek);
+      if (a.coversThisWeek !== b.coversThisWeek)
+        return a.coversThisWeek - b.coversThisWeek;
+      const aDiff = parseFloat(a.coversPerWeek),
+        bDiff = parseFloat(b.coversPerWeek);
       if (aDiff !== bDiff) return aDiff - bDiff;
       return b.freePeriods - a.freePeriods;
-    });
+    };
+
+    regularTeachers.sort(sortFn);
+    lastResortTeachers.sort(sortFn);
+
+    // Combine: regular teachers first, then Last Resort
+    result[p] = regularTeachers.concat(lastResortTeachers);
   }
 
   return result;
@@ -343,18 +527,23 @@ function refreshTeachers() {
   const sel = document.getElementById("addAbsenceTeacherSelect");
   if (!sel) return;
   const absentSet = new Set(absentTeachers);
-  const names = getTeacherNames().filter(n => !absentSet.has(n));
+  const names = getTeacherNames().filter((n) => !absentSet.has(n));
   names.sort();
-  sel.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join("");
+  sel.innerHTML = names
+    .map((n) => `<option value="${n}">${n}</option>`)
+    .join("");
 }
 
 // ── UI: absent teachers table ──────────────────────────────────
 
 function renderAbsentTeachersTable() {
   const tableBody = document.querySelector("#absentTeachersTable tbody");
-  tableBody.innerHTML = absentTeachers.map((name, idx) =>
-    `<tr><td>${name}</td><td><button class="btn btn-sm btn-danger" data-remove-idx="${idx}">Remove</button></td></tr>`
-  ).join("");
+  tableBody.innerHTML = absentTeachers
+    .map(
+      (name, idx) =>
+        `<tr><td>${name}</td><td><button class="btn btn-sm btn-danger" data-remove-idx="${idx}">Remove</button></td></tr>`,
+    )
+    .join("");
   tableBody.onclick = (e) => {
     const btn = e.target.closest("[data-remove-idx]");
     if (!btn) return;
@@ -391,7 +580,8 @@ function renderGrid() {
   const availDiv = document.getElementById("availableCoverList");
 
   if (absentTeachers.length === 0) {
-    grid.innerHTML = "<div class='alert alert-info'>No absent teachers selected.</div>";
+    grid.innerHTML =
+      "<div class='alert alert-info'>No absent teachers selected.</div>";
     availDiv.innerHTML = "";
     return;
   }
@@ -402,7 +592,9 @@ function renderGrid() {
   absentTeachers.forEach((teacher) => {
     const data = loadTeacher(teacher);
     if (!data) return;
-    const lessons = data.entries.filter(e => e.row == day).sort((a, b) => a.col - b.col);
+    const lessons = data.entries
+      .filter((e) => e.row == day)
+      .sort((a, b) => a.col - b.col);
 
     lessons.forEach((e) => {
       if (e.col === 6) return;
@@ -427,7 +619,9 @@ function renderGrid() {
         }
       }
 
-      rowsHtml.push(`<tr><td>${teacher}</td><td>${e.col + 1}</td><td>${e.subject || e.type}</td><td>${e.className || ""}</td><td>${e.venue || ""}</td><td>${assignHtml}</td></tr>`);
+      rowsHtml.push(
+        `<tr><td>${teacher}</td><td>${e.col + 1}</td><td>${e.subject || e.type}</td><td>${e.className || ""}</td><td>${e.venue || ""}</td><td>${assignHtml}</td></tr>`,
+      );
     });
   });
 
@@ -438,15 +632,24 @@ function renderGrid() {
   // Event delegation for grid actions
   grid.onclick = (e) => {
     const undoBtn = e.target.closest("[data-undo-key]");
-    if (undoBtn) { undo(undoBtn.dataset.undoKey); return; }
+    if (undoBtn) {
+      undo(undoBtn.dataset.undoKey);
+      return;
+    }
     const undoNoCoverBtn = e.target.closest("[data-undo-nocover]");
-    if (undoNoCoverBtn) { undoNoCover(undoNoCoverBtn.dataset.undoNocover); return; }
+    if (undoNoCoverBtn) {
+      undoNoCover(undoNoCoverBtn.dataset.undoNocover);
+      return;
+    }
     const markBtn = e.target.closest("[data-mark-nocover]");
-    if (markBtn) { markNoCover(markBtn.dataset.markNocover); return; }
+    if (markBtn) {
+      markNoCover(markBtn.dataset.markNocover);
+      return;
+    }
   };
 
   // Set up drag-drop on drop zones
-  grid.querySelectorAll(".drop-zone").forEach(drop => {
+  grid.querySelectorAll(".drop-zone").forEach((drop) => {
     drop.ondragover = (ev) => ev.preventDefault();
     drop.ondrop = (ev) => {
       ev.preventDefault();
@@ -455,7 +658,11 @@ function renderGrid() {
       const dropDay = parseInt(drop.dataset.day);
       const key = drop.dataset.dropKey;
 
-      const available = getAvailableTeachers(period, dropDay, absentTeachers).map(o => o.name);
+      const available = getAvailableTeachers(
+        period,
+        dropDay,
+        absentTeachers,
+      ).map((o) => o.name);
       if (!available.includes(t)) {
         drop.innerHTML = `<span class='text-danger'>Teacher not available</span>`;
         setTimeout(() => renderGrid(), 1200);
@@ -469,12 +676,23 @@ function renderGrid() {
       // Use indexed entry lookup
       const lesson = getTeacherEntry(teacher, dropDay, period);
 
-      addCoverHistoryEntry(teacher, t, period + 1, dropDay + 1, lesson?.subject || lesson?.type, lesson?.className, lesson?.venue);
+      addCoverHistoryEntry(
+        teacher,
+        t,
+        period + 1,
+        dropDay + 1,
+        lesson?.subject || lesson?.type,
+        lesson?.className,
+        lesson?.venue,
+      );
 
       const metrics = loadMetrics();
       ensureTeacherMetrics(t);
       metrics[t].coversDone += 1;
-      const _hs = buildHistoryStats(loadCoverHistory(), getWeekNumber(coverDate));
+      const _hs = buildHistoryStats(
+        loadCoverHistory(),
+        getWeekNumber(coverDate),
+      );
       metrics[t].totalCovers = _hs[t]?.total || 0;
       metrics[t].coversThisWeek = _hs[t]?.thisWeek || 0;
       metrics[t].lastCoverDate = coverDate;
@@ -493,9 +711,11 @@ function renderGrid() {
     if (avail.length === 0) {
       tdContent = '<span class="text-muted">None</span>';
     } else {
-      tdContent = avail.map(teacher => {
-        const warningClass = teacher.totalCovers > 5 ? " border border-danger" : "";
-        return `<span class="badge me-1 avail-badge ${teacher.type === "free" ? "bg-primary" : "bg-secondary"}${warningClass}" draggable="true" data-teacher-name="${teacher.name}">
+      tdContent = avail
+        .map((teacher) => {
+          const warningClass =
+            teacher.totalCovers > 5 ? " border border-danger" : "";
+          return `<span class="badge me-1 avail-badge ${teacher.type === "free" ? "bg-primary" : "bg-secondary"}${warningClass}" draggable="true" data-teacher-name="${teacher.name}">
   ${teacher.name}
   <span class="badge bg-light text-dark ms-1" title="Total covers">T:${teacher.totalCovers}</span>
   <span class="badge bg-light text-dark ms-1" title="This week">W:${teacher.coversThisWeek}</span>
@@ -503,9 +723,12 @@ function renderGrid() {
   <span class="badge bg-light text-dark ms-1" title="Free periods">F:${teacher.freePeriods}</span>
   ${teacher.type === "meeting" ? " (M)" : ""}
 </span>`;
-      }).join("");
+        })
+        .join("");
     }
-    availRows.push(`<tr><td>Period ${period + 1}</td><td>${tdContent}</td></tr>`);
+    availRows.push(
+      `<tr><td>Period ${period + 1}</td><td>${tdContent}</td></tr>`,
+    );
   }
 
   availDiv.innerHTML = `<table class="table table-bordered table-sm">
@@ -526,19 +749,36 @@ document.getElementById("availableCoverList").ondragstart = (ev) => {
 function checkFairnessWarnings() {
   const history = loadCoverHistory();
   const week = getWeekNumber(coverDate);
+  const settings = getFairnessSettings();
   const coversPerTeacher = {};
+
   for (let i = 0, len = history.length; i < len; i++) {
     if (history[i].week === week) {
       const t = history[i].coverTeacher;
       coversPerTeacher[t] = (coversPerTeacher[t] || 0) + 1;
     }
   }
+
   const warnings = [];
   for (const teacher in coversPerTeacher) {
-    if (coversPerTeacher[teacher] > 3) {
-      warnings.push(`⚠️ ${teacher} has ${coversPerTeacher[teacher]} covers this week (unfair load)`);
+    if (coversPerTeacher[teacher] > settings.maxCoversPerWeek) {
+      warnings.push(
+        `⚠️ ${teacher} has ${coversPerTeacher[teacher]} covers this week (exceeds fair limit of ${settings.maxCoversPerWeek})`,
+      );
     }
   }
+
+  // Add info about active constraints
+  const constraintInfo = [];
+  if (settings.excludeDnd) constraintInfo.push("DND teachers excluded");
+  if (settings.useLastResort)
+    constraintInfo.push("Last Resort used only as backup");
+  if (constraintInfo.length > 0) {
+    warnings.push(
+      `ℹ️ Active fairness constraints: ${constraintInfo.join(", ")}`,
+    );
+  }
+
   const warningDiv = document.getElementById("fairnessWarning");
   if (warnings.length > 0) {
     warningDiv.innerHTML = warnings.join("<br>");
@@ -554,10 +794,18 @@ function undo(key) {
   const history = loadCoverHistory();
   const [teacher, dp] = key.split(":");
   const [d, p] = dp.split("-");
-  const dayNum = parseInt(d) + 1, periodNum = parseInt(p) + 1;
-  saveCoverHistory(history.filter(h =>
-    !(h.coveredTeacher === teacher && h.day === dayNum && h.period === periodNum)
-  ));
+  const dayNum = parseInt(d) + 1,
+    periodNum = parseInt(p) + 1;
+  saveCoverHistory(
+    history.filter(
+      (h) =>
+        !(
+          h.coveredTeacher === teacher &&
+          h.day === dayNum &&
+          h.period === periodNum
+        ),
+    ),
+  );
   delete coverAssignments[key];
   renderGrid();
 }
@@ -581,7 +829,8 @@ function autoAssignCoverTeachers() {
   }
 
   const day = parseInt(document.getElementById("absenceDaySelect").value);
-  let assignmentsMade = 0, conflicts = 0;
+  let assignmentsMade = 0,
+    conflicts = 0;
   const assignedTeachers = new Set(Object.values(coverAssignments));
 
   // Load metrics ONCE before the loop
@@ -591,28 +840,44 @@ function autoAssignCoverTeachers() {
     const data = loadTeacher(teacher);
     if (!data) return;
 
-    const lessons = data.entries.filter(e => e.row == day && e.type === "lesson").sort((a, b) => a.col - b.col);
+    const lessons = data.entries
+      .filter((e) => e.row == day && e.type === "lesson")
+      .sort((a, b) => a.col - b.col);
 
     lessons.forEach((e) => {
       if (e.col === 6) return;
       const key = teacher + ":" + day + "-" + e.col;
       if (coverAssignments[key] || noCoverNeeded[key]) return;
 
-      let availableTeachers = getAvailableTeachers(e.col, day, absentTeachers)
-        .filter(t => !assignedTeachers.has(t.name));
+      let availableTeachers = getAvailableTeachers(
+        e.col,
+        day,
+        absentTeachers,
+      ).filter((t) => !assignedTeachers.has(t.name));
 
       if (availableTeachers.length > 0) {
         const best = availableTeachers[0];
         coverAssignments[key] = best.name;
         assignedTeachers.add(best.name);
 
-        addCoverHistoryEntry(teacher, best.name, e.col + 1, day + 1, e.subject || e.type, e.className, e.venue);
+        addCoverHistoryEntry(
+          teacher,
+          best.name,
+          e.col + 1,
+          day + 1,
+          e.subject || e.type,
+          e.className,
+          e.venue,
+        );
 
         // Update metrics in-memory (no save per iteration)
         if (!metrics[best.name]) {
           metrics[best.name] = {
             freePeriods: calculateFreePeriods(best.name),
-            coversDone: 0, coversThisWeek: 0, totalCovers: 0, lastCoverDate: null
+            coversDone: 0,
+            coversThisWeek: 0,
+            totalCovers: 0,
+            lastCoverDate: null,
           };
         }
         metrics[best.name].coversDone += 1;
@@ -632,7 +897,8 @@ function autoAssignCoverTeachers() {
 
   renderGrid();
   let message = `Auto-assignment complete!\n\nAssignments made: ${assignmentsMade}`;
-  if (conflicts > 0) message += `\nUnassigned lessons: ${conflicts} (no suitable teachers available)`;
+  if (conflicts > 0)
+    message += `\nUnassigned lessons: ${conflicts} (no suitable teachers available)`;
   alert(message);
 }
 
@@ -652,14 +918,15 @@ function initializeDatePicker() {
 function initializePeriodModal() {
   const startDate = getCachedTenWeekStart();
   const dateInput = document.getElementById("tenWeekStartDate");
-  dateInput.value = startDate || new Date().toISOString().split('T')[0];
+  dateInput.value = startDate || new Date().toISOString().split("T")[0];
   updatePeriodStatus();
 }
 
 function updatePeriodStatus() {
   const startDate = getCachedTenWeekStart();
   if (!startDate) {
-    document.getElementById("periodStatus").innerHTML = "Not set. Will initialize on first use.";
+    document.getElementById("periodStatus").innerHTML =
+      "Not set. Will initialize on first use.";
     return;
   }
   const start = new Date(startDate);
@@ -676,12 +943,16 @@ function displayCoverHistory() {
   const history = loadCoverHistory();
   const tbody = document.getElementById("historyTableBody");
   if (history.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6' class='text-center text-muted'>No cover history yet</td></tr>";
+    tbody.innerHTML =
+      "<tr><td colspan='6' class='text-center text-muted'>No cover history yet</td></tr>";
     return;
   }
-  tbody.innerHTML = history.map(entry =>
-    `<tr><td>${entry.date}</td><td>${entry.week}</td><td>${entry.coveredTeacher}</td><td>${entry.coverTeacher}</td><td>${entry.period}</td><td>${entry.subject}</td></tr>`
-  ).join("");
+  tbody.innerHTML = history
+    .map(
+      (entry) =>
+        `<tr><td>${entry.date}</td><td>${entry.week}</td><td>${entry.coveredTeacher}</td><td>${entry.coverTeacher}</td><td>${entry.period}</td><td>${entry.subject}</td></tr>`,
+    )
+    .join("");
 }
 
 // ── Print / Export helpers ─────────────────────────────────────
@@ -691,17 +962,20 @@ function getCoverPlanRows(day) {
   absentTeachers.forEach((teacher) => {
     const data = loadTeacher(teacher);
     if (!data) return;
-    data.entries.filter(e => e.row == day).sort((a, b) => a.col - b.col).forEach((e) => {
-      if (e.col === 6) return;
-      rows.push({
-        teacher,
-        period: e.col + 1,
-        subject: e.subject || e.type,
-        className: e.className || "",
-        venue: e.venue || "",
-        assigned: coverAssignments[teacher + ":" + day + "-" + e.col] || "",
+    data.entries
+      .filter((e) => e.row == day)
+      .sort((a, b) => a.col - b.col)
+      .forEach((e) => {
+        if (e.col === 6) return;
+        rows.push({
+          teacher,
+          period: e.col + 1,
+          subject: e.subject || e.type,
+          className: e.className || "",
+          venue: e.venue || "",
+          assigned: coverAssignments[teacher + ":" + day + "-" + e.col] || "",
+        });
       });
-    });
   });
   return rows;
 }
@@ -718,10 +992,19 @@ function buildCoverGridTableHtml(day, includeActions = false) {
     </div>`;
   }
   if (rows.length === 0) {
-    return html + "<div class='alert alert-info'>No absent teacher lessons found for the selected day.</div></div>";
+    return (
+      html +
+      "<div class='alert alert-info'>No absent teacher lessons found for the selected day.</div></div>"
+    );
   }
-  html += '<table class="table table-bordered"><thead><tr><th>Teacher</th><th>Period</th><th>Subject/Type</th><th>Class</th><th>Venue</th><th>Assigned Cover</th></tr></thead><tbody>';
-  html += rows.map(r => `<tr><td>${r.teacher}</td><td>${r.period}</td><td>${r.subject}</td><td>${r.className}</td><td>${r.venue}</td><td>${r.assigned}</td></tr>`).join("");
+  html +=
+    '<table class="table table-bordered"><thead><tr><th>Teacher</th><th>Period</th><th>Subject/Type</th><th>Class</th><th>Venue</th><th>Assigned Cover</th></tr></thead><tbody>';
+  html += rows
+    .map(
+      (r) =>
+        `<tr><td>${r.teacher}</td><td>${r.period}</td><td>${r.subject}</td><td>${r.className}</td><td>${r.venue}</td><td>${r.assigned}</td></tr>`,
+    )
+    .join("");
   html += "</tbody></table></div>";
   return html;
 }
@@ -731,7 +1014,10 @@ function buildCoverGridTableHtml(day, includeActions = false) {
 function loadScript(url) {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector(`script[src="${url}"]`);
-    if (existing) { resolve(); return; }
+    if (existing) {
+      resolve();
+      return;
+    }
     const s = document.createElement("script");
     s.src = url;
     s.onload = resolve;
@@ -740,8 +1026,10 @@ function loadScript(url) {
   });
 }
 
-const HTML2CANVAS_URL = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-const JSPDF_URL = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+const HTML2CANVAS_URL =
+  "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+const JSPDF_URL =
+  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
 
 function openCoverPrintPreview(action = null) {
   if (absentTeachers.length === 0) {
@@ -778,7 +1066,12 @@ function openCoverPrintPreview(action = null) {
       const doc = win.document;
       const rows = getCoverPlanRows(day);
       const makeText = () =>
-        rows.map(r => `${r.teacher} | P${r.period} | ${r.subject} | ${r.className} | ${r.venue} | ${r.assigned}`).join("\n");
+        rows
+          .map(
+            (r) =>
+              `${r.teacher} | P${r.period} | ${r.subject} | ${r.className} | ${r.venue} | ${r.assigned}`,
+          )
+          .join("\n");
 
       doc.getElementById("printPageBtn").onclick = () => win.print();
 
@@ -786,70 +1079,122 @@ function openCoverPrintPreview(action = null) {
       const ensureLibs = () => {
         const promises = [];
         if (!win.html2canvas) {
-          promises.push(new Promise((res, rej) => {
-            const s = doc.createElement("script");
-            s.src = HTML2CANVAS_URL;
-            s.onload = res; s.onerror = rej;
-            doc.head.appendChild(s);
-          }));
+          promises.push(
+            new Promise((res, rej) => {
+              const s = doc.createElement("script");
+              s.src = HTML2CANVAS_URL;
+              s.onload = res;
+              s.onerror = rej;
+              doc.head.appendChild(s);
+            }),
+          );
         }
         if (!win.jspdf) {
-          promises.push(new Promise((res, rej) => {
-            const s = doc.createElement("script");
-            s.src = JSPDF_URL;
-            s.onload = res; s.onerror = rej;
-            doc.head.appendChild(s);
-          }));
+          promises.push(
+            new Promise((res, rej) => {
+              const s = doc.createElement("script");
+              s.src = JSPDF_URL;
+              s.onload = res;
+              s.onerror = rej;
+              doc.head.appendChild(s);
+            }),
+          );
         }
         return Promise.all(promises);
       };
 
       doc.getElementById("downloadPdfBtn").onclick = () => {
-        ensureLibs().then(() => {
-          const { jsPDF } = win.jspdf;
-          const content = doc.querySelector('.container');
-          if (!content) return;
-          win.html2canvas(content, { scale: 2 }).then((canvas) => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-            const pdfW = pdf.internal.pageSize.getWidth();
-            const pdfH = pdf.internal.pageSize.getHeight();
-            const ratio = Math.min(pdfW / canvas.width, pdfH / canvas.height);
-            const imgW = canvas.width * ratio, imgH = canvas.height * ratio;
-            if (imgH <= pdfH) {
-              pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
-            } else {
-              let remaining = canvas.height, pos = 0;
-              while (remaining > 0) {
-                const pageH = Math.min(remaining, Math.floor(pdfH / ratio));
-                const c = document.createElement('canvas');
-                c.width = canvas.width; c.height = pageH;
-                c.getContext('2d').drawImage(canvas, 0, pos, canvas.width, pageH, 0, 0, canvas.width, pageH);
-                pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, imgW, pageH * ratio);
-                remaining -= pageH; pos += pageH;
-                if (remaining > 0) pdf.addPage();
-              }
-            }
-            pdf.save(`cover_plan_day_${day + 1}.pdf`);
-          }).catch(err => { console.error('pdf generation failed', err); alert('Error generating PDF: ' + err); });
-        }).catch(err => alert("Failed to load PDF libraries: " + err));
+        ensureLibs()
+          .then(() => {
+            const { jsPDF } = win.jspdf;
+            const content = doc.querySelector(".container");
+            if (!content) return;
+            win
+              .html2canvas(content, { scale: 2 })
+              .then((canvas) => {
+                const imgData = canvas.toDataURL("image/png");
+                const pdf = new jsPDF({
+                  orientation: "landscape",
+                  unit: "pt",
+                  format: "a4",
+                });
+                const pdfW = pdf.internal.pageSize.getWidth();
+                const pdfH = pdf.internal.pageSize.getHeight();
+                const ratio = Math.min(
+                  pdfW / canvas.width,
+                  pdfH / canvas.height,
+                );
+                const imgW = canvas.width * ratio,
+                  imgH = canvas.height * ratio;
+                if (imgH <= pdfH) {
+                  pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH);
+                } else {
+                  let remaining = canvas.height,
+                    pos = 0;
+                  while (remaining > 0) {
+                    const pageH = Math.min(remaining, Math.floor(pdfH / ratio));
+                    const c = document.createElement("canvas");
+                    c.width = canvas.width;
+                    c.height = pageH;
+                    c.getContext("2d").drawImage(
+                      canvas,
+                      0,
+                      pos,
+                      canvas.width,
+                      pageH,
+                      0,
+                      0,
+                      canvas.width,
+                      pageH,
+                    );
+                    pdf.addImage(
+                      c.toDataURL("image/png"),
+                      "PNG",
+                      0,
+                      0,
+                      imgW,
+                      pageH * ratio,
+                    );
+                    remaining -= pageH;
+                    pos += pageH;
+                    if (remaining > 0) pdf.addPage();
+                  }
+                }
+                pdf.save(`cover_plan_day_${day + 1}.pdf`);
+              })
+              .catch((err) => {
+                console.error("pdf generation failed", err);
+                alert("Error generating PDF: " + err);
+              });
+          })
+          .catch((err) => alert("Failed to load PDF libraries: " + err));
       };
 
       doc.getElementById("downloadPngBtn").onclick = () => {
-        ensureLibs().then(() => {
-          const content = doc.querySelector('.container');
-          if (!content) return;
-          win.html2canvas(content, { scale: 2 }).then(canvas => {
-            const link = doc.createElement('a');
-            link.download = `cover_plan_day_${day + 1}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-          }).catch(err => { console.error('png capture failed', err); alert('Error generating image: ' + err); });
-        }).catch(err => alert("Failed to load image libraries: " + err));
+        ensureLibs()
+          .then(() => {
+            const content = doc.querySelector(".container");
+            if (!content) return;
+            win
+              .html2canvas(content, { scale: 2 })
+              .then((canvas) => {
+                const link = doc.createElement("a");
+                link.download = `cover_plan_day_${day + 1}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+              })
+              .catch((err) => {
+                console.error("png capture failed", err);
+                alert("Error generating image: " + err);
+              });
+          })
+          .catch((err) => alert("Failed to load image libraries: " + err));
       };
 
       doc.getElementById("emailExportBtn").onclick = () => {
-        const subject = encodeURIComponent(`Absent Teachers Cover Plan - Day ${day + 1}`);
+        const subject = encodeURIComponent(
+          `Absent Teachers Cover Plan - Day ${day + 1}`,
+        );
         const body = encodeURIComponent(makeText());
         window.location.href = `mailto:?subject=${subject}&body=${body}`;
       };
@@ -859,7 +1204,7 @@ function openCoverPrintPreview(action = null) {
       else if (action === "image") doc.getElementById("downloadPngBtn").click();
       else if (action === "email") doc.getElementById("emailExportBtn").click();
     } catch (err) {
-      console.error('setupActions failed', err);
+      console.error("setupActions failed", err);
     }
   };
 
@@ -875,7 +1220,8 @@ document.getElementById("coverDate").addEventListener("change", (e) => {
   scheduleRenderGrid();
 });
 
-document.getElementById("absenceDaySelect").onchange = () => scheduleRenderGrid();
+document.getElementById("absenceDaySelect").onchange = () =>
+  scheduleRenderGrid();
 
 document.getElementById("addAbsenceTeacherBtn").onclick = () => {
   const sel = document.getElementById("addAbsenceTeacherSelect");
@@ -893,17 +1239,266 @@ document.getElementById("saveBtn").onclick = () => {
   alert("Saved");
 };
 
-document.getElementById("autoAssignBtn").onclick = () => {
-  if (confirm("This will automatically assign the most fair cover teachers to all unassigned lessons. Continue?")) {
-    autoAssignCoverTeachers();
+// ── Round-Robin Auto-Assign ───────────────────────────────
+
+function autoAssignRoundRobin() {
+  const day = parseInt(document.getElementById("absenceDaySelect").value);
+  const allAvail = getAllAvailableTeachers(day, absentTeachers);
+  const assignments = {};
+  const noCoverAssignments = {};
+  let assignmentsMade = 0;
+  let conflicts = 0;
+
+  // Flatten all available teachers
+  const allTeachers = [];
+  for (let p = 0; p < 6; p++) {
+    allTeachers.push(...allAvail[p]);
+  }
+
+  let teacherIndex = 0;
+
+  // Process each absent teacher's lessons
+  absentTeachers.forEach((teacher) => {
+    const data = loadTeacher(teacher);
+    if (!data) return;
+
+    data.entries
+      .filter((e) => e.row == day && e.type === "lesson")
+      .sort((a, b) => a.col - b.col)
+      .forEach((e) => {
+        if (e.col === 6) return;
+        const key = teacher + ":" + day + "-" + e.col;
+
+        if (coverAssignments[key] || noCoverNeeded[key]) return;
+
+        // Find next available teacher (cycle through)
+        let assigned = false;
+        let attempts = 0;
+        while (attempts < allTeachers.length) {
+          const candidate = allTeachers[teacherIndex % allTeachers.length];
+          teacherIndex++;
+          attempts++;
+
+          // Check if this candidate is available for this period
+          const candidateAvail = allAvail[e.col].find(
+            (t) => t.name === candidate.name,
+          );
+          if (candidateAvail) {
+            assignments[key] = candidate.name;
+            assignmentsMade++;
+            assigned = true;
+            break;
+          }
+        }
+
+        if (!assigned) conflicts++;
+      });
+  });
+
+  return { assignments, noCoverAssignments, assignmentsMade, conflicts };
+}
+
+// ── Preview Auto-Assign ───────────────────────────────────
+
+function previewAutoAssign() {
+  if (absentTeachers.length === 0) {
+    alert("No absent teachers selected.");
+    return;
+  }
+
+  const strategy = document.getElementById("autoAssignStrategy").value;
+  let result;
+
+  if (strategy === "roundRobin") {
+    result = autoAssignRoundRobin();
+  } else {
+    result = generateAutoAssignments();
+  }
+
+  previewAssignments = result.assignments;
+  previewNoCoverNeeded = result.noCoverAssignments;
+  preAutoAssignState = {
+    coverAssignments: { ...coverAssignments },
+    noCoverNeeded: { ...noCoverNeeded },
+  };
+
+  // Build preview HTML with improved formatting
+  const day = parseInt(document.getElementById("absenceDaySelect").value);
+  const strategyLabel =
+    strategy === "roundRobin"
+      ? "Round-Robin (Sequential)"
+      : "Fair (Minimize Unfairness)";
+
+  let html = `
+    <div class="alert alert-info mb-3">
+      <strong>Strategy:</strong> ${strategyLabel} | 
+      <strong>Day:</strong> Day ${parseInt(day) + 1}
+    </div>
+    
+    <table class="table table-striped table-hover table-sm">
+      <thead class="table-dark">
+        <tr>
+          <th>Absent Teacher</th>
+          <th style="width: 60px;">Period</th>
+          <th>Subject</th>
+          <th>Preview: Cover Assignment</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  let count = 0;
+  let successCount = 0;
+
+  absentTeachers.forEach((teacher) => {
+    const data = loadTeacher(teacher);
+    if (!data) return;
+
+    data.entries
+      .filter((e) => e.row == day && e.type === "lesson")
+      .sort((a, b) => a.col - b.col)
+      .forEach((e) => {
+        const key = teacher + ":" + day + "-" + e.col;
+        const assigned = previewAssignments[key];
+        const isAssigned = !!assigned;
+
+        if (isAssigned) successCount++;
+        count++;
+
+        const rowClass = isAssigned ? "" : "table-danger";
+        const assignedText = assigned
+          ? `<strong>${assigned}</strong>`
+          : `<span class="badge bg-danger">NOT ASSIGNED</span>`;
+
+        html += `
+        <tr class="${rowClass}">
+          <td>${teacher}</td>
+          <td style="text-align: center;">${e.col + 1}</td>
+          <td>${e.subject || ""}</td>
+          <td>${assignedText}</td>
+        </tr>
+      `;
+      });
+  });
+
+  html += `
+      </tbody>
+    </table>
+    
+    <div class="alert alert-secondary mt-3">
+      <strong>Summary:</strong><br>
+      ✓ ${successCount} assignments made<br>
+      ⚠️ ${result.conflicts} unassigned lessons
+    </div>
+  `;
+
+  // Add strategy notes
+  if (strategy === "roundRobin") {
+    html += `<small class="text-muted d-block mt-2"><i>Round-Robin cycles through available teachers sequentially.</i></small>`;
+  } else {
+    html += `<small class="text-muted d-block mt-2"><i>Fair strategy assigns to teachers with fewest total covers.</i></small>`;
+  }
+
+  document.getElementById("previewAssignmentsList").innerHTML = html;
+
+  if (result.conflicts > 0) {
+    document.getElementById("previewWarnings").innerHTML = `
+      <strong>⚠️ ${result.conflicts} lessons cannot be assigned</strong><br>
+      <small>No suitable teachers available with current fairness constraints. Consider adjusting settings or assign manually (drag-drop bypasses constraints).</small>
+    `;
+    document.getElementById("previewWarnings").style.display = "block";
+  } else {
+    document.getElementById("previewWarnings").style.display = "none";
+  }
+
+  const previewModal = new bootstrap.Modal(
+    document.getElementById("previewAutoAssignModal"),
+  );
+  previewModal.show();
+}
+
+// ── Apply Assignments from Preview ────────────────────────
+
+function applyPreviewAssignments() {
+  Object.assign(coverAssignments, previewAssignments);
+  Object.assign(noCoverNeeded, previewNoCoverNeeded);
+
+  // Add to history
+  const day = parseInt(document.getElementById("absenceDaySelect").value);
+  absentTeachers.forEach((teacher) => {
+    const data = loadTeacher(teacher);
+    if (!data) return;
+
+    data.entries
+      .filter((e) => e.row == day && e.type === "lesson")
+      .forEach((e) => {
+        const key = teacher + ":" + day + "-" + e.col;
+        if (previewAssignments[key]) {
+          addCoverHistoryEntry(
+            teacher,
+            previewAssignments[key],
+            e.col + 1,
+            day + 1,
+            e.subject,
+            e.className,
+            e.venue,
+          );
+        }
+      });
+  });
+
+  addToHistoryLog("AUTO_ASSIGN_APPLIED", {
+    strategy: document.getElementById("autoAssignStrategy").value,
+    assignmentsMade: Object.keys(previewAssignments).length,
+  });
+
+  renderGrid();
+  alert(
+    `Auto-assign complete! ${Object.keys(previewAssignments).length} assignments applied.`,
+  );
+}
+
+document.getElementById("undoAutoAssignBtn").onclick = () => {
+  if (!preAutoAssignState) {
+    alert("Nothing to undo.");
+    return;
+  }
+
+  if (
+    confirm(
+      "Undo auto-assign? This will revert to the state before auto-assign was applied.",
+    )
+  ) {
+    coverAssignments = preAutoAssignState.coverAssignments;
+    noCoverNeeded = preAutoAssignState.noCoverNeeded;
+    preAutoAssignState = null;
+    previewAssignments = {};
+    previewNoCoverNeeded = {};
+
+    addToHistoryLog("AUTO_ASSIGN_UNDONE", {});
+
+    renderGrid();
+    alert("Auto-assign reverted.");
   }
 };
 
+document.getElementById("confirmAutoAssignBtn").onclick = () => {
+  const modal = bootstrap.Modal.getInstance(
+    document.getElementById("previewAutoAssignModal"),
+  );
+  modal.hide();
+  applyPreviewAssignments();
+};
+
 document.getElementById("printBtn").onclick = () => openCoverPrintPreview();
-document.getElementById("navPrintBtn").onclick = () => openCoverPrintPreview("print");
-document.getElementById("navPdfBtn").onclick = () => openCoverPrintPreview("pdf");
-document.getElementById("navImgBtn").onclick = () => openCoverPrintPreview("image");
-document.getElementById("navEmailBtn").onclick = () => openCoverPrintPreview("email");
+document.getElementById("navPrintBtn").onclick = () =>
+  openCoverPrintPreview("print");
+document.getElementById("navPdfBtn").onclick = () =>
+  openCoverPrintPreview("pdf");
+document.getElementById("navImgBtn").onclick = () =>
+  openCoverPrintPreview("image");
+document.getElementById("navEmailBtn").onclick = () =>
+  openCoverPrintPreview("email");
 
 document.getElementById("confirmPrintBtn").onclick = () => {
   const printArea = document.getElementById("printArea");
@@ -919,19 +1514,30 @@ document.getElementById("confirmPrintBtn").onclick = () => {
 
 document.getElementById("emailBtn").onclick = async () => {
   const email = document.getElementById("emailInput").value;
-  if (!email) { alert("Please enter a valid email address."); return; }
+  if (!email) {
+    alert("Please enter a valid email address.");
+    return;
+  }
 
   const day = parseInt(document.getElementById("absenceDaySelect").value);
-  const parts = ['<h3>Absent Teachers Cover Plan</h3><table border="1" cellpadding="5" cellspacing="0"><thead><tr><th>Teacher</th><th>Period</th><th>Subject/Type</th><th>Class</th><th>Venue</th><th>Assigned Cover</th></tr></thead><tbody>'];
+  const parts = [
+    '<h3>Absent Teachers Cover Plan</h3><table border="1" cellpadding="5" cellspacing="0"><thead><tr><th>Teacher</th><th>Period</th><th>Subject/Type</th><th>Class</th><th>Venue</th><th>Assigned Cover</th></tr></thead><tbody>',
+  ];
 
   absentTeachers.forEach((teacher) => {
     const data = loadTeacher(teacher);
     if (!data) return;
-    data.entries.filter(e => e.row == day && e.type === "lesson").sort((a, b) => a.col - b.col).forEach((e) => {
-      if (e.col === 6) return;
-      const assigned = coverAssignments[teacher + ":" + day + "-" + e.col] || "";
-      parts.push(`<tr><td>${teacher}</td><td>${e.col + 1}</td><td>${e.subject || e.type}</td><td>${e.className || ""}</td><td>${e.venue || ""}</td><td>${assigned}</td></tr>`);
-    });
+    data.entries
+      .filter((e) => e.row == day && e.type === "lesson")
+      .sort((a, b) => a.col - b.col)
+      .forEach((e) => {
+        if (e.col === 6) return;
+        const assigned =
+          coverAssignments[teacher + ":" + day + "-" + e.col] || "";
+        parts.push(
+          `<tr><td>${teacher}</td><td>${e.col + 1}</td><td>${e.subject || e.type}</td><td>${e.className || ""}</td><td>${e.venue || ""}</td><td>${assigned}</td></tr>`,
+        );
+      });
   });
   parts.push("</tbody></table>");
 
@@ -942,7 +1548,8 @@ document.getElementById("emailBtn").onclick = async () => {
 };
 
 // BULK IMPORT
-document.getElementById("bulkBtn").onclick = () => document.getElementById("bulkInput").click();
+document.getElementById("bulkBtn").onclick = () =>
+  document.getElementById("bulkInput").click();
 
 document.getElementById("bulkInput").addEventListener("change", async (e) => {
   const files = Array.from(e.target.files);
@@ -962,66 +1569,127 @@ document.getElementById("bulkInput").addEventListener("change", async (e) => {
   scheduleRenderGrid();
 });
 
+// Clear only absent teachers and current cover assignments (preserves history)
 document.getElementById("clearBtn").onclick = () => {
-  if (confirm("Are you sure you want to clear ALL data? This includes timetables, covers, metrics, and history.")) {
-    const keysToRemove = [];
-    for (let i = 0, len = localStorage.length; i < len; i++) {
-      const k = localStorage.key(i);
-      if (k.startsWith(PREFIX) || k === "coverPlans" || k === METRICS_KEY || k === HISTORY_KEY) {
-        keysToRemove.push(k);
-      }
-    }
-    keysToRemove.forEach(k => localStorage.removeItem(k));
-
-    teacherCache = {};
+  if (
+    confirm(
+      "Clear absent teachers and today's cover assignments?\n\nThis will NOT erase cover history (needed for fairness tracking).",
+    )
+  ) {
+    absentTeachers = [];
     coverAssignments = {};
     noCoverNeeded = {};
-    tallies = {};
-    _metricsCache = null;
-    _historyCache = null;
-    _teacherNamesCache = null;
-    _startDateObj = null;
-    // Clear entry index
-    for (const k in _entryIndex) delete _entryIndex[k];
-    document.getElementById("status").innerText = "All data cleared.";
-    refreshTeachers();
+
+    addToHistoryLog("CLEAR_DAY_DATA", {
+      absentTeachersCleared: absentTeachers.length,
+    });
+
+    document.getElementById("status").innerText =
+      "Absent teachers and assignments cleared. History preserved.";
     renderAbsentTeachersTable();
     renderGrid();
   }
 };
 
+// Full system reset with backup and confirmation
+document.getElementById("clearAllBtn").onclick = () => {
+  const confirmed = confirm(
+    "⚠️ FULL SYSTEM RESET - This cannot be undone!\n\n" +
+      "This will clear:\n" +
+      "• All teacher timetables\n" +
+      "• Cover history\n" +
+      "• Metrics and fairness data\n\n" +
+      "An automated backup will be exported.\n\n" +
+      "Type 'CLEAR ALL' in the next prompt to confirm.",
+  );
+
+  if (!confirmed) return;
+
+  const userInput = prompt("Type 'CLEAR ALL' to confirm full system reset:");
+  if (userInput !== "CLEAR ALL") {
+    alert("Reset cancelled.");
+    return;
+  }
+
+  // Backup before clearing
+  backupCoverHistory();
+  autoExportAllData();
+  addToHistoryLog("FULL_SYSTEM_RESET", {
+    action: "All data cleared with backups exported",
+  });
+
+  // Clear everything
+  const keysToRemove = [];
+  for (let i = 0, len = localStorage.length; i < len; i++) {
+    const k = localStorage.key(i);
+    if (
+      k.startsWith(PREFIX) ||
+      k === "coverPlans" ||
+      k === METRICS_KEY ||
+      k === HISTORY_KEY
+    ) {
+      keysToRemove.push(k);
+    }
+  }
+  keysToRemove.forEach((k) => localStorage.removeItem(k));
+
+  teacherCache = {};
+  coverAssignments = {};
+  noCoverNeeded = {};
+  tallies = {};
+  _metricsCache = null;
+  _historyCache = null;
+  _teacherNamesCache = null;
+  _startDateObj = null;
+  absentTeachers = [];
+  for (const k in _entryIndex) delete _entryIndex[k];
+
+  document.getElementById("status").innerText =
+    "Full system reset complete. Backup exported.";
+  refreshTeachers();
+  renderAbsentTeachersTable();
+  renderGrid();
+};
+
 document.getElementById("exportBtn").onclick = () => {
+  backupCoverHistory();
   const data = {
     coverAssignments,
     noCoverNeeded,
     metrics: loadMetrics(),
     history: loadCoverHistory(),
-    tenWeekStart: getCachedTenWeekStart()
+    tenWeekStart: getCachedTenWeekStart(),
   };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `cover_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `cover_backup_${new Date().toISOString().split("T")[0]}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  addToHistoryLog("MANUAL_BACKUP", { fileName: a.download });
 };
 
-document.getElementById("importBtn").onclick = () => document.getElementById("importMetricsInput").click();
+document.getElementById("importBtn").onclick = () =>
+  document.getElementById("importMetricsInput").click();
 
-document.getElementById("importMetricsInput").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const data = JSON.parse(await file.text());
+document
+  .getElementById("importMetricsInput")
+  .addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const data = JSON.parse(await file.text());
 
-  coverAssignments = data.coverAssignments || {};
-  noCoverNeeded = data.noCoverNeeded || {};
-  saveMetrics(data.metrics || {});
-  if (data.history) saveCoverHistory(data.history);
-  if (data.tenWeekStart) setCachedTenWeekStart(data.tenWeekStart);
+    coverAssignments = data.coverAssignments || {};
+    noCoverNeeded = data.noCoverNeeded || {};
+    saveMetrics(data.metrics || {});
+    if (data.history) saveCoverHistory(data.history);
+    if (data.tenWeekStart) setCachedTenWeekStart(data.tenWeekStart);
 
-  renderGrid();
-  alert("Backup restored successfully!");
-});
+    renderGrid();
+    alert("Backup restored successfully!");
+  });
 
 // EXCEL EXPORT
 document.getElementById("exportExcelBtn").onclick = () => {
@@ -1043,39 +1711,110 @@ document.getElementById("exportExcelBtn").onclick = () => {
   const histStats = buildHistoryStats(history, currentWeek);
 
   // Sheet 1: Summary
-  const summaryData = [["Teacher", "Total Covers", "Covers This Week", "Per-Week Average", "Free Periods"]];
+  const summaryData = [
+    [
+      "Teacher",
+      "Total Covers",
+      "Covers This Week",
+      "Per-Week Average",
+      "Free Periods",
+    ],
+  ];
   for (const teacher in metrics) {
-    const hs = histStats[teacher] || { total: 0, thisWeek: 0, coversPerWeek: "0.00" };
-    summaryData.push([teacher, hs.total, hs.thisWeek, parseFloat(hs.coversPerWeek).toFixed(2), metrics[teacher].freePeriods || 0]);
+    const hs = histStats[teacher] || {
+      total: 0,
+      thisWeek: 0,
+      coversPerWeek: "0.00",
+    };
+    summaryData.push([
+      teacher,
+      hs.total,
+      hs.thisWeek,
+      parseFloat(hs.coversPerWeek).toFixed(2),
+      metrics[teacher].freePeriods || 0,
+    ]);
   }
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), "Summary");
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet(summaryData),
+    "Summary",
+  );
 
   // Sheet 2: Weekly Breakdown (single pass)
-  const teachers = new Set(history.map(h => h.coverTeacher));
+  const teachers = new Set(history.map((h) => h.coverTeacher));
   const weekCounts = {};
   for (let i = 0; i < history.length; i++) {
     const h = history[i];
     if (!weekCounts[h.coverTeacher]) weekCounts[h.coverTeacher] = {};
-    weekCounts[h.coverTeacher][h.week] = (weekCounts[h.coverTeacher][h.week] || 0) + 1;
+    weekCounts[h.coverTeacher][h.week] =
+      (weekCounts[h.coverTeacher][h.week] || 0) + 1;
   }
-  const weeklyData = [["Teacher", "Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6", "Week 7", "Week 8", "Week 9", "Week 10"]];
-  teachers.forEach(t => {
+  const weeklyData = [
+    [
+      "Teacher",
+      "Week 1",
+      "Week 2",
+      "Week 3",
+      "Week 4",
+      "Week 5",
+      "Week 6",
+      "Week 7",
+      "Week 8",
+      "Week 9",
+      "Week 10",
+    ],
+  ];
+  teachers.forEach((t) => {
     const row = [t];
-    for (let w = 1; w <= 10; w++) row.push((weekCounts[t] && weekCounts[t][w]) || 0);
+    for (let w = 1; w <= 10; w++)
+      row.push((weekCounts[t] && weekCounts[t][w]) || 0);
     weeklyData.push(row);
   });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(weeklyData), "Weekly Breakdown");
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet(weeklyData),
+    "Weekly Breakdown",
+  );
 
   // Sheet 3: Detailed History
-  const detailedData = [["Date", "Week", "Covered Teacher", "Cover Teacher", "Day", "Period", "Subject", "Class", "Venue"]];
-  history.forEach(e => detailedData.push([e.date, e.week, e.coveredTeacher, e.coverTeacher, e.day, e.period, e.subject, e.className, e.venue]));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detailedData), "Detailed History");
+  const detailedData = [
+    [
+      "Date",
+      "Week",
+      "Covered Teacher",
+      "Cover Teacher",
+      "Day",
+      "Period",
+      "Subject",
+      "Class",
+      "Venue",
+    ],
+  ];
+  history.forEach((e) =>
+    detailedData.push([
+      e.date,
+      e.week,
+      e.coveredTeacher,
+      e.coverTeacher,
+      e.day,
+      e.period,
+      e.subject,
+      e.className,
+      e.venue,
+    ]),
+  );
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet(detailedData),
+    "Detailed History",
+  );
 
   // Sheet 4: Statistics
   const totalCovers = history.length;
   const uniqueTeachers = teachers.size;
-  const coverCounts = Array.from(teachers).map(t => histStats[t]?.total || 0);
-  const minC = Math.min(...coverCounts), maxC = Math.max(...coverCounts);
+  const coverCounts = Array.from(teachers).map((t) => histStats[t]?.total || 0);
+  const minC = Math.min(...coverCounts),
+    maxC = Math.max(...coverCounts);
   const statsData = [
     ["Statistic", "Value"],
     ["Total Cover Sessions", totalCovers],
@@ -1083,14 +1822,167 @@ document.getElementById("exportExcelBtn").onclick = () => {
     ["Average Covers per Teacher", (totalCovers / uniqueTeachers).toFixed(2)],
     ["Minimum Covers", minC],
     ["Maximum Covers", maxC],
-    ["Fairness Ratio (Max/Min)", minC > 0 ? (maxC / minC).toFixed(2) : "N/A"]
+    ["Fairness Ratio (Max/Min)", minC > 0 ? (maxC / minC).toFixed(2) : "N/A"],
   ];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(statsData), "Statistics");
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet(statsData),
+    "Statistics",
+  );
 
-  XLSX.writeFile(wb, `cover_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+  XLSX.writeFile(
+    wb,
+    `cover_report_${new Date().toISOString().split("T")[0]}.xlsx`,
+  );
 };
 
-// ── Initialization ─────────────────────────────────────────────
+// ── History backup and accountability ──────────────────────
+
+function backupCoverHistory() {
+  const history = loadCoverHistory();
+  const backup = {
+    date: new Date().toISOString(),
+    historyCount: history.length,
+    data: history,
+  };
+  const backups = JSON.parse(localStorage.getItem(HISTORY_BACKUP_KEY) || "[]");
+  backups.push(backup);
+  // Keep last 10 backups only
+  if (backups.length > 10) backups.shift();
+  localStorage.setItem(HISTORY_BACKUP_KEY, JSON.stringify(backups));
+  return backup;
+}
+
+function addToHistoryLog(action, details) {
+  const log = JSON.parse(localStorage.getItem(HISTORY_LOG_KEY) || "[]");
+  log.push({
+    timestamp: new Date().toISOString(),
+    action,
+    details,
+    dataSnapshot: {
+      historyCount: loadCoverHistory().length,
+      metricsCount: Object.keys(loadMetrics()).length,
+    },
+  });
+  // Auto-clear log if older than 3 months OR over 100 entries
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const filtered = log.filter(
+    (entry) => new Date(entry.timestamp) > threeMonthsAgo,
+  );
+
+  if (filtered.length > 100) {
+    const oldEntries = log.slice(0, log.length - 100);
+    // Export old entries before clearing
+    if (oldEntries.length > 0) {
+      autoExportHistoryLog(oldEntries);
+    }
+    localStorage.setItem(HISTORY_LOG_KEY, JSON.stringify(filtered.slice(-100)));
+  } else {
+    localStorage.setItem(HISTORY_LOG_KEY, JSON.stringify(filtered));
+  }
+}
+
+function autoExportHistoryLog(entries) {
+  const data = {
+    exportDate: new Date().toISOString(),
+    archiveType: "history-log-archive",
+    entries: entries,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `cover_history_log_archive_${new Date().toISOString().split("T")[0]}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function shouldAutoCleanHistory() {
+  const lastClear = localStorage.getItem(LAST_AUTO_CLEAR_KEY);
+  if (!lastClear) return false;
+
+  const lastClearDate = new Date(lastClear);
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+  return lastClearDate < threeMonthsAgo;
+}
+
+function autoExportAllData() {
+  const data = {
+    exportDate: new Date().toISOString(),
+    exportType: "full-system-backup",
+    coverHistory: loadCoverHistory(),
+    metrics: loadMetrics(),
+    tenWeekStart: getCachedTenWeekStart(),
+    historyLog: JSON.parse(localStorage.getItem(HISTORY_LOG_KEY) || "[]"),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `cover_system_backup_${new Date().toISOString().split("T")[0]}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return true;
+}
+
+// ── Teacher Search Filter ─────────────────────────────────
+
+document.getElementById("teacherSearchInput").addEventListener("input", (e) => {
+  const query = e.target.value.toLowerCase().trim();
+  const searchResults = document.getElementById("searchResults");
+
+  if (query.length === 0) {
+    searchResults.style.display = "none";
+    return;
+  }
+
+  const allNames = getTeacherNames().filter(
+    (n) => !new Set(absentTeachers).has(n),
+  );
+  const matches = allNames.filter((name) => name.toLowerCase().includes(query));
+
+  if (matches.length === 0) {
+    searchResults.innerHTML =
+      '<div class="list-group-item text-muted">No teachers found</div>';
+    searchResults.style.display = "block";
+    return;
+  }
+
+  searchResults.innerHTML = matches
+    .map(
+      (name) =>
+        `<button class="list-group-item list-group-item-action" type="button" data-teacher-name="${name}">${name}</button>`,
+    )
+    .join("");
+
+  searchResults.style.display = "block";
+
+  // Add click handlers to results
+  searchResults.querySelectorAll("button").forEach((btn) => {
+    btn.onclick = () => {
+      document.getElementById("addAbsenceTeacherSelect").value =
+        btn.dataset.teacherName;
+      document.getElementById("teacherSearchInput").value = "";
+      searchResults.style.display = "none";
+      document.getElementById("addAbsenceTeacherBtn").click();
+    };
+  });
+});
+
+// Hide search results when clicking outside
+document.addEventListener("click", (e) => {
+  if (
+    !e.target.closest("#teacherSearchInput") &&
+    !e.target.closest("#searchResults")
+  ) {
+    document.getElementById("searchResults").style.display = "none";
+  }
+});
 
 refreshTeachers();
 renderGrid();
@@ -1098,15 +1990,28 @@ initializeDatePicker();
 initializeTenWeekPeriod();
 autoPruneOldEntries();
 
-document.addEventListener('show.bs.modal', (e) => {
-  if (e.target.id === 'historyModal') displayCoverHistory();
-  else if (e.target.id === 'tenWeekModal') initializePeriodModal();
+document.addEventListener("show.bs.modal", (e) => {
+  if (e.target.id === "historyModal") displayCoverHistory();
+  else if (e.target.id === "tenWeekModal") initializePeriodModal();
+  else if (e.target.id === "fairnessSettingsModal") {
+    const settings = loadFairnessSettings();
+    document.getElementById("excludeDndSwitch").checked = settings.excludeDnd;
+    document.getElementById("freePeriodsOnlySwitch").checked =
+      settings.freePeriodsOnly;
+    document.getElementById("maxCoversPerDay").value = settings.maxCoversPerDay;
+    document.getElementById("maxCoversPerWeek").value =
+      settings.maxCoversPerWeek;
+    document.getElementById("useLastResortSwitch").checked =
+      settings.useLastResort;
+  }
 });
 
-document.querySelector('.sidebar-hover-trigger')?.addEventListener('click', () => {
-  const sidebar = document.getElementById('sidebarContainer');
-  sidebar.style.left = sidebar.style.left === '0px' ? '-350px' : '0';
-});
+document
+  .querySelector(".sidebar-hover-trigger")
+  ?.addEventListener("click", () => {
+    const sidebar = document.getElementById("sidebarContainer");
+    sidebar.style.left = sidebar.style.left === "0px" ? "-350px" : "0";
+  });
 
 document.getElementById("savePeriodBtn").onclick = () => {
   const newStartDate = document.getElementById("tenWeekStartDate").value;
@@ -1121,7 +2026,7 @@ document.getElementById("savePeriodBtn").onclick = () => {
 
 document.getElementById("resetPeriodBtn").onclick = () => {
   if (confirm("Reset the 10-week period? This will mark today as Week 1.")) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     setCachedTenWeekStart(today);
     document.getElementById("tenWeekStartDate").value = today;
     updatePeriodStatus();
@@ -1133,6 +2038,48 @@ document.getElementById("resetPeriodBtn").onclick = () => {
   }
 };
 
+// ── Fairness Settings Modal ────────────────────────────────
+
+document.getElementById("saveFairnessBtn").onclick = () => {
+  const settings = {
+    excludeDnd: document.getElementById("excludeDndSwitch").checked,
+    freePeriodsOnly: document.getElementById("freePeriodsOnlySwitch").checked,
+    maxCoversPerDay: parseInt(document.getElementById("maxCoversPerDay").value),
+    maxCoversPerWeek: parseInt(
+      document.getElementById("maxCoversPerWeek").value,
+    ),
+    useLastResort: document.getElementById("useLastResortSwitch").checked,
+  };
+
+  saveFairnessSettings(settings);
+  addToHistoryLog("FAIRNESS_SETTINGS_UPDATED", settings);
+  alert("Fairness settings saved successfully!");
+
+  // Close modal and re-render
+  const modal = bootstrap.Modal.getInstance(
+    document.getElementById("fairnessSettingsModal"),
+  );
+  if (modal) modal.hide();
+  scheduleRenderGrid();
+};
+
+document.getElementById("resetFairnessBtn").onclick = () => {
+  if (confirm("Reset fairness settings to defaults?")) {
+    saveFairnessSettings(DEFAULT_FAIRNESS_SETTINGS);
+    document.getElementById("excludeDndSwitch").checked =
+      DEFAULT_FAIRNESS_SETTINGS.excludeDnd;
+    document.getElementById("maxCoversPerDay").value =
+      DEFAULT_FAIRNESS_SETTINGS.maxCoversPerDay;
+    document.getElementById("maxCoversPerWeek").value =
+      DEFAULT_FAIRNESS_SETTINGS.maxCoversPerWeek;
+    document.getElementById("useLastResortSwitch").checked =
+      DEFAULT_FAIRNESS_SETTINGS.useLastResort;
+    addToHistoryLog("FAIRNESS_SETTINGS_RESET", DEFAULT_FAIRNESS_SETTINGS);
+    alert("Fairness settings reset to defaults!");
+    scheduleRenderGrid();
+  }
+};
+
 async function generatePDF() {
   try {
     // [OPT-7] Lazy-load jsPDF only when needed
@@ -1140,11 +2087,16 @@ async function generatePDF() {
       try {
         await loadScript(JSPDF_URL);
       } catch (err) {
-        alert("jsPDF library failed to load. Please check your internet connection.");
+        alert(
+          "jsPDF library failed to load. Please check your internet connection.",
+        );
         return;
       }
     }
-    if (absentTeachers.length === 0) { alert("No absent teachers selected. Please add absent teachers first."); return; }
+    if (absentTeachers.length === 0) {
+      alert("No absent teachers selected. Please add absent teachers first.");
+      return;
+    }
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: "landscape" });
@@ -1159,7 +2111,9 @@ async function generatePDF() {
     absentTeachers.forEach((teacher) => {
       const data = loadTeacher(teacher);
       if (!data) return;
-      const lessons = data.entries.filter(e => e.row == (day - 1) && e.type === "lesson").sort((a, b) => a.col - b.col);
+      const lessons = data.entries
+        .filter((e) => e.row == day - 1 && e.type === "lesson")
+        .sort((a, b) => a.col - b.col);
       if (lessons.length === 0) return;
 
       doc.setFont(undefined, "bold");
@@ -1174,12 +2128,15 @@ async function generatePDF() {
         const split = doc.splitTextToSize(line, 180);
         doc.text(split, 16, y);
         y += split.length * 5;
-        if (y > 270) { doc.addPage(); y = 15; }
+        if (y > 270) {
+          doc.addPage();
+          y = 15;
+        }
       });
       y += 4;
     });
 
-    const pdfBlob = doc.output('blob');
+    const pdfBlob = doc.output("blob");
     const url = URL.createObjectURL(pdfBlob);
     window.open(url);
   } catch (error) {

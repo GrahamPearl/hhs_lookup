@@ -1,7 +1,26 @@
+:root {
+  --fw-bg-light: #fff7e6;
+  --fw-border-light: #f59e0b;
+  --fw-text-light: #92400e;
+
+  --fw-bg-dark: #1f2937;
+  --fw-border-dark: #fbbf24;
+  --fw-text-dark: #fde68a;
+}
+
 body {
   background: #f4f6f9;
   margin: 0;
 }
+
+.sidebar-container .fairness-warning,
+.floating-cover-panel .fairness-warning,
+body.dark .fairness-warning {
+  background-color: var(--fw-bg-dark);
+  border-left-color: var(--fw-border-dark);
+  color: var(--fw-text-dark);
+}
+
 
 /* Left edge hover area indicator */
 .sidebar-hover-trigger {
@@ -119,12 +138,16 @@ body {
 }
 
 .fairness-warning {
-  background-color: #fff3cd;
-  border-left: 4px solid #ff6b6b;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 4px;
+  background-color: var(--fw-bg-light);
+  border-left: 5px solid var(--fw-border-light);
+  color: var(--fw-text-light);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  line-height: 1.4;
 }
+
 
 @media print {
   .avail-badge {
@@ -250,11 +273,31 @@ body {
   border-collapse: collapse;
 }
 
+.floating-cover-content .table thead th {
+  background: rgba(15, 23, 42, 0.95);
+}
+
 .floating-cover-content .table thead {
-  background: rgba(15, 23, 42, 0.9);
+  position: static;
+}
+
+.floating-cover-content {
+  overflow-y: auto;
+  position: relative;
+}
+
+.floating-cover-content .table thead {
+  z-index: 5;
+}
+
+.floating-cover-content .table thead {
   position: sticky;
   top: 0;
-  z-index: 10;
+
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+
+  z-index: 5;
 }
 
 .floating-cover-content .table thead th {
@@ -336,7 +379,22 @@ body {
   transition: opacity 0.2s ease-in-out;
 }
 
-.panel-hover-trigger:hover::after {
-  opacity: 0.8;
-  color: #cbd5e1;
+
+.sidebar-container #weekDisplay {
+  color: #facc15;
+}
+
+.sidebar-container small.text-muted {
+  color: #94a3b8;
+}
+
+.sidebar-container .text-muted,
+.floating-cover-panel .text-muted,
+.floating-print-nav .text-muted {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+#weekDisplay {
+  font-weight: 600;
+  color: #facc15; /* amber */
 }
