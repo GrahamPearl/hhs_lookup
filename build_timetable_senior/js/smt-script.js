@@ -104,7 +104,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Modal elements
   const cellModalElement = document.getElementById("cellModal");
-  const cellModal = cellModalElement ? new bootstrap.Modal(cellModalElement) : null;
+  const cellModal = cellModalElement
+    ? new bootstrap.Modal(cellModalElement)
+    : null;
   const cellForm = document.getElementById("cellForm");
   const cellRowInput = document.getElementById("cellRow");
   const cellColInput = document.getElementById("cellCol");
@@ -120,19 +122,137 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Rename confirm modal
   const renameConfirmModalEl = document.getElementById("renameConfirmModal");
-  const renameConfirmModal = renameConfirmModalEl ? new bootstrap.Modal(renameConfirmModalEl) : null;
+  const renameConfirmModal = renameConfirmModalEl
+    ? new bootstrap.Modal(renameConfirmModalEl)
+    : null;
   const renameFromSpan = document.getElementById("renameFrom");
   const renameToSpan = document.getElementById("renameTo");
   const confirmRenameBtn = document.getElementById("confirmRenameBtn");
 
   // DND confirm modal
   const dndConfirmModalEl = document.getElementById("dndConfirmModal");
-  const dndConfirmModal = dndConfirmModalEl ? new bootstrap.Modal(dndConfirmModalEl) : null;
+  const dndConfirmModal = dndConfirmModalEl
+    ? new bootstrap.Modal(dndConfirmModalEl)
+    : null;
   const dndConfirmSlot = document.getElementById("dndConfirmSlot");
   const dndConfirmCount = document.getElementById("dndConfirmCount");
   const confirmDndApplyBtn = document.getElementById("confirmDndApplyBtn");
 
+  const coverRiskModalEl = document.getElementById("coverRiskModal");
+  const coverRiskModal = coverRiskModalEl
+    ? new bootstrap.Modal(coverRiskModalEl)
+    : null;
+
+  document.getElementById("coverRiskBtn")?.addEventListener("click", () => {
+    coverRiskModal?.show();
+  });
+
   // ---------------------- HELPERS ----------------------------
+  function analyseCoverRisk(day, period) {
+    const teachers = getAllTeacherNames();
+
+    let teaching = 0;
+    let meetingsDnd = 0;
+    let meetingsAllowed = 0;
+    let free = 0;
+    const eligible = [];
+
+    teachers.forEach((name) => {
+      const key = getTeacherKey(name);
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+
+      try {
+        const payload = JSON.parse(raw);
+        const entry = (payload.entries || []).find(
+          (e) => e.row === day && e.col === period,
+        );
+
+        if (!entry) {
+          free++;
+          eligible.push(name);
+          return;
+        }
+
+        if (entry.type === "lesson") {
+          teaching++;
+          return;
+        }
+
+        if (entry.type === "meeting") {
+          if (entry.doNotDisturb) {
+            meetingsDnd++;
+          } else {
+            meetingsAllowed++;
+            eligible.push(name);
+          }
+          return;
+        }
+
+        if (entry.type === "free") {
+          free++;
+          eligible.push(name);
+        }
+      } catch {}
+    });
+
+    return {
+      teaching,
+      meetingsDnd,
+      meetingsAllowed,
+      free,
+      eligibleCount: eligible.length,
+      eligible,
+    };
+  }
+
+  function classifyRisk(eligibleCount) {
+    if (eligibleCount === 0) {
+      return { level: "Critical", class: "danger", icon: "fa-skull" };
+    }
+    if (eligibleCount <= 2) {
+      return {
+        level: "High Risk",
+        class: "warning",
+        icon: "fa-triangle-exclamation",
+      };
+    }
+    return { level: "Healthy", class: "success", icon: "fa-check-circle" };
+  }
+  function renderCoverRiskResult(stats, day, period) {
+    const risk = classifyRisk(stats.eligibleCount);
+    const output = document.getElementById("coverRiskOutput");
+
+    output.innerHTML = `
+    <div class="alert alert-${risk.class}">
+      <strong>
+        <i class="fa-solid ${risk.icon} me-1"></i>
+        ${risk.level}
+      </strong>
+      — ${stats.eligibleCount} teacher(s) eligible for cover
+    </div>
+
+    <ul class="list-group mb-3">
+      <li class="list-group-item">Teaching: <strong>${stats.teaching}</strong></li>
+      <li class="list-group-item">Meetings (DND): <strong>${stats.meetingsDnd}</strong></li>
+      <li class="list-group-item">Meetings (cover allowed): <strong>${stats.meetingsAllowed}</strong></li>
+      <li class="list-group-item">Free periods: <strong>${stats.free}</strong></li>
+    </ul>
+
+    <div>
+      <strong>Eligible Teachers</strong>
+      <div class="mt-2">
+        ${
+          stats.eligible.length
+            ? stats.eligible
+                .map((n) => `<span class="teacher-chip chip-muted">${n}</span>`)
+                .join("")
+            : `<span class="text-muted">None</span>`
+        }
+      </div>
+    </div>
+  `;
+  }
 
   function setUnsaved(flag) {
     unsavedChanges = !!flag;
@@ -163,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!input || !input.trim()) return [];
     return input
       .split(",")
-      .map(x => x.trim())
+      .map((x) => x.trim())
       .filter(Boolean)
       .slice(0, rows);
   }
@@ -180,28 +300,26 @@ document.addEventListener("DOMContentLoaded", () => {
     timetableWrapper?.classList.remove("d-none");
   }
 
-  
-// Helpers used by bulkExportAllTeachersIndividually()
-function sanitizeFileName(name) {
-  return (name || "timetable")
-    .trim()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-zA-Z0-9_\-]/g, "");
-}
+  // Helpers used by bulkExportAllTeachersIndividually()
+  function sanitizeFileName(name) {
+    return (name || "timetable")
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9_\-]/g, "");
+  }
 
-function downloadJsonObject(obj, filename) {
-  const jsonString = JSON.stringify(obj, null, 2);
-  const blob = new Blob([jsonString], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
+  function downloadJsonObject(obj, filename) {
+    const jsonString = JSON.stringify(obj, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   // ---------------------- TEACHER LIST ------------------------
 
@@ -229,14 +347,17 @@ function downloadJsonObject(obj, filename) {
     teacherSelect.innerHTML = "";
     const defaultOpt = document.createElement("option");
     defaultOpt.value = "";
-    defaultOpt.textContent = names.length === 0 ? "-- No saved timetables yet --" : "-- Select a teacher --";
+    defaultOpt.textContent =
+      names.length === 0
+        ? "-- No saved timetables yet --"
+        : "-- Select a teacher --";
     teacherSelect.appendChild(defaultOpt);
 
     const filtered = filter
-      ? names.filter(n => n.toLowerCase().includes(filter))
+      ? names.filter((n) => n.toLowerCase().includes(filter))
       : names;
 
-    filtered.forEach(name => {
+    filtered.forEach((name) => {
       const opt = document.createElement("option");
       opt.value = getTeacherKey(name);
       opt.textContent = name;
@@ -418,7 +539,7 @@ function downloadJsonObject(obj, filename) {
 
   function renderAllEntries() {
     _cellRefCache.forEach((_, key) => {
-      const [r, c] = key.split("-").map(x => parseInt(x, 10));
+      const [r, c] = key.split("-").map((x) => parseInt(x, 10));
       renderSingleCell(r, c);
     });
   }
@@ -479,7 +600,9 @@ function downloadJsonObject(obj, filename) {
   // ---------------------- PAYLOAD BUILD ----------------------
 
   function buildPayload() {
-    const teacherName = normalizeTeacherName(teacherNameInput.value || currentTeacherName || "Unknown");
+    const teacherName = normalizeTeacherName(
+      teacherNameInput.value || currentTeacherName || "Unknown",
+    );
     return {
       teacherName,
       config: { ...timetableConfig },
@@ -501,7 +624,9 @@ function downloadJsonObject(obj, filename) {
     // Ensure valid config defaults
     timetableConfig.rows = parseInt(timetableConfig.rows, 10) || 0;
     timetableConfig.cols = parseInt(timetableConfig.cols, 10) || 0;
-    timetableConfig.dayNames = Array.isArray(timetableConfig.dayNames) ? timetableConfig.dayNames : [];
+    timetableConfig.dayNames = Array.isArray(timetableConfig.dayNames)
+      ? timetableConfig.dayNames
+      : [];
 
     timetableData = {};
     (payload.entries || []).forEach((e) => {
@@ -582,7 +707,11 @@ function downloadJsonObject(obj, filename) {
   function loadTimetable() {
     const selectedKey = teacherSelect.value;
     if (selectedKey) {
-      if (unsavedChanges && !confirm("You have unsaved changes. Load another timetable anyway?")) return;
+      if (
+        unsavedChanges &&
+        !confirm("You have unsaved changes. Load another timetable anyway?")
+      )
+        return;
       loadTimetableByKey(selectedKey);
       return;
     }
@@ -594,12 +723,21 @@ function downloadJsonObject(obj, filename) {
     }
 
     const key = getTeacherKey(teacherName);
-    if (unsavedChanges && !confirm("You have unsaved changes. Load another timetable anyway?")) return;
+    if (
+      unsavedChanges &&
+      !confirm("You have unsaved changes. Load another timetable anyway?")
+    )
+      return;
     loadTimetableByKey(key);
   }
 
   function clearCurrentGrid() {
-    if (!confirm("Clear the current timetable grid (unsaved changes will be lost)?")) return;
+    if (
+      !confirm(
+        "Clear the current timetable grid (unsaved changes will be lost)?",
+      )
+    )
+      return;
     timetableConfig = { rows: 0, cols: 0, dayNames: [] };
     timetableData = {};
     currentTeacherName = "";
@@ -629,7 +767,12 @@ function downloadJsonObject(obj, filename) {
 
         let teacherName = normalizeTeacherName(payload.teacherName || "");
         if (!teacherName) {
-          teacherName = normalizeTeacherName(prompt("JSON has no teacherName. Enter teacher name:", "New Teacher") || "");
+          teacherName = normalizeTeacherName(
+            prompt(
+              "JSON has no teacherName. Enter teacher name:",
+              "New Teacher",
+            ) || "",
+          );
           if (!teacherName) {
             alert("Import cancelled.");
             return;
@@ -638,7 +781,7 @@ function downloadJsonObject(obj, filename) {
 
         // Compatibility: older builder might use title instead of subject
         if (Array.isArray(payload.entries)) {
-          payload.entries.forEach(e2 => {
+          payload.entries.forEach((e2) => {
             if (e2 && !e2.subject && e2.title) e2.subject = e2.title;
           });
         }
@@ -708,7 +851,8 @@ function downloadJsonObject(obj, filename) {
     }
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text)
+      navigator.clipboard
+        .writeText(text)
         .then(() => alert("JSON copied to clipboard."))
         .catch(() => fallbackCopy());
     } else {
@@ -734,7 +878,9 @@ function downloadJsonObject(obj, filename) {
   }
 
   async function bulkImportFromFolder(files) {
-    const jsonFiles = Array.from(files || []).filter(f => f.name.toLowerCase().endsWith(".json"));
+    const jsonFiles = Array.from(files || []).filter((f) =>
+      f.name.toLowerCase().endsWith(".json"),
+    );
     if (jsonFiles.length === 0) {
       bulkStatus.textContent = "No JSON files found in selected folder.";
       bulkStatusDetail.textContent = "";
@@ -759,7 +905,7 @@ function downloadJsonObject(obj, filename) {
 
         // Compatibility: title -> subject
         if (Array.isArray(payload.entries)) {
-          payload.entries.forEach(e2 => {
+          payload.entries.forEach((e2) => {
             if (e2 && !e2.subject && e2.title) e2.subject = e2.title;
           });
         }
@@ -771,7 +917,10 @@ function downloadJsonObject(obj, filename) {
           lastResort: !!payload.lastResort,
         };
 
-        localStorage.setItem(getTeacherKey(teacherName), JSON.stringify(safePayload));
+        localStorage.setItem(
+          getTeacherKey(teacherName),
+          JSON.stringify(safePayload),
+        );
         imported++;
       } catch (err) {
         failed++;
@@ -785,9 +934,10 @@ function downloadJsonObject(obj, filename) {
     refreshCompletenessDashboard();
 
     bulkStatus.textContent = `Imported ${imported} timetable(s).`;
-    bulkStatusDetail.textContent = failed > 0
-      ? `Failed ${failed}. ${failures.slice(0, 5).join(" | ")}${failures.length > 5 ? " | ..." : ""}`
-      : "All files imported successfully.";
+    bulkStatusDetail.textContent =
+      failed > 0
+        ? `Failed ${failed}. ${failures.slice(0, 5).join(" | ")}${failures.length > 5 ? " | ..." : ""}`
+        : "All files imported successfully.";
   }
 
   // ---------------------- RENAME TEACHER -----------------------
@@ -830,7 +980,9 @@ function downloadJsonObject(obj, filename) {
     const toKey = getTeacherKey(to);
 
     if (localStorage.getItem(toKey)) {
-      alert("A timetable already exists with the target name. Rename cancelled.");
+      alert(
+        "A timetable already exists with the target name. Rename cancelled.",
+      );
       return;
     }
 
@@ -874,7 +1026,11 @@ function downloadJsonObject(obj, filename) {
       return;
     }
 
-    if (!confirm("This will bulk-remove titles (Mr/Mrs/Miss/Ms/Dr) from ALL teacher names. Continue?")) {
+    if (
+      !confirm(
+        "This will bulk-remove titles (Mr/Mrs/Miss/Ms/Dr) from ALL teacher names. Continue?",
+      )
+    ) {
       return;
     }
 
@@ -926,10 +1082,16 @@ function downloadJsonObject(obj, filename) {
     refreshTeacherSelect(teacherSearchInput?.value || "");
     refreshCompletenessDashboard();
 
-    const msg = `Titles removed from ${changed} teacher(s).` +
+    const msg =
+      `Titles removed from ${changed} teacher(s).` +
       (skipped > 0 ? ` Skipped ${skipped} due to conflicts/errors.` : "");
 
-    alert(msg + (conflicts.length ? `\nExamples: ${conflicts.slice(0, 5).join(" | ")}${conflicts.length > 5 ? " | ..." : ""}` : ""));
+    alert(
+      msg +
+        (conflicts.length
+          ? `\nExamples: ${conflicts.slice(0, 5).join(" | ")}${conflicts.length > 5 ? " | ..." : ""}`
+          : ""),
+    );
   }
 
   // ---------------------- SEARCH + QUICK LOAD ------------------
@@ -937,7 +1099,7 @@ function downloadJsonObject(obj, filename) {
   function quickSearchUpdate() {
     const txt = teacherSearchInput.value;
     const filtered = refreshTeacherSelect(txt);
-refreshCompletenessDashboard();
+    refreshCompletenessDashboard();
 
     // Optional: if only one match and user pressed Enter, handled in keydown
     return filtered;
@@ -952,7 +1114,13 @@ refreshCompletenessDashboard();
       if (filtered.length === 1) {
         const key = getTeacherKey(filtered[0]);
         if (key) {
-          if (unsavedChanges && !confirm("You have unsaved changes. Load the matching timetable anyway?")) return;
+          if (
+            unsavedChanges &&
+            !confirm(
+              "You have unsaved changes. Load the matching timetable anyway?",
+            )
+          )
+            return;
           loadTimetableByKey(key);
         }
       }
@@ -962,7 +1130,10 @@ refreshCompletenessDashboard();
   teacherSelect?.addEventListener("change", () => {
     const key = teacherSelect.value;
     if (!key) return;
-    if (unsavedChanges && !confirm("You have unsaved changes. Load another timetable anyway?")) {
+    if (
+      unsavedChanges &&
+      !confirm("You have unsaved changes. Load another timetable anyway?")
+    ) {
       teacherSelect.value = currentTeacherKey || "";
       return;
     }
@@ -979,69 +1150,74 @@ refreshCompletenessDashboard();
   // ---------------------- COMPLETENESS AUDIT -------------------
 
   function auditMissingCells() {
-    if (!timetableConfig.rows || !timetableConfig.cols) {
+    const { rows, cols } = timetableConfig;
+    if (!rows || !cols) {
       missingSummary.textContent = "Generate or load a timetable first.";
       missingCellChips.innerHTML = "";
       autofillBtn.disabled = true;
-      return;
+      return [];
     }
 
     const missing = [];
-    for (let r = 0; r < timetableConfig.rows; r++) {
-      for (let c = 0; c < timetableConfig.cols; c++) {
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
         const key = getCellKey(r, c);
         if (!timetableData[key]) {
-          missing.push({ r, c });
+          missing.push({ row: r, col: c });
         }
       }
     }
 
-    missingSummary.textContent = `${missing.length} uncaptured cell(s).`;
-    missingCellChips.innerHTML = missing.slice(0, 60).map(m => {
-      return `<span class="teacher-chip chip-muted">Day ${m.r + 1} P${m.c + 1}</span>`;
-    }).join("") + (missing.length > 60 ? `<div class="small text-muted mt-1">+ ${missing.length - 60} more…</div>` : "");
+    missingSummary.textContent =
+      missing.length === 0
+        ? "✅ No missing cells."
+        : `${missing.length} uncaptured cell(s) found.`;
+
+    missingCellChips.innerHTML =
+      missing
+        .slice(0, 30)
+        .map(
+          (m) =>
+            `<span class="teacher-chip chip-muted">D${m.row + 1} P${m.col + 1}</span>`,
+        )
+        .join("") +
+      (missing.length > 30 ? `<span class="text-muted">…</span>` : "");
 
     autofillBtn.disabled = missing.length === 0;
-
     return missing;
   }
 
   function getSelectedAutofillType() {
-    const selected = document.querySelector("input[name='autofillType']:checked");
-    return selected ? selected.value : "free";
+    const checked = document.querySelector(
+      "input[name='autofillType']:checked",
+    );
+    return checked ? checked.value : "free";
   }
 
   function applyAutofill() {
     const missing = auditMissingCells();
-    if (!missing || missing.length === 0) return;
+    if (!missing.length) return;
 
     const type = getSelectedAutofillType();
 
-    missing.forEach(({ r, c }) => {
-      const key = getCellKey(r, c);
-      if (timetableData[key]) return;
-
-      const base = { row: r, col: c, type };
-
-      if (type === "free") {
-        timetableData[key] = base;
-        return;
-      }
-
-      // meeting/lesson placeholders — editable later
+    missing.forEach(({ row, col }) => {
+      const key = getCellKey(row, col);
       timetableData[key] = {
-        ...base,
-        subject: "",
+        row,
+        col,
+        type,
+        title: "",
         className: "",
         venue: "",
-        ...(type === "meeting" ? { doNotDisturb: false } : {}),
+        doNotDisturb: false,
       };
+      renderSingleCell(row, col);
     });
 
-    renderAllEntries();
     setUnsaved(true);
     updateSummary();
-    auditMissingCells();
+    alert(`Auto-filled ${missing.length} cells as '${type}'.`);
   }
 
   // ---------------------- BULK DND BY SLOT ---------------------
@@ -1057,104 +1233,61 @@ refreshCompletenessDashboard();
     const day = parseInt(dndDaySelect.value, 10);
     const period = parseInt(dndPeriodSelect.value, 10);
 
-    const names = getAllTeacherNames();
-    const list = [];
+    _dndSlotTeachers = [];
+    dndTeacherList.innerHTML = "";
 
-    for (const name of names) {
+    getAllTeacherNames().forEach((name) => {
       const key = getTeacherKey(name);
       const raw = localStorage.getItem(key);
-      if (!raw) continue;
+      if (!raw) return;
 
       try {
         const payload = JSON.parse(raw);
-        const entries = Array.isArray(payload.entries) ? payload.entries : [];
+        const entry = (payload.entries || []).find(
+          (e) => e.row === day && e.col === period && e.type === "meeting",
+        );
 
-        // Find entry for this slot
-        const entry = entries.find(e => e && e.row === day && e.col === period);
-        if (entry && entry.type === "meeting") {
-          if (!entry.subject && entry.title) entry.subject = entry.title;
-          list.push({
+        if (entry) {
+          _dndSlotTeachers.push({
             name,
             key,
             entry,
             hasDnd: !!entry.doNotDisturb,
           });
         }
-      } catch (_) {
-        // ignore corrupted
-      }
-    }
+      } catch {}
+    });
 
-    _dndSlotTeachers = list;
     renderDndTeacherChecklist();
-
-    dndStatus.textContent = list.length
-      ? `Loaded ${list.length} teacher(s) for ${buildSlotLabel(day, period)}.`
-      : `No meetings found for ${buildSlotLabel(day, period)}.`;
   }
 
   function renderDndTeacherChecklist() {
-    dndTeacherList.innerHTML = "";
-
     if (_dndSlotTeachers.length === 0) {
-      dndTeacherList.innerHTML = `<div class="text-muted small p-2">No teachers found for selected slot.</div>`;
-      applyDndBtn.disabled = true;
-      removeDndBtn.disabled = true;
+      dndTeacherList.innerHTML = `<div class="text-muted small p-2">No meetings found in this slot.</div>`;
       return;
     }
 
-    const frag = document.createDocumentFragment();
-
-    _dndSlotTeachers.forEach((t, idx) => {
-      const item = document.createElement("label");
-      item.className = "list-group-item d-flex align-items-start gap-2";
-
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.className = "form-check-input mt-1";
-      cb.dataset.idx = String(idx);
-
-      const body = document.createElement("div");
-      body.className = "flex-grow-1";
-
-      const title = document.createElement("div");
-      title.className = "fw-semibold";
-      title.textContent = t.name;
-
-      const meta = document.createElement("div");
-      meta.className = "small text-muted";
-      meta.textContent = t.entry.subject ? `Meeting: ${t.entry.subject}` : "Meeting";
-
-      const badges = document.createElement("div");
-      badges.className = "mt-1";
-      if (t.hasDnd) {
-        badges.innerHTML = `<span class="badge bg-danger">Currently DND</span>`;
-      } else {
-        badges.innerHTML = `<span class="badge bg-secondary">Interruptible</span>`;
-      }
-
-      body.appendChild(title);
-      body.appendChild(meta);
-      body.appendChild(badges);
-
-      item.appendChild(cb);
-      item.appendChild(body);
-      frag.appendChild(item);
-    });
-
-    dndTeacherList.appendChild(frag);
-
-    // Enable buttons when selection changes
-    dndTeacherList.querySelectorAll("input[type='checkbox']").forEach(cb => {
-      cb.addEventListener("change", updateDndButtonsState);
-    });
+    dndTeacherList.innerHTML = _dndSlotTeachers
+      .map(
+        (t, i) => `
+      <label class="list-group-item d-flex align-items-center gap-2">
+        <input type="checkbox" data-idx="${i}" class="form-check-input">
+        <span>${t.name}</span>
+        ${t.hasDnd ? `<span class="badge bg-danger ms-auto">DND</span>` : ""}
+      </label>`,
+      )
+      .join("");
 
     updateDndButtonsState();
   }
 
   function getSelectedDndTeacherIndices() {
-    const cbs = dndTeacherList.querySelectorAll("input[type='checkbox']:checked");
-    return Array.from(cbs).map(cb => parseInt(cb.dataset.idx, 10)).filter(Number.isFinite);
+    const cbs = dndTeacherList.querySelectorAll(
+      "input[type='checkbox']:checked",
+    );
+    return Array.from(cbs)
+      .map((cb) => parseInt(cb.dataset.idx, 10))
+      .filter(Number.isFinite);
   }
 
   function updateDndButtonsState() {
@@ -1165,7 +1298,9 @@ refreshCompletenessDashboard();
   }
 
   function selectAllDndTeachers(flag) {
-    dndTeacherList.querySelectorAll("input[type='checkbox']").forEach(cb => { cb.checked = !!flag; });
+    dndTeacherList.querySelectorAll("input[type='checkbox']").forEach((cb) => {
+      cb.checked = !!flag;
+    });
     updateDndButtonsState();
   }
 
@@ -1182,66 +1317,45 @@ refreshCompletenessDashboard();
     dndConfirmCount.textContent = String(selected.length);
 
     // Button text could reflect mode (apply/remove)
-    confirmDndApplyBtn.textContent = mode === "remove" ? "Confirm Remove" : "Confirm Apply";
+    confirmDndApplyBtn.textContent =
+      mode === "remove" ? "Confirm Remove" : "Confirm Apply";
 
     dndConfirmModal.show();
   }
 
   function applyBulkDnd(mode) {
-    const day = parseInt(dndDaySelect.value, 10);
-    const period = parseInt(dndPeriodSelect.value, 10);
-    const selectedIdx = getSelectedDndTeacherIndices();
+    const indices = getSelectedDndTeacherIndices();
+    if (!indices.length) return;
 
-    if (selectedIdx.length === 0) {
-      dndConfirmModal?.hide();
-      return;
-    }
-
-    let updated = 0;
-    let failed = 0;
-
-    selectedIdx.forEach(i => {
+    indices.forEach((i) => {
       const t = _dndSlotTeachers[i];
-      if (!t) return;
-
       const raw = localStorage.getItem(t.key);
-      if (!raw) { failed++; return; }
+      if (!raw) return;
 
       try {
         const payload = JSON.parse(raw);
-        const entries = Array.isArray(payload.entries) ? payload.entries : [];
-        const entry = entries.find(e => e && e.row === day && e.col === period);
-        if (!entry || entry.type !== "meeting") return;
-
-        if (mode === "apply") entry.doNotDisturb = true;
-        else if (mode === "remove") delete entry.doNotDisturb;
-
-        localStorage.setItem(t.key, JSON.stringify(payload));
-        updated++;
-
-        // If this teacher is currently loaded and same slot, update in-memory state too
-        if (currentTeacherName === t.name) {
-          const k = getCellKey(day, period);
-          if (timetableData[k] && timetableData[k].type === "meeting") {
-            if (mode === "apply") timetableData[k].doNotDisturb = true;
-            else delete timetableData[k].doNotDisturb;
-            renderSingleCell(day, period);
-            setUnsaved(true);
-          }
+        const entry = payload.entries.find(
+          (e) =>
+            e.row === t.entry.row &&
+            e.col === t.entry.col &&
+            e.type === "meeting",
+        );
+        if (entry) {
+          entry.doNotDisturb = mode === "apply";
+          localStorage.setItem(t.key, JSON.stringify(payload));
         }
-      } catch (e) {
-        failed++;
-      }
+      } catch {}
     });
 
-    // Refresh slot list status
-    loadTeachersForDndSlot();
+    dndStatus.textContent = `${mode === "apply" ? "Applied" : "Removed"} DND for ${indices.length} teacher(s).`;
+    loadTeachersForDndSlot(); // refresh list
+  }
 
-    dndStatus.textContent = mode === "apply"
-      ? `Applied DND to ${updated} teacher(s) for ${buildSlotLabel(day, period)}.${failed ? ` Failed: ${failed}.` : ""}`
-      : `Removed DND from ${updated} teacher(s) for ${buildSlotLabel(day, period)}.${failed ? ` Failed: ${failed}.` : ""}`;
-
-    dndConfirmModal?.hide();
+  function openDndConfirm(mode) {
+    _dndActionMode = mode;
+    dndConfirmSlot.textContent = `Day ${+dndDaySelect.value + 1}, Period ${+dndPeriodSelect.value + 1}`;
+    dndConfirmCount.textContent = getSelectedDndTeacherIndices().length;
+    dndConfirmModal.show();
   }
 
   // ---------------------- SUMMARY -----------------------------
@@ -1268,13 +1382,17 @@ refreshCompletenessDashboard();
     summaryUncaptured.textContent = String(uncaptured);
 
     const notes = [];
-    if (currentTeacherLastResort) notes.push("Teacher is marked as Last Resort.");
+    if (currentTeacherLastResort)
+      notes.push("Teacher is marked as Last Resort.");
 
     // Count DND meetings
-    const dndCount = Object.values(timetableData).filter(e => e?.type === "meeting" && e.doNotDisturb).length;
+    const dndCount = Object.values(timetableData).filter(
+      (e) => e?.type === "meeting" && e.doNotDisturb,
+    ).length;
     if (dndCount) notes.push(`${dndCount} meeting(s) marked DND.`);
 
-    if (uncaptured) notes.push("Timetable has uncaptured cells — consider auto-fill.");
+    if (uncaptured)
+      notes.push("Timetable has uncaptured cells — consider auto-fill.");
 
     summaryNotes.textContent = notes.length ? notes.join(" ") : "No notes.";
   }
@@ -1285,7 +1403,10 @@ refreshCompletenessDashboard();
     e.preventDefault();
     timetableConfig.rows = parseInt(rowsInput.value, 10);
     timetableConfig.cols = parseInt(colsInput.value, 10);
-    timetableConfig.dayNames = parseDayNames(dayNamesInput.value, timetableConfig.rows);
+    timetableConfig.dayNames = parseDayNames(
+      dayNamesInput.value,
+      timetableConfig.rows,
+    );
 
     timetableData = {};
     buildTableStructure();
@@ -1305,7 +1426,10 @@ refreshCompletenessDashboard();
   });
 
   exportBtn?.addEventListener("click", exportCurrentTimetable);
-  bulkExportAllBtn?.addEventListener("click", bulkExportAllTeachersIndividually);
+  bulkExportAllBtn?.addEventListener(
+    "click",
+    bulkExportAllTeachersIndividually,
+  );
   copyJsonBtn?.addEventListener("click", copyJsonToClipboard);
 
   bulkFolderBtn?.addEventListener("click", () => bulkFolderInput.click());
@@ -1324,10 +1448,15 @@ refreshCompletenessDashboard();
 
   dndLoadTeachersBtn?.addEventListener("click", loadTeachersForDndSlot);
   dndSelectAllBtn?.addEventListener("click", () => selectAllDndTeachers(true));
-  dndSelectNoneBtn?.addEventListener("click", () => selectAllDndTeachers(false));
+  dndSelectNoneBtn?.addEventListener("click", () =>
+    selectAllDndTeachers(false),
+  );
+
   applyDndBtn?.addEventListener("click", () => openDndConfirm("apply"));
   removeDndBtn?.addEventListener("click", () => openDndConfirm("remove"));
-  confirmDndApplyBtn?.addEventListener("click", () => applyBulkDnd(_dndActionMode));
+  confirmDndApplyBtn?.addEventListener("click", () =>
+    applyBulkDnd(_dndActionMode),
+  );
 
   // Warn before leaving if unsaved
   window.addEventListener("beforeunload", (e) => {
@@ -1345,186 +1474,263 @@ refreshCompletenessDashboard();
     }
   });
 
-function clearAllTeacherTimetables() {
-  if (!confirm("This will delete ALL teacher timetables permanently. Continue?")) return;
+  function clearAllTeacherTimetables() {
+    if (
+      !confirm("This will delete ALL teacher timetables permanently. Continue?")
+    )
+      return;
 
-  for (let i = localStorage.length - 1; i >= 0; i--) {
-    const k = localStorage.key(i);
-    if (k && k.startsWith(STORAGE_PREFIX)) {
-      localStorage.removeItem(k);
-    }
-  }
-  // Reset cache + UI
-  _teacherNamesCache = null;
-  rebuildTeacherNamesCache();
-  refreshTeacherSelect(teacherSearchInput?.value || "");
-  refreshCompletenessDashboard();
-
-  alert("All teacher timetables have been cleared.");
-}  
-
-function bulkExportAllTeachersIndividually() {
-  // Collect all teacher_* keys
-  const keys = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (k && k.startsWith(STORAGE_PREFIX)) keys.push(k);
-  }
-  keys.sort();
-
-  if (keys.length === 0) {
-    if (typeof bulkExportStatus !== "undefined" && bulkExportStatus) {
-      bulkExportStatus.textContent = "No teacher timetables found in localStorage.";
-    }
-    alert("No teacher timetables found.");
-    return;
-  }
-
-  if (!confirm(`This will download ${keys.length} JSON files (one per teacher). Your browser may ask to allow multiple downloads. Continue?`)) {
-    return;
-  }
-
-  if (typeof bulkExportStatus !== "undefined" && bulkExportStatus) {
-    bulkExportStatus.textContent = `Preparing ${keys.length} downloads...`;
-  }
-
-  // Stagger downloads to reduce popup blocking
-  let done = 0;
-  let failed = 0;
-
-  keys.forEach((k, i) => {
-    setTimeout(() => {
-      try {
-        const raw = localStorage.getItem(k);
-        if (!raw) throw new Error("Missing payload");
-        const payload = JSON.parse(raw);
-
-        const teacherName = (payload && payload.teacherName)
-          ? payload.teacherName
-          : k.slice(STORAGE_PREFIX.length);
-
-        const safeName = sanitizeFileName(teacherName);
-        downloadJsonObject(payload, `${safeName}.json`);
-        done++;
-      } catch (e) {
-        failed++;
-      } finally {
-        if (typeof bulkExportStatus !== "undefined" && bulkExportStatus) {
-          bulkExportStatus.textContent = `Downloaded ${done}/${keys.length}` + (failed ? ` (failed: ${failed})` : "");
-        }
-        if (done + failed === keys.length) {
-          const msg = `Bulk download finished. Success: ${done}, Failed: ${failed}.`;
-          if (typeof bulkExportStatus !== "undefined" && bulkExportStatus) bulkExportStatus.textContent = msg;
-          alert(msg);
-        }
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(STORAGE_PREFIX)) {
+        localStorage.removeItem(k);
       }
-    }, 200 * i);
-  });
-}
-
-// ---------------------- COMPLETENESS DASHBOARD ----------------------
-// Populates the Completeness Dashboard using the teachers currently visible in the Loaded Teachers ComboBox.
-const refreshCompletenessBtn = document.getElementById("refreshCompletenessBtn");
-const completenessSearchInput = document.getElementById("completenessSearchInput");
-const completenessIncompleteOnly = document.getElementById("completenessIncompleteOnly");
-const completenessSummary = document.getElementById("completenessSummary");
-const completenessTableBody = document.getElementById("completenessTableBody");
-
-function getTeacherKeysFromComboBox() {
-  if (!teacherSelect) return [];
-  const opts = Array.from(teacherSelect.options || []);
-  const out = [];
-  const seen = new Set();
-  for (const opt of opts) {
-    const key = (opt.value || "").trim();
-    if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({ key, name: (opt.textContent || key.slice(STORAGE_PREFIX.length)).trim() });
-  }
-  return out;
-}
-
-function computeCompletenessForPayload(payload) {
-  const cfg = payload && payload.config ? payload.config : {};
-  const rows = parseInt(cfg.rows, 10) || 0;
-  const cols = parseInt(cfg.cols, 10) || 0;
-  const total = (rows > 0 && cols > 0) ? rows * cols : 0;
-
-  const entries = Array.isArray(payload && payload.entries ? payload.entries : []) ? payload.entries : [];
-  const set = new Set();
-  let dndMeetings = 0;
-
-  for (const e of entries) {
-    if (!e || typeof e.row !== "number" || typeof e.col !== "number") continue;
-    set.add(e.row + "-" + e.col);
-    if (e.type === "meeting" && e.doNotDisturb) dndMeetings++;
-  }
-
-  const captured = set.size;
-  const missing = total ? Math.max(total - captured, 0) : 0;
-  const percent = total ? Math.round((captured / total) * 100) : 0;
-
-  return {
-    rows, cols, total, captured, missing, percent,
-    lastResort: !!(payload && payload.lastResort),
-    dndMeetings
-  };
-}
-
-function refreshCompletenessDashboard() {
-  if (!completenessTableBody || !completenessSummary) return;
-
-  const teacherList = getAllTeacherNames().map(n => ({ key: getTeacherKey(n), name: n }));
-
-  if (teacherList.length === 0) {
-    completenessSummary.textContent = "No teachers loaded into the teacher list.";
-    completenessTableBody.innerHTML = "<tr><td colspan='4' class='text-muted text-center'>No teachers found.</td></tr>";
-    return;
-  }
-
-  // Build rows
-  const rows = teacherList.map(t => {
-    const raw = localStorage.getItem(t.key);
-    if (!raw) {
-      return { name: t.name, key: t.key, total: 0, captured: 0, missing: 0, percent: 0, dndMeetings: 0, lastResort: false, missingPayload: true };
     }
-    try {
-      const payload = JSON.parse(raw);
-      // Back-compat: older exports may use "title" instead of "subject" (not needed for completeness)
-      const stats = computeCompletenessForPayload(payload);
-      return { name: t.name, key: t.key, ...stats };
-    } catch (e) {
-      return { name: t.name, key: t.key, total: 0, captured: 0, missing: 0, percent: 0, dndMeetings: 0, lastResort: false, parseError: true };
-    }
-  });
+    // Reset cache + UI
+    _teacherNamesCache = null;
+    rebuildTeacherNamesCache();
+    refreshTeacherSelect(teacherSearchInput?.value || "");
+    refreshCompletenessDashboard();
 
-  // Dashboard filters
-  const filterText = (completenessSearchInput ? completenessSearchInput.value : "").trim().toLowerCase();
-  const incompleteOnly = !!(completenessIncompleteOnly && completenessIncompleteOnly.checked);
-
-  const filtered = rows.filter(r => {
-    const match = !filterText || (r.name || "").toLowerCase().includes(filterText);
-    const incomplete = (r.total === 0) ? true : (r.missing > 0);
-    return match && (!incompleteOnly || incomplete);
-  });
-
-  const totalTeachers = rows.length;
-  const incompleteCount = rows.filter(r => (r.total === 0) || (r.missing > 0)).length;
-  completenessSummary.textContent = `${totalTeachers} teacher(s). ${incompleteCount} incomplete.`;
-
-  if (!filtered.length) {
-    completenessTableBody.innerHTML = "<tr><td colspan='4' class='text-muted text-center'>No matches.</td></tr>";
-    return;
+    alert("All teacher timetables have been cleared.");
   }
 
-  completenessTableBody.innerHTML = filtered.map(r => {
-    const scoreText = r.total === 0 ? "No grid" : `${r.percent}% (${r.captured}/${r.total})`;
-    const scoreClass = r.total === 0 ? "text-danger" : (r.missing === 0 ? "text-success" : "text-warning");
-    const missingText = r.total === 0 ? "—" : String(r.missing);
-    const badges = `${r.lastResort ? '<span class="badge bg-warning text-dark me-1">Last Resort</span>' : ''}${r.dndMeetings ? `<span class="badge bg-danger">DND:${r.dndMeetings}</span>` : ''}`;
+  function bulkExportAllTeachersIndividually() {
+    // Collect all teacher_* keys
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(STORAGE_PREFIX)) keys.push(k);
+    }
+    keys.sort();
 
-    return `
+    if (keys.length === 0) {
+      if (typeof bulkExportStatus !== "undefined" && bulkExportStatus) {
+        bulkExportStatus.textContent =
+          "No teacher timetables found in localStorage.";
+      }
+      alert("No teacher timetables found.");
+      return;
+    }
+
+    if (
+      !confirm(
+        `This will download ${keys.length} JSON files (one per teacher). Your browser may ask to allow multiple downloads. Continue?`,
+      )
+    ) {
+      return;
+    }
+
+    if (typeof bulkExportStatus !== "undefined" && bulkExportStatus) {
+      bulkExportStatus.textContent = `Preparing ${keys.length} downloads...`;
+    }
+
+    // Stagger downloads to reduce popup blocking
+    let done = 0;
+    let failed = 0;
+
+    keys.forEach((k, i) => {
+      setTimeout(() => {
+        try {
+          const raw = localStorage.getItem(k);
+          if (!raw) throw new Error("Missing payload");
+          const payload = JSON.parse(raw);
+
+          const teacherName =
+            payload && payload.teacherName
+              ? payload.teacherName
+              : k.slice(STORAGE_PREFIX.length);
+
+          const safeName = sanitizeFileName(teacherName);
+          downloadJsonObject(payload, `${safeName}.json`);
+          done++;
+        } catch (e) {
+          failed++;
+        } finally {
+          if (typeof bulkExportStatus !== "undefined" && bulkExportStatus) {
+            bulkExportStatus.textContent =
+              `Downloaded ${done}/${keys.length}` +
+              (failed ? ` (failed: ${failed})` : "");
+          }
+          if (done + failed === keys.length) {
+            const msg = `Bulk download finished. Success: ${done}, Failed: ${failed}.`;
+            if (typeof bulkExportStatus !== "undefined" && bulkExportStatus)
+              bulkExportStatus.textContent = msg;
+            alert(msg);
+          }
+        }
+      }, 200 * i);
+    });
+  }
+
+  // ---------------------- COMPLETENESS DASHBOARD ----------------------
+  // Populates the Completeness Dashboard using the teachers currently visible in the Loaded Teachers ComboBox.
+  const refreshCompletenessBtn = document.getElementById(
+    "refreshCompletenessBtn",
+  );
+  const completenessSearchInput = document.getElementById(
+    "completenessSearchInput",
+  );
+  const completenessIncompleteOnly = document.getElementById(
+    "completenessIncompleteOnly",
+  );
+  const completenessSummary = document.getElementById("completenessSummary");
+  const completenessTableBody = document.getElementById(
+    "completenessTableBody",
+  );
+
+  function getTeacherKeysFromComboBox() {
+    if (!teacherSelect) return [];
+    const opts = Array.from(teacherSelect.options || []);
+    const out = [];
+    const seen = new Set();
+    for (const opt of opts) {
+      const key = (opt.value || "").trim();
+      if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        key,
+        name: (opt.textContent || key.slice(STORAGE_PREFIX.length)).trim(),
+      });
+    }
+    return out;
+  }
+
+  function computeCompletenessForPayload(payload) {
+    const cfg = payload && payload.config ? payload.config : {};
+    const rows = parseInt(cfg.rows, 10) || 0;
+    const cols = parseInt(cfg.cols, 10) || 0;
+    const total = rows > 0 && cols > 0 ? rows * cols : 0;
+
+    const entries = Array.isArray(
+      payload && payload.entries ? payload.entries : [],
+    )
+      ? payload.entries
+      : [];
+    const set = new Set();
+    let dndMeetings = 0;
+
+    for (const e of entries) {
+      if (!e || typeof e.row !== "number" || typeof e.col !== "number")
+        continue;
+      set.add(e.row + "-" + e.col);
+      if (e.type === "meeting" && e.doNotDisturb) dndMeetings++;
+    }
+
+    const captured = set.size;
+    const missing = total ? Math.max(total - captured, 0) : 0;
+    const percent = total ? Math.round((captured / total) * 100) : 0;
+
+    return {
+      rows,
+      cols,
+      total,
+      captured,
+      missing,
+      percent,
+      lastResort: !!(payload && payload.lastResort),
+      dndMeetings,
+    };
+  }
+
+  function refreshCompletenessDashboard() {
+    if (!completenessTableBody || !completenessSummary) return;
+
+    const teacherList = getAllTeacherNames().map((n) => ({
+      key: getTeacherKey(n),
+      name: n,
+    }));
+
+    if (teacherList.length === 0) {
+      completenessSummary.textContent =
+        "No teachers loaded into the teacher list.";
+      completenessTableBody.innerHTML =
+        "<tr><td colspan='4' class='text-muted text-center'>No teachers found.</td></tr>";
+      return;
+    }
+
+    // Build rows
+    const rows = teacherList.map((t) => {
+      const raw = localStorage.getItem(t.key);
+      if (!raw) {
+        return {
+          name: t.name,
+          key: t.key,
+          total: 0,
+          captured: 0,
+          missing: 0,
+          percent: 0,
+          dndMeetings: 0,
+          lastResort: false,
+          missingPayload: true,
+        };
+      }
+      try {
+        const payload = JSON.parse(raw);
+        // Back-compat: older exports may use "title" instead of "subject" (not needed for completeness)
+        const stats = computeCompletenessForPayload(payload);
+        return { name: t.name, key: t.key, ...stats };
+      } catch (e) {
+        return {
+          name: t.name,
+          key: t.key,
+          total: 0,
+          captured: 0,
+          missing: 0,
+          percent: 0,
+          dndMeetings: 0,
+          lastResort: false,
+          parseError: true,
+        };
+      }
+    });
+
+    // Dashboard filters
+    const filterText = (
+      completenessSearchInput ? completenessSearchInput.value : ""
+    )
+      .trim()
+      .toLowerCase();
+    const incompleteOnly = !!(
+      completenessIncompleteOnly && completenessIncompleteOnly.checked
+    );
+
+    const filtered = rows.filter((r) => {
+      const match =
+        !filterText || (r.name || "").toLowerCase().includes(filterText);
+      const incomplete = r.total === 0 ? true : r.missing > 0;
+      return match && (!incompleteOnly || incomplete);
+    });
+
+    const totalTeachers = rows.length;
+    const incompleteCount = rows.filter(
+      (r) => r.total === 0 || r.missing > 0,
+    ).length;
+    completenessSummary.textContent = `${totalTeachers} teacher(s). ${incompleteCount} incomplete.`;
+
+    if (!filtered.length) {
+      completenessTableBody.innerHTML =
+        "<tr><td colspan='4' class='text-muted text-center'>No matches.</td></tr>";
+      return;
+    }
+
+    completenessTableBody.innerHTML = filtered
+      .map((r) => {
+        const scoreText =
+          r.total === 0
+            ? "No grid"
+            : `${r.percent}% (${r.captured}/${r.total})`;
+        const scoreClass =
+          r.total === 0
+            ? "text-danger"
+            : r.missing === 0
+              ? "text-success"
+              : "text-warning";
+        const missingText = r.total === 0 ? "—" : String(r.missing);
+        const badges = `${r.lastResort ? '<span class="badge bg-warning text-dark me-1">Last Resort</span>' : ""}${r.dndMeetings ? `<span class="badge bg-danger">DND:${r.dndMeetings}</span>` : ""}`;
+
+        return `
       <tr>
         <td>
           <div class="fw-semibold">${escapeHtml(r.name)}</div>
@@ -1537,28 +1743,53 @@ function refreshCompletenessDashboard() {
         </td>
       </tr>
     `;
-  }).join("");
+      })
+      .join("");
 
-  // Load button wiring
-  completenessTableBody.querySelectorAll('[data-load-key]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const k = btn.getAttribute('data-load-key');
-      if (!k) return;
-      if (unsavedChanges && !confirm("You have unsaved changes. Load this timetable anyway?")) return;
-      loadTimetableByKey(k);
+    // Load button wiring
+    completenessTableBody.querySelectorAll("[data-load-key]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const k = btn.getAttribute("data-load-key");
+        if (!k) return;
+        if (
+          unsavedChanges &&
+          !confirm("You have unsaved changes. Load this timetable anyway?")
+        )
+          return;
+        loadTimetableByKey(k);
+      });
     });
+  }
+
+  document.getElementById("runCoverRiskBtn")?.addEventListener("click", () => {
+    const day = parseInt(document.getElementById("coverRiskDay").value, 10);
+    const period = parseInt(
+      document.getElementById("coverRiskPeriod").value,
+      10,
+    );
+
+    const stats = analyseCoverRisk(day, period);
+    renderCoverRiskResult(stats, day, period);
   });
-}
 
-refreshCompletenessBtn?.addEventListener('click', refreshCompletenessDashboard);
-completenessSearchInput?.addEventListener('input', refreshCompletenessDashboard);
-completenessIncompleteOnly?.addEventListener('change', refreshCompletenessDashboard);
+  refreshCompletenessBtn?.addEventListener(
+    "click",
+    refreshCompletenessDashboard,
+  );
+  completenessSearchInput?.addEventListener(
+    "input",
+    refreshCompletenessDashboard,
+  );
+  completenessIncompleteOnly?.addEventListener(
+    "change",
+    refreshCompletenessDashboard,
+  );
 
-// ---------------------- INITIAL UI STATE ---------------------
+  // ---------------------- INITIAL UI STATE ---------------------
 
   rebuildTeacherNamesCache();
   refreshTeacherSelect();
-refreshCompletenessDashboard();
+  refreshCompletenessDashboard();
   showPlaceholder();
   setUnsaved(false);
   updateSummary();
