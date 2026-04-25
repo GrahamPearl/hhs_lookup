@@ -64,7 +64,7 @@
   },
   {
     "badge": "Support Staff",
-      "badgeClass": "bg-primary",
+      "badgeClass": "bg-success",
     "title": "Print Queue",
     "description": "Print Queue Manager v1.",
     "buttonText": "Main Print Demo",
@@ -73,7 +73,7 @@
   },
   {
     "badge": "Support Staff",
-      "badgeClass": "bg-primary",
+      "badgeClass": "bg-success",
     "title": "Print Queue",
     "description": "Print Queue Manager v2.",
     "buttonText": "Added Email",
