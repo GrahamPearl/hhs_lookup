@@ -27,15 +27,6 @@
     "buttonClass": "btn-hhs"
   },
   {
-    "badge": "Sports",
-    "badgeClass": "bg-primary",
-    "title": "Sports Lookup",
-    "description": "Browse sport information, codes and resources.",
-    "buttonText": "Open Sport Lookup",
-    "link": "./find_sports/index.html",
-    "buttonClass": "btn-hhs"
-  },
-  {
     "badge": "Teachers",
     "badgeClass": "bg-primary",
     "title": "Teacher Timetable Builder",
@@ -45,30 +36,48 @@
     "buttonClass": "btn-hhs"
   },
   {
-    "badge": "Teachers",
-    "badgeClass": "bg-primary",
-    "title": "Cover Teacher Timetable Builder",
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Teacher Timetable Senior Management",
+    "description": "Browse sport information, codes and resources.",
+    "buttonText": "Senior Management Timetable Editor",
+    "link": "./build_timetable_senior/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Timetable Builder v1.0",
     "description": "Cover teacher timetable.",
     "buttonText": "Open Cover Teacher Timetable Builder",
     "link": "./build_cover/index.html",
     "buttonClass": "btn-hhs"
   },
   {
-    "badge": "Support Staff",
-      "badgeClass": "bg-primary",
-    "title": "Print Demo",
-    "description": "Print Requests: React.",
-    "buttonText": "React: Print Demo",
-    "link": "./demo_print/index.html",
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Timetable Builder v2.0",
+    "description": "Cover teacher timetable.",
+    "buttonText": "Open Cover Teacher Timetable Builder",
+    "link": "./build_cover2/index.html",
     "buttonClass": "btn-hhs"
   },
   {
-    "badge": "Management",
-    "badgeClass": "bg-primary",
-    "title": "Build Timetable Senior Management",
-    "description": "Browse sport information, codes and resources.",
-    "buttonText": "Senior Management Timetable Editor",
-    "link": "./build_timetable_senior/index.html",
+    "badge": "Support Staff",
+      "badgeClass": "bg-primary",
+    "title": "Print Queue",
+    "description": "Print Queue Manager v1.",
+    "buttonText": "Main Print Demo",
+    "link": "./demo_print1/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Support Staff",
+      "badgeClass": "bg-primary",
+    "title": "Print Queue",
+    "description": "Print Queue Manager v2.",
+    "buttonText": "Added Email",
+    "link": "./demo_print2/index.html",
     "buttonClass": "btn-hhs"
   },
   {
