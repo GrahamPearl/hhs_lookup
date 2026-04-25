@@ -63,6 +63,15 @@
     "buttonClass": "btn-hhs"
   },
   {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Timetable Builder v3.0",
+    "description": "Cover teacher timetable.",
+    "buttonText": "Open Cover Teacher Timetable Builder",
+    "link": "./build_cover3/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
     "badge": "Support Staff",
       "badgeClass": "bg-success",
     "title": "Print Queue",
