@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Teacher Print Queue</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./bootstrap.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .hidden {
+      display: none !important;
+    }
+
+    body {
+      background-color: #f0f2f5;
+    }
+
+    .card {
+      border-radius: 8px;
+      border: none;
+    }
+
+    /* Job status borders */
+    .job-urgent {
+      border-left: 5px solid #fd7e14 !important;
+      background-color: #fffaf5;
+    }
+
+    .job-overdue {
+      border-left: 5px solid #dc3545 !important;
+      background-color: #fff5f5;
+    }
+
+    .job-stalled {
+      border-left: 5px solid #ffc107 !important;
+      background-color: #fffdf0;
+    }
+
+    .job-teacher-urgent {
+      border-left: 5px solid #721c24 !important;
+    }
+
+    #summary-sentinel {
+      min-height: 20px;
+    }
+
+    .grade-badge {
+      margin-right: 0.25rem;
+    }
+
+    .grade-box {
+      max-height: 140px;
+      overflow: auto;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+    }
+
+    /* Capacity warning banner */
+    #capacityWarning {
+      position: sticky;
+      top: 0;
+      z-index: 1050;
+      background: #fff3cd;
+      border-bottom: 2px solid #ffc107;
+      padding: 6px 16px;
+      font-weight: 600;
+      font-size: .875rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Bulk action toolbar */
+    #bulkActionToolbar {
+      position: sticky;
+      bottom: 0;
+      z-index: 1040;
+      background: #343a40;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px 8px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #bulkActionToolbar.hidden {
+      display: none !important;
+    }
+
+    /* Progress bar on cards */
+    .progress {
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Capacity warning banner (shown/hidden by JS) -->
+  <div id="capacityWarning" class="hidden"></div>
+
+  <div class="container py-3" style="max-width:860px">
+    <header class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0 font-weight-bold">🖨️ Teacher Print Queue</h1>
+
+      <button id="msSignInBtn" class="btn btn-sm btn-outline-primary hidden" type="button">
+        🔐 Microsoft Sign-In
+      </button>
+
+      <!-- Shows signed-in M365 account (admins/operators only) -->
+      <span id="msAuthStatus" class="badge badge-light border hidden">
+        Microsoft: Not signed in
+      </span>
+
+      <div class="d-flex align-items-center">
+        <button id="toggleViewBtn" class="btn btn-sm btn-outline-secondary mr-2" title="Switch to Teacher View">👤 My
+          Jobs</button>
+        <button id="logoutBtn" class="btn btn-sm btn-outline-danger hidden">Logout</button>
+      </div>
+    </header>
+
+    <!-- ═══════════════ TEACHER VIEW PANEL ═══════════════ -->
+    <div id="teacherViewPanel" class="hidden">
+
+      <!-- Sticky search bar -->
+      <div class="card shadow-sm mb-2" style="position:sticky;top:0;z-index:100;">
+        <div class="card-body py-3 pb-2">
+          <h5 class="font-weight-bold mb-2">My Print Jobs</h5>
+          <div class="form-group mb-1">
+            <label for="teacherNameInput">Your Name <span class="text-danger">*</span>
+              <span id="teacherMatchCount" class="badge badge-info ml-1 hidden"></span>
+            </label>
+            <div style="position:relative;">
+              <input type="text" id="teacherNameInput" class="form-control"
+                placeholder="e.g. Sarah Johnson — must match exactly" autocomplete="off" />
+              <!-- Autocomplete dropdown -->
+              <div id="teacherSuggestionsBox" class="hidden bg-white border rounded shadow-sm"
+                style="position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;z-index:500;"></div>
+            </div>
+          </div>
+          <!-- Recent teachers quick-pick -->
+          <div id="recentTeachersContainer" class="mb-2"></div>
+          <!-- Date quick-filters (Bootstrap 4 button-group toggle) -->
+          <div class="btn-group btn-group-sm w-100" id="teacherDateFilterGroup" role="group">
+            <button type="button" class="btn btn-outline-secondary active" data-teacher-date-filter="all">All</button>
+            <button type="button" class="btn btn-outline-secondary" data-teacher-date-filter="today">Today</button>
+            <button type="button" class="btn btn-outline-secondary" data-teacher-date-filter="week">This Week</button>
+            <button type="button" class="btn btn-outline-secondary" data-teacher-date-filter="month">This Month</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Download toolbar (hidden until jobs found) -->
+      <div id="teacherDownloadToolbar" class="card shadow-sm mb-2 hidden">
+        <div class="card-body p-2">
+          <button id="downloadTeacherJobsCSV" class="btn btn-sm btn-outline-primary mr-2"
+            title="Download all visible jobs as CSV">📥 CSV</button>
+          <button id="downloadTeacherNotesFile" class="btn btn-sm btn-outline-primary"
+            title="Download all notes as text file">📝 Notes</button>
+        </div>
+      </div>
+
+      <!-- Queued section -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light p-2" style="cursor:pointer;" data-action="toggleSection" data-section="queued">
+          <h5 class="font-weight-bold mb-0 d-flex align-items-center">
+            <button type="button" class="btn btn-sm btn-link p-0 mr-2 text-dark" id="queuedToggleBtn"
+              data-action="toggleSection" data-section="queued" style="text-decoration:none;line-height:1;">▼</button>
+            Queued <span class="badge badge-secondary ml-1" id="queuedCount">0</span>
+          </h5>
+        </div>
+        <div id="queuedSectionBody" class="card-body p-3">
+          <div id="queuedJobsContainer">
+            <p class="text-muted small mb-0">Enter your name above to see your jobs.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- In Process section -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light p-2" style="cursor:pointer;" data-action="toggleSection"
+          data-section="inProcess">
+          <h5 class="font-weight-bold mb-0 d-flex align-items-center">
+            <button type="button" class="btn btn-sm btn-link p-0 mr-2 text-dark" id="inProcessToggleBtn"
+              data-action="toggleSection" data-section="inProcess"
+              style="text-decoration:none;line-height:1;">▼</button>
+            In Process <span class="badge badge-info ml-1" id="inProcessCount">0</span>
+          </h5>
+        </div>
+        <div id="inProcessSectionBody" class="card-body p-3">
+          <div id="inProcessJobsContainer">
+            <p class="text-muted small mb-0">No jobs in this section.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed section (collapsed by default) -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light p-2" style="cursor:pointer;" data-action="toggleSection"
+          data-section="completed">
+          <h5 class="font-weight-bold mb-0 d-flex align-items-center">
+            <button type="button" class="btn btn-sm btn-link p-0 mr-2 text-dark" id="completedToggleBtn"
+              data-action="toggleSection" data-section="completed"
+              style="text-decoration:none;line-height:1;">▶</button>
+            Completed <span class="badge badge-success ml-1" id="completedCount">0</span>
+          </h5>
+        </div>
+        <div id="completedSectionBody" class="card-body p-3 hidden">
+          <div id="completedJobsContainer">
+            <p class="text-muted small mb-0">No jobs in this section.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /teacherViewPanel -->
+
+    <!-- ═══════════════ ADMIN VIEW PANEL ═══════════════ -->
+    <div id="adminViewPanel">
+
+      <!-- ═══════════════ NEW PRINT REQUEST ═══════════════ -->
+      <div id="requestForm" class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h5 class="font-weight-bold mb-3">New Print Request</h5>
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label>Teacher <span class="text-danger">*</span></label>
+              <select id="teacherSelect" class="form-control" disabled>
+                <option value="">Loading teachers…</option>
+              </select>
+            </div>
+            <div class="col-md-6 form-group">
+              <label>Authoriser <span id="authRequired" class="text-danger hidden">*</span></label>
+              <select id="authTeacherSelect" class="form-control" disabled>
+                <option value="">— Select —</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-3 form-group">
+              <label>Pages</label>
+              <input type="number" id="pages" class="form-control" value="1" min="1" />
+            </div>
+            <div class="col-md-3 form-group">
+              <label>Copies</label>
+              <input type="number" id="copies" class="form-control" value="1" min="1" />
+            </div>
+            <div class="col-md-3 form-group">
+              <label>Type</label>
+              <select id="printType" class="form-control">
+                <option value="normal">Normal</option>
+                <option value="2-in-1">2-in-1</option>
+              </select>
+            </div>
+            <div class="col-md-3 form-group">
+              <label>Sides</label>
+              <select id="sides" class="form-control">
+                <option value="single">Single</option>
+                <option value="double">Double</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label>Finishing Tasks</label>
+              <select id="additionalTask" class="form-control">
+                <option value="none">None</option>
+                <option value="stapling">Stapling</option>
+                <option value="trimming">Trimming</option>
+                <option value="stapling,trimming">Both</option>
+              </select>
+            </div>
+            <div class="col-md-6 form-group">
+              <label>Needed By</label>
+              <input type="datetime-local" id="scheduledFor" class="form-control" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Grade(s) <span class="text-danger">*</span></label>
+            <div id="gradeChecklist" class="border rounded p-2 bg-white grade-box">
+              <div class="text-muted small">Loading grades…</div>
+            </div>
+          </div>
+          <!-- Urgent flag (teacher-declared) -->
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="urgentFlag">
+            <label class="form-check-label text-danger font-weight-bold" for="urgentFlag">
+              🔥 Mark as Urgent (teacher-declared priority)
+            </label>
+          </div>
+          <div class="form-group">
+            <label>Job Notes</label>
+            <textarea id="jobNotes" class="form-control" rows="2" placeholder="Specific instructions…"></textarea>
+          </div>
+          <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded">
+            <div class="small">
+              Estimate: <strong><span id="estimate">0</span>s</strong> &nbsp;
+              Sheets: <strong><span id="effectivePages">0</span></strong>
+            </div>
+            <button id="submitBtn" class="btn btn-primary">Submit Job</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════ SEARCH + FILTERS ═══════════════ -->
+      <div class="mb-3">
+
+        <input type="text" id="searchInput" class="form-control mb-2"
+          placeholder="Search by teacher or grade (e.g. Grade 6, Unassigned)…" />
+
+        <div id="dueDateFilters" class="btn-group btn-group-sm w-100">
+          <button class="btn btn-outline-secondary active" data-filter="all">All</button>
+          <button class="btn btn-outline-secondary" data-filter="today">Today</button>
+          <button class="btn btn-outline-secondary" data-filter="tomorrow">Tomorrow</button>
+          <button class="btn btn-outline-secondary" data-filter="week">Next 7 Days</button>
+          <button class="btn btn-outline-danger" data-filter="overdue">Overdue</button>
+        </div>
+      </div>
+
+      <!-- ═══════════════ ACTIVE QUEUE ═══════════════ -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h5 class="font-weight-bold mb-2">
+            Active Queue (<span id="jobCount">0</span>)
+          </h5>
+          <div id="queue">
+            <p class="text-muted small">Queue is empty.</p>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <button id="prevPageBtn" class="btn btn-sm btn-outline-primary">Previous</button>
+            <span id="pageInfo" class="small text-muted">Page 1 of 1</span>
+            <button id="nextPageBtn" class="btn btn-sm btn-outline-primary">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk action toolbar (sticky bottom, hidden until checkboxes checked) -->
+      <div id="bulkActionToolbar" class="hidden">
+        <span class="small">
+          <span id="bulkSelectedCount">0</span> selected
+        </span>
+        <button id="bulkStartBtn" class="btn btn-sm btn-success">Start All</button>
+        <button id="bulkFinishBtn" class="btn btn-sm btn-primary">Finish All</button>
+        <button id="bulkClearBtn" class="btn btn-sm btn-outline-light ml-auto">Clear</button>
+      </div>
+
+      <!-- ═══════════════ ADMIN LOGIN ═══════════════ -->
+      <div id="loginCard" class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h6 class="font-weight-bold mb-2">Admin Login</h6>
+          <div class="input-group input-group-sm mb-2">
+            <input type="email" id="emailInput" class="form-control" placeholder="Email" />
+            <input type="password" id="passwordInput" class="form-control" placeholder="Password" />
+            <div class="input-group-append">
+              <button id="loginBtn" class="btn btn-dark">Login</button>
+            </div>
+          </div>
+          <small class="text-muted">Super-admins can assign grade access to admins and edit grade labels after
+            login.</small>
+        </div>
+      </div>
+
+      <!-- ═══════════════ ADMIN SETTINGS ═══════════════ -->
+      <div id="adminSettings" class="card shadow-sm mb-3 hidden">
+        <div class="card-body">
+          <h5 class="font-weight-bold">Settings &amp; Management</h5>
+
+
+
+          <!-- Email sending mode (admins/operators only) -->
+          <div class="mt-3">
+            <label class="font-weight-bold mb-1">Completed Email Delivery Mode</label>
+            <div class="btn-group btn-group-sm w-100" id="emailSendModeGroup" role="group" aria-label="Email send mode">
+              <button type="button" class="btn btn-outline-secondary" data-mode="mailto">
+                ✉️ MailTo (plain text)
+              </button>
+              <button type="button" class="btn btn-outline-primary" data-mode="graph">
+                ☁️ Graph/API (HTML)
+              </button>
+            </div>
+            <small id="emailSendModeHelp" class="text-muted d-block mt-1">
+              MailTo opens the operator’s email client. Graph/API sends directly (requires Microsoft sign-in).
+            </small>
+          </div>
+
+          <button id="msalSettingsBtn" class="btn btn-sm btn-outline-primary btn-block mt-2">
+            ✉️ Microsoft Email Settings
+          </button>
+
+
+          <button id="emailTemplateBtn" class="btn btn-sm btn-outline-primary btn-block mt-2">
+            ✉️ Edit “Completed Job” Email Template
+          </button>
+
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="emailNotificationsEnabled" />
+            <label class="form-check-label">Enable mailto: completion emails</label>
+          </div>
+
+
+          <div class="form-group mt-3">
+            <label>Priority Mode</label>
+            <select id="priorityMode" class="form-control">
+              <option value="fifo">FIFO (Order Received)</option>
+              <option value="due">Due Date (Earliest First)</option>
+              <option value="overdue">Overdue First</option>
+              <option value="estimate">Shortest Job First</option>
+              <option value="quick">Quick Clear (Small Jobs)</option>
+              <option value="size">Total Volume</option>
+            </select>
+            <small id="priorityHelp" class="form-text text-muted mb-2"></small>
+          </div>
+
+          <!-- File imports -->
+          <div class="row small mb-3">
+            <div class="col-4">
+              <label>Import Teachers &amp; Emails (.txt)</label>
+              <input type="file" id="teacherFile" class="form-control-file" />
+              <small class="text-muted">Format: <code>Name</code> or <code>Name; email@school.com</code></small>
+            </div>
+            <div class="col-4">
+              <label>Import To-Do (.txt)</label>
+              <input type="file" id="todoFile" class="form-control-file" accept=".txt" />
+            </div>
+            <div class="col-4">
+              <label class="font-weight-bold">Import History (.txt)</label>
+              <input type="file" id="completedFile" class="form-control-file" accept=".txt" />
+              <small class="text-muted">All jobs marked Completed.</small>
+            </div>
+
+            <div class="col-12 mt-2">
+              <button id="checkDuplicatesBtn" class="btn btn-sm btn-outline-warning btn-block" disabled>
+                🔍 Check for Duplicate References
+              </button>
+              <div id="duplicateReport" class="small text-muted mt-1"></div>
+            </div>
+          </div>
+
+          <div class="btn-group btn-group-sm w-100 mt-2">
+            <button id="saveTodoBtn" class="btn btn-outline-secondary">Export To-Do</button>
+            <button id="saveCompletedBtn" class="btn btn-outline-secondary">Export Completed</button>
+            <button id="clearQueueBtn" class="btn btn-outline-danger">Clear All</button>
+          </div>
+
+          <div class="mt-3">
+            <button type="button" class="btn btn-sm btn-info btn-block" data-toggle="modal"
+              data-target="#timeSettingsModal">
+              ⚙️ Adjust Time &amp; Queue Calibration
+            </button>
+          </div>
+
+          <!-- ═══ SUPER-ADMIN PANEL ═══ -->
+          <div id="superAdminPanel" class="mt-4 hidden">
+            <hr />
+            <h6 class="font-weight-bold">🔐 Super-Admin</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="font-weight-bold">Admin Grade Access</h6>
+                <p class="small text-muted mb-2">Assign which grade labels each admin can view and manage.</p>
+                <div class="form-group">
+                  <label>Select Admin User</label>
+                  <select id="adminUserSelect" class="form-control form-control-sm">
+                    <option value="">Loading admins…</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Allowed Grade Labels</label>
+                  <div id="adminGradeChecklist" class="border rounded p-2 bg-white grade-box"></div>
+                  <small class="text-muted">Empty selection = see all grades (default).</small>
+                </div>
+                <div class="btn-group btn-group-sm w-100">
+                  <button id="saveAdminGradesBtn" class="btn btn-success">Save Access</button>
+                  <button id="clearAdminGradesBtn" class="btn btn-outline-secondary">Clear Access</button>
+                </div>
+                <div class="mt-3">
+                  <h6 class="font-weight-bold">Current Assignments</h6>
+                  <div id="adminAssignmentsList" class="small"></div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="font-weight-bold">Custom Grade Labels</h6>
+                <p class="small text-muted mb-2">One label per line.</p>
+                <div class="form-group">
+                  <textarea id="gradeListInput" class="form-control form-control-sm mono" rows="7"
+                    placeholder="Grade 8&#10;Grade 9&#10;Grade 10"></textarea>
+                  <small class="text-muted">Duplicates and blank lines ignored.</small>
+                </div>
+                <div class="btn-group btn-group-sm w-100">
+                  <button id="saveGradeListBtn" class="btn btn-primary">Save Grade Labels</button>
+                  <button id="resetGradeListBtn" class="btn btn-outline-secondary">Reset Defaults</button>
+                </div>
+                <div class="mt-2 small text-muted" id="gradeListStatus"></div>
+              </div>
+            </div>
+
+            <!-- Open Hours (super-admin) -->
+            <div class="mt-3">
+              <button id="openHoursBtn" class="btn btn-sm btn-outline-secondary btn-block">
+                🕐 Set School Open Hours
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ANALYTICS & HISTORY ═══════════════ -->
+  <div id="weeklyReportControls" class="card shadow-sm mb-3 hidden">
+    <div class="card-body">
+      <h5 class="font-weight-bold">📊 Analytics &amp; History</h5>
+      <div class="btn-group btn-group-sm flex-wrap" style="gap:4px">
+        <button id="openWeeklyCalendarBtn" class="btn btn-outline-primary">Weekly Calendar</button>
+        <button id="openGanttViewBtn" class="btn btn-outline-secondary">Gantt Timeline</button>
+        <button class="btn btn-outline-primary" data-toggle="modal" data-target="#gradeAnalyticsModal">📊 Grade
+          Analytics</button>
+        <button id="openAuditLogBtn" class="btn btn-outline-dark">📋 Audit Log</button>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-6"><canvas id="teacherChart"></canvas></div>
+        <div class="col-md-6"><canvas id="timeChart"></canvas></div>
+      </div>
+
+      <hr />
+      <h6 class="font-weight-bold">Completed Job History</h6>
+      <div id="weeklySummaryContent" class="mt-3"></div>
+      <div id="summary-sentinel"></div>
+    </div>
+  </div>
+  </div><!-- /adminViewPanel -->
+  </div><!-- /container -->
+
+  <!-- ════════════════════════════════════════════════
+         MODALS
+    ════════════════════════════════════════════════ -->
+
+  <!-- 1. SUBMISSION CONFIRMATION MODAL -->
+  <div class="modal fade" id="confirmSubmitModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">✅ Confirm Print Job</h5>
+          <button type="button" class="close text-white" data-dismiss="modal">×</button>
+        </div>
+        <div class="modal-body">
+          <!-- Short-notice warning (hidden by default) -->
+          <div id="confirmShortNoticeWarn" class="alert alert-warning d-none">
+            ⏱ <strong>Short notice:</strong> This job's due time is within your minimum lead-time threshold.
+          </div>
+          <table class="table table-sm table-borderless mb-0">
+            <tbody>
+              <tr>
+                <th style="width:38%">Teacher</th>
+                <td id="confirmTeacher"></td>
+              </tr>
+              <tr>
+                <th>Authoriser</th>
+                <td id="confirmAuthoriser"></td>
+              </tr>
+              <tr>
+                <th>Grades</th>
+                <td id="confirmGrades"></td>
+              </tr>
+              <tr>
+                <th>Volume</th>
+                <td id="confirmVolume"></td>
+              </tr>
+              <tr>
+                <th>Type / Sides</th>
+                <td id="confirmType"></td>
+              </tr>
+              <tr>
+                <th>Finishing</th>
+                <td id="confirmTasks"></td>
+              </tr>
+              <tr>
+                <th>Needed By</th>
+                <td id="confirmDue"></td>
+              </tr>
+              <tr>
+                <th>Estimate</th>
+                <td id="confirmEstimate"></td>
+              </tr>
+              <tr>
+                <th>Notes</th>
+                <td id="confirmNotes" class="text-muted small"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Go Back</button>
+          <button type="button" id="confirmSubmitFinalBtn" class="btn btn-primary">Confirm &amp; Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. DELETION REASON MODAL -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">🗑 Delete Job</h5>
+          <button type="button" class="close text-white" data-dismiss="modal">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-1">Deleting job <strong id="deleteJobRef"></strong>. This cannot be undone.</p>
+          <div class="form-group mt-3">
+            <label class="font-weight-bold">Reason for deletion</label>
+            <select id="deleteReasonSelect" class="form-control">
+              <option value="Duplicate">Duplicate</option>
+              <option value="Cancelled by teacher">Cancelled by teacher</option>
+              <option value="Submitted in error">Submitted in error</option>
+              <option value="Job completed offline">Job completed offline</option>
+              <option value="other">Other (specify below)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <input type="text" id="deleteReasonOther" class="form-control" placeholder="Describe reason (if Other)" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="button" id="confirmDeleteFinalBtn" class="btn btn-danger">Delete Job</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. AUDIT LOG MODAL -->
+  <div class="modal fade" id="auditLogModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">📋 Audit Log (last 200 entries)</h5>
+          <button type="button" class="close text-white" data-dismiss="modal">×</button>
+        </div>
+        <div class="modal-body p-2">
+          <div id="auditLogContent">Loading…</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. WEEKLY CALENDAR / GANTT MODAL -->
+  <div class="modal fade" id="weeklyCalendarModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Weekly Calendar View</h5>
+          <button type="button" class="close" data-dismiss="modal">×</button>
+        </div>
+        <div class="modal-body">
+          <div id="weeklyCalendarContainer"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. GRADE ANALYTICS MODAL -->
+  <div class="modal fade" id="gradeAnalyticsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">📊 Grade Analytics</h5>
+          <button type="button" class="close text-white" data-dismiss="modal"><span>×</span></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <!-- Analytics Menu -->
+            <div class="col-md-3 border-right pr-0">
+              <div class="list-group list-group-flush" id="gradeAnalyticsMenu">
+                <div class="list-group-item list-group-item-secondary small text-uppercase py-1">Workload</div>
+                <button class="list-group-item list-group-item-action active" data-analytics="jobsPerGrade">Jobs per
+                  Grade</button>
+                <button class="list-group-item list-group-item-action" data-analytics="timePerGrade">Est. Time per
+                  Grade</button>
+                <button class="list-group-item list-group-item-action" data-analytics="volumePerGrade">Print Volume per
+                  Grade</button>
+
+                <div class="list-group-item list-group-item-secondary small text-uppercase py-1 mt-1">Performance</div>
+                <button class="list-group-item list-group-item-action" data-analytics="onTimeVsLate">On‑Time vs
+                  Late</button>
+                <button class="list-group-item list-group-item-action" data-analytics="turnaround">Turnaround by
+                  Grade</button>
+
+                <div class="list-group-item list-group-item-secondary small text-uppercase py-1 mt-1">Trends &amp;
+                  Patterns</div>
+                <button class="list-group-item list-group-item-action" data-analytics="jobsTrend">Jobs per Grade —
+                  Trend</button>
+                <button class="list-group-item list-group-item-action" data-analytics="onTimeTrend">On‑Time % —
+                  Trend</button>
+                <button class="list-group-item list-group-item-action" data-analytics="heatmap">Day × Hour
+                  Pattern</button>
+
+                <div class="list-group-item list-group-item-secondary small text-uppercase py-1 mt-1">🔍 Bottleneck
+                </div>
+                <button class="list-group-item list-group-item-action" data-analytics="queueDepth">Queue Depth Over
+                  Time</button>
+                <button class="list-group-item list-group-item-action" data-analytics="avgWaitByHour">Avg Wait by
+                  Hour</button>
+                <button class="list-group-item list-group-item-action" data-analytics="submissionHeatmap">Grade × Day
+                  Heatmap</button>
+                <button class="list-group-item list-group-item-action" data-analytics="capacityWeekly">Load vs
+                  Capacity</button>
+                <button class="list-group-item list-group-item-action" data-analytics="concurrentInProcess">Concurrent
+                  In-Process</button>
+
+                <div class="list-group-item list-group-item-secondary small text-uppercase py-1 mt-1">📐 Estimation
+                </div>
+                <button class="list-group-item list-group-item-action" data-analytics="estimateAccuracy">Accuracy
+                  Distribution</button>
+                <button class="list-group-item list-group-item-action" data-analytics="estimateBySize">Error by Job
+                  Size</button>
+                <button class="list-group-item list-group-item-action" data-analytics="estimateByTask">Error by
+                  Task</button>
+                <button class="list-group-item list-group-item-action" data-analytics="lifecycle">Lifecycle
+                  Funnel</button>
+                <button class="list-group-item list-group-item-action" data-analytics="onTimeTrendMA">On‑Time % + Moving
+                  Avg</button>
+                <button class="list-group-item list-group-item-action" data-analytics="slipAnalysis">Due Date
+                  Slip</button>
+                <button class="list-group-item list-group-item-action" data-analytics="calibrationPanel">Calibration
+                  Panel</button>
+              </div>
+            </div>
+
+            <!-- Analytics Content -->
+            <div class="col-md-9">
+              <!-- Filters card -->
+              <div class="card mb-3">
+                <div class="card-body py-2">
+                  <div class="mb-2">
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-outline-secondary" data-range="week">This Week</button>
+                      <button class="btn btn-outline-secondary" data-range="month">This Month</button>
+                      <button class="btn btn-outline-secondary" data-range="term">This Term</button>
+                      <button class="btn btn-outline-secondary" data-range="all">All Time</button>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="small font-weight-bold">Grades</label>
+                    <select id="analyticsGradeSelector" class="form-control form-control-sm" multiple>
+                      <option value="__ALL__">All Grades</option>
+                    </select>
+                    <small class="text-muted">Select grades or choose <strong>All Grades</strong> to reset.</small>
+                  </div>
+                  <div id="trendDateFilter" class="mt-2 d-none">
+                    <div class="form-row align-items-end">
+                      <div class="col-md-4">
+                        <label class="small font-weight-bold">From</label>
+                        <input type="date" id="trendDateFrom" class="form-control form-control-sm" />
+                      </div>
+                      <div class="col-md-4">
+                        <label class="small font-weight-bold">To</label>
+                        <input type="date" id="trendDateTo" class="form-control form-control-sm" />
+                      </div>
+                      <div class="col-md-4">
+                        <button id="applyTrendDateFilter" class="btn btn-sm btn-outline-primary">Apply Range</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="analyticsModalBody"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer small text-muted">
+          Completed jobs only · Multi-grade jobs counted once per grade · "Unassigned" included
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. ASSIGN GRADE MODAL -->
+  <div class="modal fade" id="assignGradeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Assign Grade to Job</h5>
+          <button type="button" class="close" data-dismiss="modal"><span>×</span></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted" id="assignGradeJobInfo"></p>
+          <div id="assignGradeChecklist" class="border rounded p-2 bg-white grade-box"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="saveAssignedGradeBtn" class="btn btn-primary">Save Grade Assignment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. EDIT COMPLETED JOB MODAL -->
+  <div class="modal fade" id="editCompletedJobModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Completed Job</h5>
+          <button type="button" class="close" data-dismiss="modal"><span>×</span></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group col-md-4"><label>Pages</label>
+              <input type="number" id="editPages" class="form-control" />
+            </div>
+            <div class="form-group col-md-4"><label>Copies</label>
+              <input type="number" id="editCopies" class="form-control" />
+            </div>
+            <div class="form-group col-md-4"><label>Sides</label>
+              <select id="editSides" class="form-control">
+                <option value="single">Single</option>
+                <option value="double">Double</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6"><label>Print Type</label>
+              <select id="editPrintType" class="form-control">
+                <option value="normal">Normal</option>
+                <option value="2-in-1">2‑in‑1</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6"><label>Finishing Tasks</label>
+              <select id="editAdditionalTask" class="form-control">
+                <option value="none">None</option>
+                <option value="stapling">Stapling</option>
+                <option value="trimming">Trimming</option>
+                <option value="stapling,trimming">Both</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Grades</label>
+            <div id="editGradeChecklist" class="border rounded p-2 bg-white grade-box"></div>
+          </div>
+          <div class="form-group"><label>Notes</label>
+            <textarea id="editJobNotes" class="form-control" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="saveCompletedJobEdits" class="btn btn-primary">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. TIME & QUEUE CALIBRATION SETTINGS MODAL -->
+  <div class="modal fade" id="timeSettingsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title">⚙️ Time &amp; Queue Calibration</h5>
+          <button type="button" class="close text-white" data-dismiss="modal">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-3">Controls estimate calculations and queue behaviour.</p>
+
+          <h6 class="font-weight-bold text-muted small text-uppercase mb-2">⏱ Print Time</h6>
+          <div class="form-group row">
+            <label class="col-sm-7 col-form-label">Seconds Per Page</label>
+            <div class="col-sm-5"><input type="number" id="setting_timePerPage" class="form-control" /></div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-7 col-form-label">Base Load Time (s)</label>
+            <div class="col-sm-5"><input type="number" id="setting_loadTime" class="form-control" /></div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-7 col-form-label">Quality Check Time (s)</label>
+            <div class="col-sm-5"><input type="number" id="setting_checkTime" class="form-control" /></div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-7 col-form-label">Trimming Time (s)</label>
+            <div class="col-sm-5"><input type="number" id="setting_trimmingTime" class="form-control" /></div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-7 col-form-label">Stapling Time (s)</label>
+            <div class="col-sm-5"><input type="number" id="setting_staplingTime" class="form-control" /></div>
+          </div>
+
+          <hr />
+          <h6 class="font-weight-bold text-muted small text-uppercase mb-2">🚦 Queue &amp; Usability</h6>
+
+          <div class="form-group row">
+            <label class="col-sm-7 col-form-label">
+              Min Lead Time (hrs)
+              <small class="d-block text-muted">Short-notice badge if job due within this many hours of
+                submission</small>
+            </label>
+            <div class="col-sm-5"><input type="number" id="setting_minLeadTimeHours" class="form-control" min="0"
+                step="0.5" /></div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-7 col-form-label">
+              Max Concurrent Jobs
+              <small class="d-block text-muted">Capacity warning banner appears when In-Process count reaches
+                this</small>
+            </label>
+            <div class="col-sm-5"><input type="number" id="setting_maxConcurrentJobs" class="form-control" min="1" />
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-7 col-form-label">
+              Stall Multiplier
+              <small class="d-block text-muted">Mark In-Process as stalled when elapsed &gt; estimate × this
+                value</small>
+            </label>
+            <div class="col-sm-5"><input type="number" id="setting_stallMultiplier" class="form-control" min="1"
+                step="0.1" /></div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-7 col-form-label">
+              Daily Page Cap per Teacher
+              <small class="d-block text-muted">0 = disabled. Warn when teacher exceeds this many pages×copies per
+                day</small>
+            </label>
+            <div class="col-sm-5"><input type="number" id="setting_dailyPageCap" class="form-control" min="0" /></div>
+          </div>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="setting_requireAuthoriser" />
+            <label class="form-check-label">
+              Require authoriser on every submission
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close &amp; Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- OPEN HOURS MODAL (super-admin only) -->
+  <div class="modal fade" id="openHoursModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-secondary text-white">
+          <h5 class="modal-title">🕐 School Open Hours</h5>
+          <button type="button" class="close text-white" data-dismiss="modal">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-3">
+            Set the days and times the print room is open. Urgency, short-notice,
+            and outside-hours warnings are all calculated against these windows.
+          </p>
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>Day</th>
+                <th class="text-center">Open</th>
+                <th>Opens</th>
+                <th>Closes</th>
+              </tr>
+            </thead>
+            <tbody id="openHoursTableBody">
+              <!-- filled by renderOpenHoursModal() -->
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button id="resetOpenHoursBtn" class="btn btn-outline-secondary btn-sm">
+            Reset Defaults
+          </button>
+          <div>
+            <button class="btn btn-secondary btn-sm mr-2" data-dismiss="modal">Cancel</button>
+            <button id="saveOpenHoursBtn" class="btn btn-primary btn-sm">Save Hours</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="msalSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">✉️ Microsoft Email Settings (MSAL)</h5>
+          <button type="button" class="close text-white" data-dismiss="modal">
+            <span>×</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="alert alert-info small">
+            These settings control operator sign-in and email sending via Microsoft Graph.
+            Redirect URI must match your Entra SPA registration.
+            [2](blob:https://www.microsoft365.com/e4791025-8f63-407f-b740-0b0fcf0736eb)
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Tenant ID</label>
+              <input id="msalTenantId" class="form-control" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            </div>
+            <div class="form-group col-md-6">
+              <label>Client ID</label>
+              <input id="msalClientId" class="form-control" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Redirect URI</label>
+            <input id="msalRedirectUri" class="form-control" value="http://localhost/printqueue/">
+            <small class="text-muted">Must match Entra “Single-page application” redirect URI.
+              [2](blob:https://www.microsoft365.com/e4791025-8f63-407f-b740-0b0fcf0736eb)</small>
+          </div>
+
+          <div class="form-group">
+            <label>Scopes (comma-separated)</label>
+            <input id="msalScopes" class="form-control" value="Mail.Send">
+            <small class="text-muted">Mail.Send is required for sendMail.
+              [3](https://postmarkapp.com/)[4](https://supabase.com/docs/guides/auth/auth-smtp)</small>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-8">
+              <label>No-reply sender mailbox</label>
+              <input id="msalSenderMailbox" class="form-control" value="no-reply@forestview.co.za">
+            </div>
+            <div class="form-group col-md-4">
+              <label>Save to Sent Items</label>
+              <select id="msalSaveToSentItems" class="form-control">
+                <option value="false" selected>false (recommended)</option>
+                <option value="true">true</option>
+              </select>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="d-flex flex-wrap" style="gap:8px;">
+            <button id="msalLoadFileBtn" class="btn btn-outline-secondary btn-sm" type="button">
+              📥 Import JSON
+            </button>
+            <input id="msalFileInput" type="file" accept="application/json" class="d-none">
+
+            <button id="msalExportBtn" class="btn btn-outline-secondary btn-sm" type="button">
+              📤 Export JSON
+            </button>
+
+            <button id="msalLoadServerBtn" class="btn btn-outline-info btn-sm" type="button">
+              🔄 Reload from msal-config.json
+            </button>
+
+
+            <button id="msalSaveServerBtn" class="btn btn-outline-success btn-sm" type="button">
+              💾 Save to Server File
+            </button>
+
+
+            <span id="msalSettingsStatus" class="small text-muted align-self-center ml-auto"></span>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button id="msalSaveBtn" class="btn btn-primary">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETED EMAIL TEMPLATE MODAL -->
+  <div class="modal fade" id="emailTemplateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">✉️ Completed Job Email Template</h5>
+          <button type="button" class="close text-white" data-dismiss="modal"><span>×</span></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="alert alert-info small mb-3">
+            Use placeholders like <code>{{reference}}</code>, <code>{{teacher}}</code>, <code>{{grades}}</code>,
+            <code>{{pages}}</code>, <code>{{copies}}</code>, <code>{{due}}</code>, <code>{{completed}}</code>,
+            <code>{{notes}}</code>.
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">Subject template</label>
+            <input id="completedEmailSubjectTpl" class="form-control"
+              placeholder="e.g. Print job completed: {{reference}}">
+          </div>
+
+
+          <div class="form-group">
+            <label class="font-weight-bold">Body template (plain text — used for MailTo)</label>
+            <textarea id="completedEmailBodyTextTpl" class="form-control mono" rows="8"
+              placeholder="Hi {{teacher}},&#10;&#10;Your print job {{reference}} is complete.&#10;..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">Body template (HTML — used for Graph/API)</label>
+            <textarea id="completedEmailBodyHtmlTpl" class="form-control mono" rows="10"
+              placeholder="<p>Hi {{teacher}},</p><p>Your print job <b>{{reference}}</b> is complete.</p>..."></textarea>
+            <small class="text-muted">
+              Graph/API supports HTML body content. [1](https://www.npmjs.com/package/@sendgrid/mail)
+            </small>
+          </div>
+
+          <hr>
+
+          <div>
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="font-weight-bold">Preview</div>
+              <small class="text-muted">Uses the most recent completed job (or sample)</small>
+            </div>
+
+            <div class="border rounded p-2 bg-light small mt-2">
+              <div><strong>Subject:</strong> <span id="completedEmailPreviewSubject"></span></div>
+
+              <div class="mt-2"><strong>Text preview:</strong></div>
+              <pre id="completedEmailPreviewBodyText" class="mb-2" style="white-space:pre-wrap;"></pre>
+
+              <div class="mt-2"><strong>HTML preview:</strong></div>
+
+              <iframe id="completedEmailPreviewBodyHtml" sandbox="allow-same-origin"
+                style="width:100%; height:220px; border:1px solid rgba(0,0,0,.15); background:white;"></iframe>
+
+            </div>
+          </div>
+
+          <div id="emailTemplateStatus" class="small text-muted mt-2"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="resetEmailTemplateBtn" class="btn btn-outline-secondary">Reset Default</button>
+          <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button id="saveEmailTemplateBtn" class="btn btn-primary">Save Template</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ Scripts ════ -->
+  <script src="./jquery-3.5.1.slim.min.js"></script>
+  <script src="./bootstrap.bundle.min.js"></script>
+  <script src="./chart.js"></script>
+  <script src="./vendor/msal-browser.min.js"></script>
+
+  <script src="app.js" defer></script>
+</body>
+
+</html>

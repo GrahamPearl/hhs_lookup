@@ -1,0 +1,50 @@
+{
+    "priorityMode": "fifo",
+    "timePerPage": 5,
+    "loadTime": 60,
+    "checkTime": 120,
+    "trimmingTime": 30,
+    "staplingTime": 20,
+    "minLeadTimeHours": 2,
+    "maxConcurrentJobs": 2,
+    "stallMultiplier": 1.5,
+    "dailyPageCap": 0,
+    "requireAuthoriser": false,
+    "openHours": {
+        "Mon": {
+            "open": "07:30",
+            "close": "16:00",
+            "enabled": true
+        },
+        "Tue": {
+            "open": "07:30",
+            "close": "16:00",
+            "enabled": true
+        },
+        "Wed": {
+            "open": "07:30",
+            "close": "16:00",
+            "enabled": true
+        },
+        "Thu": {
+            "open": "07:30",
+            "close": "16:00",
+            "enabled": true
+        },
+        "Fri": {
+            "open": "07:30",
+            "close": "16:00",
+            "enabled": true
+        },
+        "Sat": {
+            "open": "08:00",
+            "close": "12:00",
+            "enabled": false
+        },
+        "Sun": {
+            "open": "08:00",
+            "close": "12:00",
+            "enabled": false
+        }
+    }
+}
