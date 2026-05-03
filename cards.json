@@ -84,9 +84,18 @@
     "badge": "Support Staff",
       "badgeClass": "bg-success",
     "title": "Print Queue",
-    "description": "Print Queue Manager v2.",
-    "buttonText": "Added Email",
+    "description": "Print Queue Manager v2, Added Email",
+    "buttonText": "Print Queue Manager v2",
     "link": "./demo_print2/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Support Staff",
+      "badgeClass": "bg-success",
+    "title": "Teacher Tracking",
+    "description": "Activity Tracker v1. (Habit/Tasks)",
+    "buttonText": "Activity Tracking",
+    "link": "./demo_teacher_tracking/index.html",
     "buttonClass": "btn-hhs"
   },
   {

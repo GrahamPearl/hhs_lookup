@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teacher Planner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#eef2f7;--sur:#fff;--pri:#1a3a5c;--acc:#2980b9;--grn:#27ae60;--org:#e67e22;--red:#e74c3c;--txt:#2c3e50;--mut:#95a5a6;--bdr:#dde4ec}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);font-size:13px}
+.app{max-width:1020px;margin:0 auto;padding:10px}
+header{background:var(--pri);color:#fff;padding:10px 14px;border-radius:10px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+header h1{font-size:14px;font-weight:800;white-space:nowrap}
+.wknav{display:flex;align-items:center;gap:5px}
+.wknav button{background:rgba(255,255,255,.2);border:none;color:#fff;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:16px;line-height:1}
+.wknav span{font-size:11px;font-weight:600;white-space:nowrap}
+.hacts{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.hbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 9px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit;white-space:nowrap}
+.hbtn:hover{background:rgba(255,255,255,.27)}
+nav.tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+nav.tabs button{padding:5px 8px;border:none;background:var(--sur);border-radius:7px;cursor:pointer;font-size:11px;color:var(--mut);font-weight:700;line-height:1.4;text-align:center;min-width:46px}
+nav.tabs button.active{background:var(--acc);color:#fff}
+.card{background:var(--sur);border-radius:10px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-title{font-weight:800;color:var(--pri);margin-bottom:10px;font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+.hdr-card{display:flex;align-items:center;justify-content:space-between;padding:8px 14px}
+.prow{display:flex;align-items:center;gap:5px;padding:7px 0;border-bottom:1px solid var(--bdr);flex-wrap:wrap}
+.prow:last-child{border-bottom:none}
+.prow.done-row{opacity:.42}
+.plbl{font-weight:800;color:var(--pri);min-width:24px;font-size:13px;white-space:nowrap}
+.ptm{color:var(--mut);font-size:10px;min-width:90px;white-space:nowrap}
+.xf{display:flex;gap:5px;flex:1;flex-wrap:wrap;align-items:center}
+.xf input[type=text]{flex:1;min-width:70px}
+select,input[type=text],input[type=number],input[type=time]{padding:4px 7px;border:1px solid var(--bdr);border-radius:5px;font-size:12px;background:#f8fafc;color:var(--txt);font-family:inherit}
+.breakbar{background:#fff8e1;border:1px dashed #f39c12;border-radius:8px;padding:6px 12px;margin:4px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.breakbar strong{color:var(--org);font-size:11px;white-space:nowrap}
+.sport-wrap{display:flex;flex-direction:column;gap:6px}
+.srow{display:flex;align-items:center;gap:7px;padding:8px 10px;background:#f8fafc;border-radius:8px;flex-wrap:wrap}
+.slbl{font-weight:700;font-size:12px;min-width:140px;color:var(--pri)}
+.tog{appearance:none;width:34px;height:18px;background:#ccc;border-radius:9px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.tog:checked{background:var(--grn)}
+.tog::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left .2s}
+.tog:checked::after{left:18px}
+.chk{accent-color:var(--grn);cursor:pointer}
+.done-lbl{font-size:11px;color:var(--mut);display:flex;align-items:center;gap:3px;white-space:nowrap}
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+@media(max-width:580px){.rgrid{grid-template-columns:repeat(2,1fr)}}
+.sc{background:var(--bg);border-radius:8px;padding:10px;text-align:center}
+.sn{font-size:24px;font-weight:900;color:var(--acc)}
+.sl{font-size:10px;color:var(--mut);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:5px 7px;background:var(--bg);color:var(--mut);font-weight:700;font-size:10px;text-transform:uppercase}
+td{padding:5px 7px;border-bottom:1px solid var(--bdr)}
+tr:last-child td{border-bottom:none}
+.abtn{background:var(--acc);border:none;color:#fff;padding:6px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:700}
+.abtn:hover{opacity:.88}
+.tpl-note{font-size:11px;color:var(--mut);margin-bottom:12px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🏫 Teacher Planner</h1>
+    <div class="wknav">
+      <button onclick="shiftWeek(-1)">‹</button>
+      <span id="wkLbl"></span>
+      <button onclick="shiftWeek(1)">›</button>
+    </div>
+    <div class="hacts">
+      <button class="hbtn" onclick="exportJSON()">⬇ JSON</button>
+      <button class="hbtn" onclick="exportICS()">📅 Week → Cal</button>
+      <label class="hbtn">⬆ Import<input type="file" accept=".json" onchange="importJSON(event)" style="display:none"></label>
+    </div>
+  </header>
+  <nav id="tabs"></nav>
+  <div id="content"></div>
+</div>
+<script>
+const DAYS=['mon','tue','wed','thu','fri'],DNAMES=['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const PTYPES=[['teaching','📚 Teaching'],['cover','🔄 Cover'],['printing','🖨️ Printing'],['planning','📝 Planning'],['free','☕ Free']];
+const MS_TYPES=[['meeting','📋 Meeting'],['sport','🏃 Staff Sport'],['free','☕ Free']];
+
+const DEF_TPL={
+  assembly:{label:'Assembly',start:'07:30',end:'07:50'},
+  periods:[
+    {label:'P1',start:'07:50',end:'08:35'},{label:'P2',start:'08:35',end:'09:20'},
+    {label:'P3',start:'09:20',end:'10:05'},{label:'P4',start:'10:25',end:'11:10'},
+    {label:'P5',start:'11:10',end:'11:55'},{label:'P6',start:'12:30',end:'13:15'}
+  ],
+  break1:{label:'Break',start:'10:05',end:'10:25'},
+  break2:{label:'Lunch',start:'11:55',end:'12:30'},
+  meetingSport:{label:'Meeting / Sport',start:'12:30',end:'13:30'}
+};
+
+let T=JSON.parse(JSON.stringify(DEF_TPL)),D={},ws=getMonday(new Date()),curDay='mon';
+
+function getMonday(d){const x=new Date(d);const day=x.getDay()||7;x.setDate(x.getDate()-day+1);x.setHours(0,0,0,0);return x;}
+function wk(){return ws.toISOString().slice(0,10);}
+function dayDate(i){const d=new Date(ws);d.setDate(d.getDate()+i);return d;}
+function fmt(d){return d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short'});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function clone(o){return JSON.parse(JSON.stringify(o));}
+
+function initPeriod(){return{type:'teaching',subject:'',cls:'',notes:'',coverTeacher:'',coverSubject:'',coverCls:'',printDoc:'',printQty:'1',printDone:false,done:false};}
+function initDay(){return{
+  assembly:{notes:'',done:false},
+  periods:Array.from({length:6},initPeriod),
+  break1:{duty:false,location:''},break2:{duty:false,location:''},
+  meetingSport:{type:'meeting',notes:'',done:false},
+  morningSport:{active:false,sport:'',venue:'',time:'06:30',hours:'1'},
+  afternoonSport:{active:false,sport:'',venue:'',time:'14:00',hours:'2'}
+};}
+function initWeek(){D={ws:ws.toISOString()};DAYS.forEach(d=>D[d]=initDay());}
+
+async function loadTpl(){try{const r=await window.storage.get('tpl');if(r)T=JSON.parse(r.value);}catch(e){T=clone(DEF_TPL);}}
+async function saveTpl(){try{await window.storage.set('tpl',JSON.stringify(T));}catch(e){}}
+async function loadWeek(){
+  try{const r=await window.storage.get('wk:'+wk());D=r?JSON.parse(r.value):null;
+    if(!D)initWeek();DAYS.forEach(d=>{if(!D[d])D[d]=initDay();});}
+  catch(e){initWeek();}
+}
+async function saveWeek(){try{await window.storage.set('wk:'+wk(),JSON.stringify(D));}catch(e){}}
+async function init(){await loadTpl();await loadWeek();render();}
+
+function shiftWeek(n){ws.setDate(ws.getDate()+n*7);curDay='mon';loadWeek().then(render);}
+function setDay(d){curDay=d;renderTabs();renderContent();}
+function render(){renderHeader();renderTabs();renderContent();}
+function renderHeader(){document.getElementById('wkLbl').textContent=fmt(ws)+' – '+fmt(dayDate(4));}
+
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=
+    DAYS.map((d,i)=>`<button class="${curDay===d?'active':''}" onclick="setDay('${d}')">${DNAMES[i].slice(0,3)}<br><small style="font-weight:400;font-size:10px">${fmt(dayDate(i))}</small></button>`).join('')+
+    `<button class="${curDay==='report'?'active':''}" onclick="setDay('report')">📊<br><small>Report</small></button>`+
+    `<button class="${curDay==='template'?'active':''}" onclick="setDay('template')">⚙️<br><small>Times</small></button>`;
+}
+
+function renderContent(){
+  const c=document.getElementById('content');
+  if(curDay==='report'){c.innerHTML=buildReport();return;}
+  if(curDay==='template'){c.innerHTML=buildTemplate();return;}
+  const di=DAYS.indexOf(curDay),dd=D[curDay],isFri=curDay==='fri',isMon=curDay==='mon';
+  c.innerHTML=`
+    <div class="card hdr-card">
+      <span style="font-weight:800;color:var(--pri);font-size:14px">${DNAMES[di]} — ${fmt(dayDate(di))}</span>
+      <button class="abtn" onclick="exportDayICS('${curDay}')" style="font-size:11px;padding:5px 10px">📅 → Calendar</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Timetable</div>
+      ${isMon?buildAssembly(dd):''}
+      ${buildPeriods(curDay,dd,isFri)}
+    </div>
+    <div class="card">
+      <div class="card-title">⚡ Duties &amp; Sport</div>
+      ${buildDuties(curDay,dd)}
+    </div>`;
+}
+
+function buildAssembly(dd){
+  const a=dd.assembly;
+  return`<div class="prow${a.done?' done-row':''}">
+    <span class="plbl">🏫</span>
+    <span class="ptm">${T.assembly.start}–${T.assembly.end}</span>
+    <span style="font-weight:800;font-size:12px;color:var(--org);min-width:78px">${esc(T.assembly.label)}</span>
+    <div class="xf"><input type="text" placeholder="Notes / agenda" value="${esc(a.notes)}" oninput="updA('notes',this.value)"></div>
+    <label class="done-lbl"><input type="checkbox" class="chk" ${a.done?'checked':''} onchange="updAR('done',this.checked)"> Done</label>
+  </div>`;
+}
+
+function buildPeriods(day,dd,isFri){
+  let h='';const pCount=isFri?5:6;
+  for(let i=0;i<pCount;i++){
+    if(i===3)h+=buildBreak(day,dd.break1,1);
+    if(!isFri&&i===5)h+=buildBreak(day,dd.break2,2);
+    h+=buildPeriod(day,dd.periods[i],i);
+  }
+  if(isFri)h+=buildMtgSport(day,dd);
+  return h;
+}
+
+function buildPeriod(day,p,i){
+  const tpl=T.periods[i];
+  const topts=PTYPES.map(([v,l])=>`<option value="${v}"${p.type===v?' selected':''}>${l}</option>`).join('');
+  let xf='';
+  if(p.type==='teaching')xf=`<input type="text" placeholder="Subject" value="${esc(p.subject)}" oninput="updP('${day}',${i},'subject',this.value)" style="min-width:90px">
+    <input type="text" placeholder="Class" value="${esc(p.cls)}" oninput="updP('${day}',${i},'cls',this.value)" style="min-width:65px">
+    <input type="text" placeholder="Notes" value="${esc(p.notes)}" oninput="updP('${day}',${i},'notes',this.value)">`;
+  else if(p.type==='cover')xf=`<input type="text" placeholder="Covering for..." value="${esc(p.coverTeacher)}" oninput="updP('${day}',${i},'coverTeacher',this.value)" style="min-width:100px">
+    <input type="text" placeholder="Subject" value="${esc(p.coverSubject)}" oninput="updP('${day}',${i},'coverSubject',this.value)" style="min-width:70px">
+    <input type="text" placeholder="Class" value="${esc(p.coverCls)}" oninput="updP('${day}',${i},'coverCls',this.value)" style="min-width:55px">`;
+  else if(p.type==='printing')xf=`<input type="text" placeholder="Document name" value="${esc(p.printDoc)}" oninput="updP('${day}',${i},'printDoc',this.value)">
+    <input type="number" min="1" value="${esc(p.printQty)}" oninput="updP('${day}',${i},'printQty',this.value)" style="width:50px"> copies
+    <label class="done-lbl"><input type="checkbox" class="chk" ${p.printDone?'checked':''} onchange="updPR('${day}',${i},'printDone',this.checked)"> Printed</label>`;
+  else if(p.type==='planning')xf=`<input type="text" placeholder="Planning notes..." value="${esc(p.notes)}" oninput="updP('${day}',${i},'notes',this.value)">`;
+  else xf=`<span style="color:var(--mut)">—</span>`;
+  return`<div class="prow${p.done?' done-row':''}">
+    <span class="plbl">${esc(tpl.label)}</span>
+    <span class="ptm">${tpl.start}–${tpl.end}</span>
+    <select onchange="updPType('${day}',${i},this.value)" style="min-width:112px">${topts}</select>
+    <div class="xf">${xf}</div>
+    <label class="done-lbl"><input type="checkbox" class="chk" ${p.done?'checked':''} onchange="updPR('${day}',${i},'done',this.checked)"> Done</label>
+  </div>`;
+}
+
+function buildBreak(day,bd,num){
+  const tpl=num===1?T.break1:T.break2;
+  return`<div class="breakbar">
+    <strong>${num===1?'☕':'🍽️'} ${esc(tpl.label)} &nbsp;${tpl.start}–${tpl.end}</strong>
+    <label style="display:flex;align-items:center;gap:4px;font-size:12px">
+      <input type="checkbox" class="chk" ${bd.duty?'checked':''} onchange="updBreak('${day}',${num},'duty',this.checked)"> Duty
+    </label>
+    ${bd.duty?`<input type="text" placeholder="Location / post" value="${esc(bd.location)}" oninput="updBreak('${day}',${num},'location',this.value)" style="flex:1;min-width:110px">`:''}
+  </div>`;
+}
+
+function buildMtgSport(day,dd){
+  const ms=dd.meetingSport,tpl=T.meetingSport;
+  const topts=MS_TYPES.map(([v,l])=>`<option value="${v}"${ms.type===v?' selected':''}>${l}</option>`).join('');
+  return`<div class="prow${ms.done?' done-row':''}">
+    <span class="plbl" style="color:var(--org)">🏁</span>
+    <span class="ptm">${tpl.start}–${tpl.end}</span>
+    <select onchange="updMS('${day}','type',this.value)" style="min-width:140px">${topts}</select>
+    <div class="xf"><input type="text" placeholder="Notes / details" value="${esc(ms.notes)}" oninput="updMS('${day}','notes',this.value)"></div>
+    <label class="done-lbl"><input type="checkbox" class="chk" ${ms.done?'checked':''} onchange="updMSR('${day}','done',this.checked)"> Done</label>
+  </div>`;
+}
+
+function buildDuties(day,dd){
+  const ms=dd.morningSport,as=dd.afternoonSport;
+  const mF=ms.active?`<input type="text" placeholder="Sport" value="${esc(ms.sport)}" oninput="updSport('${day}','morningSport','sport',this.value)" style="min-width:80px">
+    <input type="text" placeholder="Venue" value="${esc(ms.venue)}" oninput="updSport('${day}','morningSport','venue',this.value)" style="min-width:80px">
+    <input type="time" value="${esc(ms.time)}" onchange="updSport('${day}','morningSport','time',this.value)" style="width:82px">
+    <input type="number" min=".5" step=".5" value="${esc(ms.hours)}" oninput="updSport('${day}','morningSport','hours',this.value)" style="width:48px"> hrs`
+    :'<span style="color:var(--mut);font-size:12px">Off</span>';
+  const aF=as.active?`<input type="text" placeholder="Sport" value="${esc(as.sport)}" oninput="updSport('${day}','afternoonSport','sport',this.value)" style="min-width:80px">
+    <input type="text" placeholder="Venue" value="${esc(as.venue)}" oninput="updSport('${day}','afternoonSport','venue',this.value)" style="min-width:80px">
+    <input type="time" value="${esc(as.time)}" onchange="updSport('${day}','afternoonSport','time',this.value)" style="width:82px">
+    <input type="number" min=".5" step=".5" value="${esc(as.hours)}" oninput="updSport('${day}','afternoonSport','hours',this.value)" style="width:48px"> hrs`
+    :'<span style="color:var(--mut);font-size:12px">Off</span>';
+  return`<div class="sport-wrap">
+    <div class="srow"><label class="slbl">🌅 Morning Sport/Duty</label>
+      <input type="checkbox" class="tog" ${ms.active?'checked':''} onchange="updSport('${day}','morningSport','active',this.checked)">${mF}</div>
+    <div class="srow"><label class="slbl">🌆 Afternoon Sport/Duty</label>
+      <input type="checkbox" class="tog" ${as.active?'checked':''} onchange="updSport('${day}','afternoonSport','active',this.checked)">${aF}</div>
+  </div>`;
+}
+
+function buildTemplate(){
+  const rows=[
+    {key:'assembly',label:'🏫 Assembly (Mon only)'},
+    ...T.periods.map((p,i)=>({key:`periods.${i}`,label:`Period ${i+1}`})),
+    {key:'break1',label:'☕ Break 1 (all days)'},
+    {key:'break2',label:'🍽️ Lunch Break (Mon–Thu)'},
+    {key:'meetingSport',label:'🏁 Meeting / Sport (Fri)'}
+  ];
+  function obj(key){if(key.startsWith('periods.')){return T.periods[parseInt(key.split('.')[1])];}return T[key];}
+  return`<div class="card">
+    <div class="card-title">⚙️ Time Template — All Slots</div>
+    <p class="tpl-note">Edit labels and times for every slot. Saved instantly and reflected across all day views.<br>
+    Export as a <strong>Template JSON</strong> to share your school's timetable structure with colleagues.</p>
+    <table>
+      <tr><th>Slot</th><th>Label</th><th>Start</th><th>End</th></tr>
+      ${rows.map(r=>{const o=obj(r.key);return`<tr>
+        <td style="color:var(--mut);font-size:11px;white-space:nowrap">${r.label}</td>
+        <td><input type="text" value="${esc(o.label)}" onchange="updTpl('${r.key}','label',this.value)" style="width:120px"></td>
+        <td><input type="time" value="${esc(o.start)}" onchange="updTpl('${r.key}','start',this.value)"></td>
+        <td><input type="time" value="${esc(o.end)}" onchange="updTpl('${r.key}','end',this.value)"></td>
+      </tr>`;}).join('')}
+    </table>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="abtn" onclick="exportTemplate()">⬇ Export Template JSON</button>
+      <label class="abtn">⬆ Import Template JSON<input type="file" accept=".json" onchange="importTemplate(event)" style="display:none"></label>
+      <button class="abtn" onclick="resetTemplate()" style="background:var(--red)">↺ Reset Defaults</button>
+    </div>
+  </div>`;
+}
+
+function buildReport(){
+  let totP=0,doneP=0,covers=[],prints=[],sports=[],duties=[];
+  DAYS.forEach((d,i)=>{
+    const dd=D[d],isFri=d==='fri',isMon=d==='mon';
+    if(isMon){totP++;if(dd.assembly.done)doneP++;}
+    const pCount=isFri?5:6;
+    for(let pi=0;pi<pCount;pi++){
+      const p=dd.periods[pi];totP++;if(p.done)doneP++;
+      if(p.type==='cover'&&p.coverTeacher)covers.push({day:DNAMES[i],p:T.periods[pi].label,teacher:p.coverTeacher,subj:p.coverSubject,cls:p.coverCls});
+      if(p.type==='printing'&&p.printDoc)prints.push({day:DNAMES[i],p:T.periods[pi].label,doc:p.printDoc,qty:p.printQty,done:p.printDone});
+    }
+    if(isFri){totP++;if(dd.meetingSport.done)doneP++;}
+    if(dd.break1.duty)duties.push({day:DNAMES[i],brk:T.break1.label,time:`${T.break1.start}–${T.break1.end}`,loc:dd.break1.location});
+    if(!isFri&&dd.break2.duty)duties.push({day:DNAMES[i],brk:T.break2.label,time:`${T.break2.start}–${T.break2.end}`,loc:dd.break2.location});
+    if(dd.morningSport.active)sports.push({day:DNAMES[i],sess:'🌅 Morning',sport:dd.morningSport.sport,venue:dd.morningSport.venue,time:dd.morningSport.time,hrs:dd.morningSport.hours});
+    if(dd.afternoonSport.active)sports.push({day:DNAMES[i],sess:'🌆 Afternoon',sport:dd.afternoonSport.sport,venue:dd.afternoonSport.venue,time:dd.afternoonSport.time,hrs:dd.afternoonSport.hours});
+  });
+  const pct=totP?Math.round(doneP/totP*100):0;
+  return`<div class="card">
+    <div class="card-title">📊 Weekly Summary — ${fmt(ws)} to ${fmt(dayDate(4))}</div>
+    <div class="rgrid">
+      <div class="sc"><div class="sn">${doneP}/${totP}</div><div class="sl">Tasks Done (${pct}%)</div></div>
+      <div class="sc"><div class="sn">${covers.length}</div><div class="sl">Cover Periods</div></div>
+      <div class="sc"><div class="sn">${prints.length}</div><div class="sl">Print Jobs</div></div>
+      <div class="sc"><div class="sn">${sports.length}</div><div class="sl">Sport Duties</div></div>
+    </div>
+  </div>
+  ${covers.length?`<div class="card"><div class="card-title">🔄 Cover Assignments</div>
+    <table><tr><th>Day</th><th>Period</th><th>Covering For</th><th>Subject</th><th>Class</th></tr>
+    ${covers.map(c=>`<tr><td>${c.day}</td><td>${esc(c.p)}</td><td>${esc(c.teacher)}</td><td>${esc(c.subj)}</td><td>${esc(c.cls)}</td></tr>`).join('')}</table></div>`:''}
+  ${prints.length?`<div class="card"><div class="card-title">🖨️ Print Schedule</div>
+    <table><tr><th>Day</th><th>Period</th><th>Document</th><th>Qty</th><th>Status</th></tr>
+    ${prints.map(p=>`<tr><td>${p.day}</td><td>${esc(p.p)}</td><td>${esc(p.doc)}</td><td>${p.qty}</td><td>${p.done?'✅ Printed':'⏳ Pending'}</td></tr>`).join('')}</table></div>`:''}
+  ${duties.length?`<div class="card"><div class="card-title">☕ Break Duties</div>
+    <table><tr><th>Day</th><th>Break</th><th>Time</th><th>Location</th></tr>
+    ${duties.map(d=>`<tr><td>${d.day}</td><td>${esc(d.brk)}</td><td>${d.time}</td><td>${esc(d.loc)||'—'}</td></tr>`).join('')}</table></div>`:''}
+  ${sports.length?`<div class="card"><div class="card-title">🏃 Sport Duties</div>
+    <table><tr><th>Day</th><th>Session</th><th>Sport</th><th>Venue</th><th>Start</th><th>Hrs</th></tr>
+    ${sports.map(s=>`<tr><td>${s.day}</td><td>${s.sess}</td><td>${esc(s.sport)||'—'}</td><td>${esc(s.venue)||'—'}</td><td>${s.time}</td><td>${s.hrs}</td></tr>`).join('')}</table></div>`:''}`;
+}
+
+// Updaters
+function updP(day,i,k,v){D[day].periods[i][k]=v;saveWeek();}
+function updPR(day,i,k,v){updP(day,i,k,v);renderContent();}
+function updPType(day,i,type){D[day].periods[i].type=type;saveWeek();renderContent();}
+function updA(k,v){D[curDay].assembly[k]=v;saveWeek();}
+function updAR(k,v){updA(k,v);renderContent();}
+function updBreak(day,num,k,v){D[day][num===1?'break1':'break2'][k]=v;saveWeek();renderContent();}
+function updMS(day,k,v){D[day].meetingSport[k]=v;saveWeek();}
+function updMSR(day,k,v){updMS(day,k,v);renderContent();}
+function updSport(day,grp,k,v){D[day][grp][k]=v;saveWeek();renderContent();}
+function updTpl(key,field,val){
+  if(key.startsWith('periods.'))T.periods[parseInt(key.split('.')[1])][field]=val;
+  else T[key][field]=val;
+  saveTpl();
+}
+
+// ICS helpers
+function icsDate(date,time){return date.toISOString().slice(0,10).replace(/-/g,'')+'T'+(time||'00:00').replace(':','')+'00';}
+function addHrs(time,hrs){const[h,m]=(time||'00:00').split(':').map(Number),tot=h*60+m+Math.round(parseFloat(hrs||1)*60);return String(Math.floor(tot/60)%24).padStart(2,'0')+':'+String(tot%60).padStart(2,'0');}
+function uid(){return Math.random().toString(36).slice(2,10)+'@tp';}
+function icsEvt(date,s,e,sum){return`BEGIN:VEVENT\r\nDTSTART:${icsDate(date,s)}\r\nDTEND:${icsDate(date,e)}\r\nSUMMARY:${sum}\r\nUID:${uid()}\r\nEND:VEVENT`;}
+
+function buildICS(daysList){
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Teacher Planner//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  daysList.forEach(d=>{
+    const di=DAYS.indexOf(d),date=dayDate(di),dd=D[d],isFri=d==='fri';
+    if(d==='mon')lines.push(icsEvt(date,T.assembly.start,T.assembly.end,`🏫 ${T.assembly.label}${dd.assembly.notes?' – '+dd.assembly.notes:''}`));
+    const pCount=isFri?5:6;
+    for(let i=0;i<pCount;i++){
+      const p=dd.periods[i],tpl=T.periods[i];if(p.type==='free')continue;
+      let sum=p.type==='teaching'?`📚 ${tpl.label}: ${p.subject||'Teaching'}${p.cls?' ('+p.cls+')':''}`
+        :p.type==='cover'?`🔄 ${tpl.label}: Cover – ${p.coverTeacher||'?'}${p.coverSubject?' ('+p.coverSubject+')':''}`
+        :p.type==='printing'?`🖨️ ${tpl.label}: Print – ${p.printDoc||'Doc'} x${p.printQty}`
+        :`📝 ${tpl.label}: Planning${p.notes?' – '+p.notes:''}`;
+      lines.push(icsEvt(date,tpl.start,tpl.end,sum));
+    }
+    if(dd.break1.duty)lines.push(icsEvt(date,T.break1.start,T.break1.end,`☕ ${T.break1.label} Duty${dd.break1.location?' – '+dd.break1.location:''}`));
+    if(!isFri&&dd.break2.duty)lines.push(icsEvt(date,T.break2.start,T.break2.end,`🍽️ ${T.break2.label} Duty${dd.break2.location?' – '+dd.break2.location:''}`));
+    if(isFri&&dd.meetingSport.type!=='free')lines.push(icsEvt(date,T.meetingSport.start,T.meetingSport.end,`${dd.meetingSport.type==='meeting'?'📋 Meeting':'🏃 Staff Sport'}${dd.meetingSport.notes?' – '+dd.meetingSport.notes:''}`));
+    if(dd.morningSport.active&&dd.morningSport.sport)lines.push(icsEvt(date,dd.morningSport.time,addHrs(dd.morningSport.time,dd.morningSport.hours),`🌅 Morning Sport: ${dd.morningSport.sport}${dd.morningSport.venue?' @ '+dd.morningSport.venue:''}`));
+    if(dd.afternoonSport.active&&dd.afternoonSport.sport)lines.push(icsEvt(date,dd.afternoonSport.time,addHrs(dd.afternoonSport.time,dd.afternoonSport.hours),`🌆 Afternoon Sport: ${dd.afternoonSport.sport}${dd.afternoonSport.venue?' @ '+dd.afternoonSport.venue:''}`));
+  });
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+function dlFile(c,n,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();}
+function exportJSON(){dlFile(JSON.stringify(D,null,2),`teacher-planner-${wk()}.json`,'application/json');}
+function exportICS(){dlFile(buildICS(DAYS),`teacher-week-${wk()}.ics`,'text/calendar');}
+function exportDayICS(d){dlFile(buildICS([d]),`teacher-${d}-${wk()}.ics`,'text/calendar');}
+function exportTemplate(){dlFile(JSON.stringify(T,null,2),'teacher-template.json','application/json');}
+function importJSON(evt){const f=evt.target.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{D=JSON.parse(e.target.result);DAYS.forEach(d=>{if(!D[d])D[d]=initDay();});saveWeek();render();alert('✅ Week data imported!');}catch{alert('❌ Invalid JSON');}};r.readAsText(f);evt.target.value='';}
+function importTemplate(evt){const f=evt.target.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{T=JSON.parse(e.target.result);saveTpl();renderContent();alert('✅ Template imported!');}catch{alert('❌ Invalid template JSON');}};r.readAsText(f);evt.target.value='';}
+function resetTemplate(){if(!confirm('Reset all times to defaults?'))return;T=clone(DEF_TPL);saveTpl();renderContent();}
+
+init();
+</script>
+</body>
+</html>
