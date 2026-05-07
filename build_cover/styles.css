@@ -1,400 +1,426 @@
-:root {
-  --fw-bg-light: #fff7e6;
-  --fw-border-light: #f59e0b;
-  --fw-text-light: #92400e;
-
-  --fw-bg-dark: #1f2937;
-  --fw-border-dark: #fbbf24;
-  --fw-text-dark: #fde68a;
-}
-
 body {
-  background: #f4f6f9;
-  margin: 0;
+    background: #f4f6f9;
+    margin: 0
 }
 
-.sidebar-container .fairness-warning,
-.floating-cover-panel .fairness-warning,
-body.dark .fairness-warning {
-  background-color: var(--fw-bg-dark);
-  border-left-color: var(--fw-border-dark);
-  color: var(--fw-text-dark);
-}
-
-
-/* Left edge hover area indicator */
 .sidebar-hover-trigger {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 15px;
-  height: 100vh;
-  background: linear-gradient(90deg, #1e293b 0%, rgba(30, 41, 59, 0) 100%);
-  z-index: 999;
-  cursor: pointer;
-  border-right: 2px solid #3b4c65;
-  transition: width 0.2s ease-in-out;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 15px;
+    height: 100vh;
+    background: linear-gradient(90deg, #1e293b 0%, rgba(30, 41, 59, 0) 100%);
+    z-index: 999;
+    cursor: pointer;
+    border-right: 2px solid #3b4c65;
+    transition: width .2s ease-in-out
 }
 
 .sidebar-hover-trigger:hover {
-  width: 25px;
-  background: linear-gradient(90deg, #334155 0%, rgba(30, 41, 59, 0) 100%);
+    width: 25px;
+    background: linear-gradient(90deg, #334155 0%, rgba(30, 41, 59, 0) 100%)
 }
 
 .sidebar-hover-trigger::after {
-  content: "☰";
-  position: absolute;
-  left: 2px;
-  top: 20px;
-  color: #94a3b8;
-  font-size: 18px;
-  font-weight: bold;
-  opacity: 0.6;
+    content: "☰";
+    position: absolute;
+    left: 2px;
+    top: 20px;
+    color: #94a3b8;
+    font-size: 18px;
+    font-weight: bold;
+    opacity: .6
 }
 
 .sidebar-hover-trigger:hover::after {
-  opacity: 1;
-  color: #cbd5e1;
+    opacity: 1;
+    color: #cbd5e1
 }
 
 .sidebar-container {
-  position: fixed;
-  left: -350px;
-  top: 0;
-  width: 350px;
-  height: 100vh;
-  background: #1e293b;
-  color: white;
-  padding: 15px;
-  overflow-y: auto;
-  transition: left 0.3s ease-in-out;
-  z-index: 1000;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+    position: fixed;
+    left: -350px;
+    top: 0;
+    width: 350px;
+    height: 100vh;
+    background: #1e293b;
+    color: white;
+    padding: 15px;
+    overflow-y: auto;
+    transition: left .3s ease-in-out;
+    z-index: 1000;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, .2)
 }
 
 .sidebar-container:hover,
-.sidebar-hover-trigger:hover ~ .sidebar-container {
-  left: 0;
+.sidebar-hover-trigger:hover~.sidebar-container {
+    left: 0
 }
 
 .sidebar-toggle {
-  position: fixed;
-  left: 0;
-  top: 15px;
-  width: 30px;
-  height: 30px;
-  background: #1e293b;
-  color: white;
-  border: none;
-  cursor: pointer;
-  border-radius: 0 4px 4px 0;
-  z-index: 999;
-  display: none;
+    position: fixed;
+    left: 0;
+    top: 15px;
+    width: 30px;
+    height: 30px;
+    background: #1e293b;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 0 4px 4px 0;
+    z-index: 999;
+    display: none
 }
 
-.sidebar-container:hover ~ .sidebar-toggle {
-  display: none;
+.sidebar-container:hover~.sidebar-toggle {
+    display: none
 }
 
-@media (max-width: 992px) {
-  .sidebar-toggle {
-    display: block;
-  }
+@media (max-width:992px) {
+    .sidebar-toggle {
+        display: block
+    }
 }
 
 .main-content {
-  margin-left: 0;
-  transition: margin-left 0.3s ease-in-out;
-  padding: 20px;
-  padding-bottom: calc(35vh + 40px);
+    margin-left: 0;
+    transition: margin-left .3s ease-in-out;
+    padding: 20px;
+    padding-bottom: calc(35vh + 40px)
 }
 
 .cell {
-  border: 1px solid #ccc;
-  padding: 10px;
+    border: 1px solid #ccc;
+    padding: 10px
 }
+
 .free {
-  background: #d1fae5;
+    background: #d1fae5
 }
+
 .lesson {
-  background: #dbeafe;
+    background: #dbeafe
 }
+
 .meeting {
-  background: #fef3c7;
-}
-.avail-badge {
-  cursor: grab;
-}
-.assigned {
-  background: #fde68a;
+    background: #fef3c7
 }
 
 .avail-badge {
-  cursor: grab;
-  font-size: 0.85em;
+    cursor: grab
 }
+
+.assigned {
+    background: #fde68a
+}
+
+.avail-badge {
+    cursor: grab;
+    font-size: .85em
+}
+
 .avail-badge .badge {
-  font-size: 0.7em;
+    font-size: .7em
 }
 
 .fairness-warning {
-  background-color: var(--fw-bg-light);
-  border-left: 5px solid var(--fw-border-light);
-  color: var(--fw-text-light);
-  padding: 12px 14px;
-  margin-bottom: 12px;
-  border-radius: 6px;
-  font-size: 0.9em;
-  line-height: 1.4;
+    background-color: #fff3cd;
+    border-left: 4px solid #ff6b6b;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    color: #1e293b
 }
 
-
 @media print {
-  .avail-badge {
-    display: none;
-  }
-  .sidebar-container {
-    display: none;
-  }
-  .sidebar-hover-trigger {
-    display: none;
-  }
-  .floating-print-nav {
-    display: none !important;
-  }
+    .avail-badge {
+        display: none
+    }
+
+    .sidebar-container {
+        display: none
+    }
+
+    .sidebar-hover-trigger {
+        display: none
+    }
+
+    .floating-print-nav {
+        display: none !important
+    }
 }
 
 .floating-print-nav {
-  position: fixed;
-  top: 20px;
-  right: 0;
-  width: 40px;
-  height: auto;
-  background: rgba(30, 41, 59, 0.95);
-  border-radius: 8px 0 0 8px;
-  overflow: hidden;
-  z-index: 1100;
-  box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.2);
-  transition: width 0.2s ease-in-out;
+    position: fixed;
+    top: 60px;
+    right: 0;
+    width: 40px;
+    height: auto;
+    background: rgba(30, 41, 59, .95);
+    border-radius: 8px 0 0 8px;
+    overflow: hidden;
+    z-index: 1100;
+    box-shadow: -2px 2px 10px rgba(0, 0, 0, .2);
+    transition: width .2s ease-in-out
 }
 
 .floating-print-nav:hover,
 .floating-print-nav:focus-within {
-  width: 210px;
+    width: 210px
 }
 
 .floating-print-handle {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  cursor: pointer;
-  font-size: 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, .15)
 }
 
 .floating-print-content {
-  display: none;
-  padding: 8px;
+    display: none;
+    padding: 8px
 }
 
 .floating-print-nav:hover .floating-print-content,
 .floating-print-nav:focus-within .floating-print-content {
-  display: block;
+    display: block
 }
 
 .floating-print-content button {
-  font-size: 0.8em;
-  text-align: left;
+    font-size: .8em;
+    text-align: left
 }
 
-/* Fixed Floating Available Cover Teachers Panel */
 .floating-cover-panel {
-  position: fixed;
-  /*bottom: -28vh;*/
-  bottom: calc(-35vh + 40px);
-  left: 0;
-  right: 0;
-  width: 100%;
-  max-height: 35vh;
-  background: rgba(30, 41, 59, 0.98);
-  border-top: 2px solid rgba(255, 255, 255, 0.2);
-  z-index: 1050;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  transition: bottom 0.3s ease-in-out;
+    position: fixed;
+    bottom: calc(-35vh + 40px);
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 35vh;
+    background: rgba(30, 41, 59, .98);
+    border-top: 2px solid rgba(255, 255, 255, .2);
+    z-index: 1050;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, .3);
+    display: flex;
+    flex-direction: column;
+    transition: bottom .3s ease-in-out
 }
 
-/* Show panel on hover */
 .floating-cover-panel:hover,
-.panel-hover-trigger:hover ~ .floating-cover-panel {
-  bottom: 0;
+.panel-hover-trigger:hover~.floating-cover-panel {
+    bottom: 0
 }
 
 .floating-cover-handle {
-  
-  min-height: 50px;
-  font-size: 17px;
-  width: 100%;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  padding: 0 15px;
-  color: white;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.1);
-  font-weight: 500;
+    min-height: 50px;
+    font-size: 17px;
+    width: 100%;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    color: white;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, .15);
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, .1);
+    font-weight: 500
 }
 
 .floating-cover-content {
-  display: block;
-  overflow-y: auto;
-  overflow-x: hidden;
-  flex: 1;
-  padding: 12px;
-  color: white;
-  min-height: 0;
+    display: block;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    padding: 12px;
+    color: white;
+    min-height: 0
 }
 
 .floating-cover-content table {
-  font-size: 0.85em;
-  margin-bottom: 0;
-  width: 100%;
-  border-collapse: collapse;
+    font-size: .85em;
+    margin-bottom: 0;
+    width: 100%;
+    border-collapse: collapse
 }
 
 .floating-cover-content .table {
-  color: white;
-  border-collapse: collapse;
+    color: white;
+    border-collapse: collapse
+}
+
+.floating-cover-content .table thead {
+    background: rgba(15, 23, 42, .9);
+    position: sticky;
+    top: 0;
+    z-index: 10
 }
 
 .floating-cover-content .table thead th {
-  background: rgba(15, 23, 42, 0.95);
-}
-
-.floating-cover-content .table thead {
-  position: static;
-}
-
-.floating-cover-content {
-  overflow-y: auto;
-  position: relative;
-}
-
-.floating-cover-content .table thead {
-  z-index: 5;
-}
-
-.floating-cover-content .table thead {
-  position: sticky;
-  top: 0;
-
-  background: rgba(15, 23, 42, 0.95);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-
-  z-index: 5;
-}
-
-.floating-cover-content .table thead th {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #cbd5e1;
-  padding: 8px 6px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 0.85em;
+    border-color: rgba(255, 255, 255, .2);
+    color: #cbd5e1;
+    padding: 8px 6px;
+    text-align: left;
+    font-weight: 600;
+    font-size: .85em
 }
 
 .floating-cover-content .table tbody td {
-  border-color: rgba(255, 255, 255, 0.15);
-  padding: 6px;
-  vertical-align: top;
+    border-color: rgba(255, 255, 255, .15);
+    padding: 6px;
+    vertical-align: top
 }
 
 .floating-cover-content .table tbody tr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, .1)
 }
 
 .floating-cover-content .badge {
-  font-size: 0.65em;
-  padding: 2px 4px;
-  margin-right: 2px;
+    font-size: .65em;
+    padding: 2px 4px;
+    margin-right: 2px
 }
 
 .floating-cover-content .avail-badge {
-  display: inline-block;
-  margin-bottom: 4px;
-  cursor: grab;
-  word-break: normal;
-  font-size: 0.8em;
-  line-height: 1.3;
+    display: inline-block;
+    margin-bottom: 4px;
+    cursor: grab;
+    word-break: normal;
+    font-size: .8em;
+    line-height: 1.3
 }
 
 .floating-cover-content .text-muted {
-  color: #94a3b8 !important;
+    color: #94a3b8 !important
 }
 
-/* Bottom Panel Hover Trigger Line */
 .panel-hover-trigger {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 14px;
- /* background: linear-gradient(180deg, #1e293b 0%, rgba(30, 41, 59, 0) 100%); */
-  z-index: 999;
-  cursor: pointer;
-  border-top: 2px solid #3b4c65;
-  transition: height 0.2s ease-in-out;
-  
- background: linear-gradient(
-    180deg,
-    rgba(30, 41, 59, 1) 0%,
-    rgba(30, 41, 59, 0.7) 100%,
-    rgba(30, 41, 59, 0.2) 100%
-  );
-
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 14px;
+    z-index: 999;
+    cursor: pointer;
+    border-top: 2px solid #3b4c65;
+    transition: height .2s ease-in-out;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 1) 0%, rgba(30, 41, 59, .7) 100%, rgba(30, 41, 59, .2) 100%)
 }
 
 .panel-hover-trigger:hover {
-  height: 8px;
-  background: linear-gradient(180deg, #334155 0%, rgba(30, 41, 59, 0) 100%);
+    height: 8px;
+    background: linear-gradient(180deg, #334155 0%, rgba(30, 41, 59, 0) 100%)
 }
 
 .panel-hover-trigger::after {
-  content: "Available Cover Teachers";
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #94a3b8;
-  font-size: 12px;
-  font-weight: bold;
-  opacity: 0;
-  white-space: nowrap;
-  transition: opacity 0.2s ease-in-out;
+    content: "Available Cover Teachers";
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: bold;
+    opacity: 0;
+    white-space: nowrap;
+    transition: opacity .2s ease-in-out
+}
+
+.panel-hover-trigger:hover::after {
+    opacity: .8;
+    color: #cbd5e1
+}
+
+.workflow-step {
+    transition: all .2s ease;
+    border-left: 4px solid transparent
+}
+
+.workflow-step:hover {
+    background-color: #e8f0fe !important;
+    border-left-color: #667eea
+}
+
+.workflow-step.active {
+    background-color: #dfe7fd !important;
+    border-left-color: #667eea;
+    font-weight: 600
+}
+
+.workflow-step .badge {
+    font-size: .9rem;
+    padding: .4rem .6rem
+}
+
+.step-indicator {
+    font-weight: bold;
+    min-width: 1.5rem;
+    text-align: center
+}
+
+#quickNavSidebar {
+    border: 2px solid #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, .1)
+}
+
+#quickNavSidebar .card-header {
+    border-bottom: 2px solid #667eea;
+    padding: 1rem;
+    user-select: none
+}
+
+#quickNavSidebar .card-footer {
+    border-top: 1px solid #dee2e6;
+    padding: .75rem;
+    background-color: #f8f9fa
+}
+
+#workflowToggleIcon {
+    transition: transform .3s ease;
+    display: inline-block
+}
+
+body {
+    padding-top: 56px
+}
+
+.main-content {
+    margin-top: 0
+}
+
+.shortcut-hint {
+    font-size: .75rem;
+    padding: 2px 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    color: #495057;
+    margin-left: .5rem
 }
 
 
-.sidebar-container #weekDisplay {
-  color: #facc15;
+.teacher-block {
+  page-break-inside: avoid;
 }
 
-.sidebar-container small.text-muted {
-  color: #94a3b8;
-}
+@media (max-width:768px) {
+    #quickNavSidebar {
+        margin-bottom: 1rem;
+        font-size: .9rem
+    }
 
-.sidebar-container .text-muted,
-.floating-cover-panel .text-muted,
-.floating-print-nav .text-muted {
-  color: #cbd5e1 !important; /* slate-300 */
-}
+    #quickNavSidebar .card-body {
+        max-height: 300px;
+        overflow-y: auto
+    }
 
-#weekDisplay {
-  font-weight: 600;
-  color: #facc15; /* amber */
+    .workflow-step .badge {
+        padding: .3rem .5rem;
+        font-size: .8rem
+    }
 }
