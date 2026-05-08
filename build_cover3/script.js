@@ -1689,6 +1689,36 @@ document.getElementById("resetFairnessBtn").onclick = () => {
   }
 };
 
+function addAbsentTeacher(name) {
+  if (!name) return;
+  // Check if teacher exists in cache
+  if (!teacherCache[name]) {
+    alert("Error: This teacher does not exist in the uploaded timetable data.");
+    return;
+  }
+  if (!absentTeachers.includes(name)) {
+    absentTeachers.push(name);
+    renderGrid();
+    updateAbsenceStats();
+  }
+}
+
+function onDateChange(e) {
+  coverDate = e.target.value;
+  // Clear current assignments to prevent bleeding
+  coverAssignments = {};
+  noCoverNeeded = {};
+  renderGrid();
+  updateAbsenceStats();
+}
+
+// Ensure the same happens when the "Day" (1-10) is changed
+document.getElementById("absenceDaySelect").addEventListener("change", () => {
+  coverAssignments = {};
+  noCoverNeeded = {};
+  renderGrid();
+});
+
 async function generatePDF() {
   try {
     if (!window.jspdf) { try { await loadScript(JSPDF_URL); } catch(err) { alert("jsPDF library failed to load."); return; } }
