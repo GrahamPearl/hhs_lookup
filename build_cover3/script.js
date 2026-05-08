@@ -796,6 +796,58 @@ function undoNoCover(key)  { delete noCoverNeeded[key];  renderGrid(); }
 
 // ── Auto-assign (Fair) ─────────────────────────────────────────
 function autoAssignCoverTeachers() {
+  const day = parseInt(document.getElementById("absenceDaySelect").value);
+  const items = getCoverNeededLessons(day); // Unified list of full AND partial absence lessons
+
+  if (items.length === 0) { 
+    alert("No absent teacher lessons to assign."); 
+    return; 
+  }
+  
+  let assignmentsMade = 0, conflicts = 0;
+  // Initialize set with teachers already assigned (prevents double-booking in this run)
+  const assignedTeachers = new Set(Object.values(coverAssignments));
+  const metrics = loadMetrics();
+
+  items.forEach(item => {
+    const { coveredTeacher: teacher, periodCol: period, key, entry: e } = item;
+    
+    // Skip if already handled manually
+    if (coverAssignments[key] || noCoverNeeded[key]) return;
+
+    // Fetch candidates: getAvailableTeachers already handles partial-absence period logic
+    let availableTeachers = getAvailableTeachers(period, day, absentTeachers)
+                              .filter(t => !assignedTeachers.has(t.name));
+
+    if (availableTeachers.length > 0) {
+      const best = availableTeachers[0];
+      coverAssignments[key] = best.name; 
+      assignedTeachers.add(best.name); // Mark as used for this auto-assign session
+
+      // Record in history and update metrics
+      addCoverHistoryEntry(teacher, best.name, period + 1, day + 1, e.subject || e.type, e.className, e.venue);
+      
+      ensureTeacherMetrics(best.name);
+      metrics[best.name].coversDone += 1;
+      metrics[best.name].totalCovers = getTotalCovers(best.name);
+      metrics[best.name].coversThisWeek = getCoversThisWeek(best.name);
+      metrics[best.name].lastCoverDate = coverDate;
+      
+      assignmentsMade++;
+    } else { 
+      conflicts++; 
+    }
+  });
+
+  saveMetrics(metrics);
+  renderGrid();
+  
+  let msg = `Auto-assignment complete!\n\nAssignments made: ${assignmentsMade}`;
+  if (conflicts > 0) msg += `\nUnassigned lessons: ${conflicts} (no suitable teachers available)`;
+  alert(msg);
+}
+/*
+function autoAssignCoverTeachers() {
   if (absentTeachers.length === 0) { alert("No absent teachers to assign covers for."); return; }
   const day = parseInt(document.getElementById("absenceDaySelect").value);
   let assignmentsMade = 0, conflicts = 0;
@@ -830,6 +882,7 @@ function autoAssignCoverTeachers() {
   if (conflicts > 0) msg += `\nUnassigned lessons: ${conflicts} (no suitable teachers available)`;
   alert(msg);
 }
+  */
 
 // ── Week display & date picker ─────────────────────────────────
 function updateWeekDisplay() { document.getElementById("weekDisplay").textContent = getWeekNumber(coverDate); }
