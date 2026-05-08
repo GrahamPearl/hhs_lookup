@@ -701,6 +701,7 @@ function renderGrid() {
       const teacher = key.split(":")[0];
       const lesson  = getTeacherEntry(teacher, dropDay, period);
       addCoverHistoryEntry(teacher, t, period+1, dropDay+1, lesson?.subject||lesson?.type, lesson?.className, lesson?.venue);
+
       const metrics = loadMetrics();
       ensureTeacherMetrics(t);
       metrics[t].coversDone += 1;
