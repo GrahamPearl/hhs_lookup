@@ -887,7 +887,7 @@ function buildCoverGridTableHtml(day, includeActions = false) {
     return acc;
   }, {});
 
-  let html = `<div class="container p-4" id="coverPrintContainer"><h3>Absent Teachers Cover Plan - Day ${day+1}</h3>`;
+  let html = `<div class="container p-4" id="coverPrintContainer"><h3>Absent Teachers Cover Plan - Day ${day+1}</h3><span class="text-muted fw-bold">Date: ${coverDate}</span>`;
   if (includeActions) {
     html += `<div hidden class="mb-3 no-print">
       <button id="printPageBtn" class="btn btn-primary me-2">Print</button>
