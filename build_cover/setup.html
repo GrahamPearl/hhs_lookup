@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Firebase Setup</title>
+  <link rel="stylesheet" href="./bootstrap.min.css"/>
+  <style>
+    body{background:#1e293b;color:#e2e8f0;padding:2rem}
+    .log-ok{color:#4ade80}.log-err{color:#f87171}.log-info{color:#93c5fd}
+    pre{background:#0f172a;padding:1rem;border-radius:6px;font-size:.85rem;max-height:60vh;overflow-y:auto}
+  </style>
+</head>
+<body>
+  <h4>☁️ Firebase Structure Setup</h4>
+  <p class="text-muted small">Reads config from localStorage. Run once per school to initialise Firestore collections.</p>
+  <button id="runBtn" class="btn btn-warning mb-3">▶ Run Setup</button>
+  <button id="clearBtn" class="btn btn-outline-secondary mb-3 ms-2">Clear Log</button>
+  <pre id="log">Ready. Press Run Setup.</pre>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script>
+  (() => {
+    const logEl = document.getElementById("log");
+    const log = (msg, cls="") => {
+      logEl.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    document.getElementById("clearBtn").onclick = () => logEl.innerHTML = "";
+
+    document.getElementById("runBtn").onclick = async () => {
+      logEl.innerHTML = "";
+      const config   = JSON.parse(localStorage.getItem("firebaseConfig") || "null");
+      const schoolId = localStorage.getItem("firebaseSchoolId");
+
+      if (!config?.apiKey || !config?.projectId || !schoolId) {
+        log("❌ Firebase config or School ID missing. Configure via index.html → Settings → Firebase Storage.", "log-err");
+        return;
+      }
+
+      log(`ℹ️  School ID : ${schoolId}`, "log-info");
+      log(`ℹ️  Project   : ${config.projectId}`, "log-info");
+
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(config);
+        const db  = firebase.firestore();
+        const ref = db.collection("schools").doc(schoolId);
+
+        // Structure: each entry is [collectionId, docId, data]
+        const structure = [
+          ["meta", "settings", {
+            fairnessSettings: {
+              excludeDnd:true, freePeriodsOnly:false,
+              maxCoversPerDay:2, maxCoversPerWeek:3, useLastResort:true
+            },
+            tenWeekStart: new Date().toISOString().split("T")[0],
+            absenceReasons: [
+              "Sick Leave","Annual Leave","Professional Development",
+              "Medical Appointment","Training","Conference","Emergency","Other"
+            ],
+            schoolName: schoolId,
+            _initialised: new Date().toISOString()
+          }],
+          ["meta", "metrics", { _placeholder: true }],
+          ["allocations", "_placeholder", {
+            date:"", coverAssignments:{}, noCoverNeeded:{},
+            absentTeachers:[], partialAbsentTeachers:{}, absentTeacherReasons:{},
+            _placeholder: true
+          }],
+          ["history", "_placeholder", {
+            date:"", week:0, coveredTeacher:"", coverTeacher:"",
+            period:0, subject:"", className:"", venue:"",
+            absentReason:"", _placeholder:true
+          }],
+          ["auditLog", "_placeholder", {
+            action:"INIT", timestamp: new Date().toISOString(), _placeholder:true
+          }],
+        ];
+
+        for (const [col, doc, data] of structure) {
+          try {
+            const docRef  = ref.collection(col).doc(doc);
+            const snap    = await docRef.get();
+            if (snap.exists && !snap.data()?._placeholder) {
+              log(`⏭  /${col}/${doc} — skipped (real data exists)`, "log-info");
+            } else {
+              await docRef.set(data, { merge: true });
+              log(`✅  /${col}/${doc} — written`, "log-ok");
+            }
+          } catch(e) {
+            log(`❌  /${col}/${doc} — ${e.message}`, "log-err");
+          }
+        }
+
+        log("\n✅ Setup complete. Return to index.html and try Save To again.", "log-ok");
+      } catch(e) {
+        log(`❌ Firebase init failed: ${e.message}`, "log-err");
+      }
+    };
+  })();
+  </script>
+</body>
+</html>

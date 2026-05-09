@@ -403,10 +403,27 @@ body {
     margin-left: .5rem
 }
 
-
 .teacher-block {
   page-break-inside: avoid;
 }
+
+
+
+.heat-low {
+  background-color: #4aca8e !important; /* green  #198754  */
+  color: white;
+}
+
+.heat-medium {
+  background-color: #ffc107 !important; /* yellow */
+  color: black;
+}
+
+.heat-high {
+  background-color: #dc3545 !important; /* red */
+  color: white;
+}
+
 
 @media (max-width:768px) {
     #quickNavSidebar {

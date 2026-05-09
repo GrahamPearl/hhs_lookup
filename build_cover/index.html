@@ -1,1166 +1,1061 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Cover Management Dashboard</title>
-    <link rel="stylesheet" href="./bootstrap.min.css" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <!-- Top Navbar -->
-    <nav
-      class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top"
-      style="z-index: 1050"
-    >
-      <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1">📚 Cover Management Dashboard</span>
 
-        <button
-          id="workflowToggleBtn"
-          class="btn btn-outline-light btn-sm me-2"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#workflowSidebarCollapse"
-          aria-controls="workflowSidebarCollapse"
-          aria-expanded="false"
-        >
-          📋 Workflow
-        </button>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cover Management Dashboard</title>
+  <link rel="stylesheet" href="./bootstrap.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
 
-        <button
-          id="dashboardToggleBtn"
-          class="btn btn-outline-light btn-sm"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#dashboardSummaryBody"
-          aria-controls="dashboardSummaryBody"
-          aria-expanded="false"
-          title="Toggle Dashboard Summary"
-        >
-          📊 Dashboard <span id="dashboardToggleIcon">▶</span>
-        </button>
+<body>
+  <!-- Top Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="z-index: 1050">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1">📚 Cover Management Dashboard</span>
 
-        <!-- Cloud sync buttons — always visible; state reflects configuration -->
-        <div class="btn-group btn-group-sm me-2" id="cloudBtnGroup">
-          <button
-            type="button"
-            class="btn btn-outline-warning btn-sm dropdown-toggle"
-            id="cloudDropdownToggle"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            title="Cloud storage — click to configure or sync"
-          >
-            ☁️ Cloud <span id="cloudStatusDot" style="font-size:.6rem;vertical-align:middle">🔴</span>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li>
-              <span class="dropdown-item-text text-muted small" id="cloudSchoolLabel">
-                Not configured
-              </span>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li><button class="dropdown-item" id="cloudSaveBtn" disabled>💾 Save To</button></li>
-            <li><button class="dropdown-item" id="cloudReadBtn" disabled>📥 Read From</button></li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <button
-                class="dropdown-item text-warning"
-                id="cloudConfigureBtn"
-              >⚙️ Configure Firebase…</button>
-            </li>
-          </ul>
-        </div>
-
-        <button
-          class="btn btn-outline-light btn-sm"
-          data-bs-toggle="modal"
-          data-bs-target="#settingsModal"
-        >
-          ⚙️ Settings
-        </button>
-      </div>
-    </nav>
-
-    <!-- Spacer for fixed navbar -->
-    <div style="height: 56px"></div>
-
-    <!-- Left edge hover trigger -->
-    <div class="sidebar-hover-trigger" title="Hover to reveal sidebar"></div>
-
-    <div class="sidebar-container" id="sidebarContainer">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">Cover System</h4>
-        <button
-          class="btn btn-sm btn-light"
-          onclick="document.getElementById('sidebarContainer').style.left = '-350px'"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Cover Date:</label>
-        <small class="text-muted"
-          >Week <span id="weekDisplay">1</span> of 10</small
-        >
-        <input type="date" id="coverDate" class="form-control mb-2" />
-      </div>
-
-      <select id="absenceDaySelect" class="form-select mb-2">
-        <option value="0">Day 1</option>
-        <option value="1">Day 2</option>
-        <option value="2">Day 3</option>
-        <option value="3">Day 4</option>
-        <option value="4">Day 5</option>
-      </select>
-
-      <h5 class="mt-3">Absent Teachers</h5>
-      <div class="mb-2">
-        <input
-          type="text"
-          id="teacherSearchInput"
-          class="form-control"
-          placeholder="Search teacher name..."
-          autocomplete="off"
-        />
-        <div
-          id="searchResults"
-          class="list-group mt-1"
-          style="display: none; max-height: 200px; overflow-y: auto"
-        ></div>
-      </div>
-
-      <!-- CHANGED: removed addPartialAbsenceBtn and absenceReasonSelect — now handled in unified modal -->
-      <div class="input-group mb-2">
-        <select id="addAbsenceTeacherSelect" class="form-select"></select>
-        <button id="addAbsenceTeacherBtn" class="btn btn-primary">Add</button>
-      </div>
-
-      <table
-        class="table table-bordered table-sm mb-2"
-        id="absentTeachersTable"
-      >
-        <thead>
-          <tr>
-            <th>Teacher</th>
-            <th>Type</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <div class="mb-3">
-        <h6 class="border-top pt-2">📋 Partial Absent - Cover Needed</h6>
-        <small class="text-muted d-block mb-2"
-          >Teachers absent for specific periods (can cover others)</small
-        >
-        <div id="partialAbsentList" class="list-group">
-          <!-- Populated by script.js -->
-        </div>
-      </div>
-
-      <div class="fairness-warning d-none" id="fairnessWarning"></div>
-
-      <button
-        class="btn btn-primary w-100 mb-3"
-        data-bs-toggle="modal"
-        data-bs-target="#actionsModal"
-      >
-        📋 Plan Actions
+      <button id="workflowToggleBtn" class="btn btn-outline-light btn-sm me-2" type="button" data-bs-toggle="collapse"
+        data-bs-target="#workflowSidebarCollapse" aria-controls="workflowSidebarCollapse" aria-expanded="false">
+        📋 Workflow
       </button>
 
-      <button
-        class="btn btn-outline-light w-100 mb-3"
-        data-bs-toggle="modal"
-        data-bs-target="#last5DaysModal"
-      >
-        📜 Recent Cover History
+      <button id="dashboardToggleBtn" class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse"
+        data-bs-target="#dashboardSummaryBody" aria-controls="dashboardSummaryBody" aria-expanded="false"
+        title="Toggle Dashboard Summary">
+        📊 Dashboard <span id="dashboardToggleIcon">▶</span>
       </button>
 
-      <hr />
+      <!-- Cloud sync buttons — always visible; state reflects configuration -->
+      <div class="btn-group btn-group-sm me-2" id="cloudBtnGroup">
+        <button type="button" class="btn btn-outline-warning btn-sm dropdown-toggle" id="cloudDropdownToggle"
+          data-bs-toggle="dropdown" aria-expanded="false" title="Cloud storage — click to configure or sync">
+          ☁️ Cloud <span id="cloudStatusDot" style="font-size:.6rem;vertical-align:middle">🔴</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <span class="dropdown-item-text text-muted small" id="cloudSchoolLabel">
+              Not configured
+            </span>
+          </li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li><button class="dropdown-item" id="cloudSaveBtn" disabled>💾 Save To</button></li>
+          <li><button class="dropdown-item" id="cloudReadBtn" disabled>📥 Read From</button></li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li>
+            <button class="dropdown-item text-warning" id="cloudConfigureBtn">⚙️ Configure Firebase…</button>
+          </li>
+        </ul>
+      </div>
 
-      <!-- Data Management — single button replacing the full section -->
-      <button
-        class="btn btn-outline-light w-100 mb-2"
-        data-bs-toggle="modal"
-        data-bs-target="#dataManagementModal"
-      >
-        📁 Data Management
+      <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#settingsModal">
+        ⚙️ Settings
       </button>
-      <div id="status" class="text-muted small mb-2"></div>
+    </div>
+  </nav>
+
+  <!-- Spacer for fixed navbar -->
+  <div style="height: 56px"></div>
+
+  <!-- Left edge hover trigger -->
+  <div class="sidebar-hover-trigger" title="Hover to reveal sidebar"></div>
+
+  <div class="sidebar-container" id="sidebarContainer">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="mb-0">Cover System</h4>
+      <button class="btn btn-sm btn-light" onclick="document.getElementById('sidebarContainer').style.left = '-350px'">
+        ✕
+      </button>
     </div>
 
-    <button
-      class="sidebar-toggle"
-      onclick="document.getElementById('sidebarContainer').style.left = '0'"
-    >
-      ☰
+    <div class="mb-3">
+      <label class="form-label">Cover Date:</label>
+      <small class="text-muted">Week <span id="weekDisplay">1</span> of 10</small>
+      <input type="date" id="coverDate" class="form-control mb-2" />
+    </div>
+
+    <select id="absenceDaySelect" class="form-select mb-2">
+      <option value="0">Day 1</option>
+      <option value="1">Day 2</option>
+      <option value="2">Day 3</option>
+      <option value="3">Day 4</option>
+      <option value="4">Day 5</option>
+    </select>
+
+    <h5 class="mt-3">Absent Teachers</h5>
+    <div class="mb-2">
+      <input type="text" id="teacherSearchInput" class="form-control" placeholder="Search teacher name..."
+        autocomplete="off" />
+      <div id="searchResults" class="list-group mt-1" style="display: none; max-height: 200px; overflow-y: auto"></div>
+    </div>
+
+    <!-- CHANGED: removed addPartialAbsenceBtn and absenceReasonSelect — now handled in unified modal -->
+    <div class="input-group mb-2">
+      <select id="addAbsenceTeacherSelect" class="form-select"></select>
+      <button id="addAbsenceTeacherBtn" class="btn btn-primary">Add</button>
+    </div>
+
+    <table class="table table-bordered table-sm mb-2" id="absentTeachersTable">
+      <thead>
+        <tr>
+          <th>Teacher</th>
+          <th>Type</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="mb-3">
+      <h6 class="border-top pt-2">📋 Partial Absent - Cover Needed</h6>
+      <small class="text-muted d-block mb-2">Teachers absent for specific periods (can cover others)</small>
+      <div id="partialAbsentList" class="list-group">
+        <!-- Populated by script.js -->
+      </div>
+    </div>
+
+    <div class="fairness-warning d-none" id="fairnessWarning"></div>
+
+    <button class="btn btn-primary w-100 mb-3" data-bs-toggle="modal" data-bs-target="#actionsModal">
+      📋 Plan Actions
     </button>
 
-    <div class="main-content">
-      <!-- Quick Navigation Workflow Sidebar -->
-      <div class="collapse" id="workflowSidebarCollapse">
-        <div
-          id="quickNavSidebar"
-          class="card mb-4 bg-light sticky-top"
-          style="top: 76px; z-index: 900"
-        >
-          <div
-            class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center"
-            style="cursor: pointer"
-            data-bs-toggle="collapse"
-            data-bs-target="#workflowBody"
-          >
-            <span>📋 Quick Setup Workflow</span>
-            <button
-              class="btn btn-sm btn-light"
-              onclick="event.stopPropagation()"
-              data-bs-toggle="collapse"
-              data-bs-target="#workflowBody"
-            >
-              <span id="workflowToggleIcon">▼</span>
-            </button>
-          </div>
-          <div id="workflowBody" class="collapse show">
-            <div class="card-body p-0">
-              <div class="list-group list-group-flush">
-                <button
-                  class="list-group-item list-group-item-action workflow-step active"
-                  data-step="1"
-                  onclick="focusStep(1)"
-                >
-                  <div class="d-flex align-items-center">
-                    <span class="badge bg-primary me-2">1</span>
-                    <div class="flex-grow-1">
-                      <div style="font-weight: 600">Select Day</div>
-                      <small class="text-muted">Choose which day to manage</small>
-        
+    <button class="btn btn-outline-light w-100 mb-3" data-bs-toggle="modal" data-bs-target="#last5DaysModal">
+      📜 Recent Cover History
+    </button>
+
+    <hr />
+
+    <!-- Data Management — single button replacing the full section -->
+    <button class="btn btn-outline-light w-100 mb-2" data-bs-toggle="modal" data-bs-target="#dataManagementModal">
+      📁 Data Management
+    </button>
+    <div id="status" class="text-muted small mb-2"></div>
+  </div>
+
+  <button class="sidebar-toggle" onclick="document.getElementById('sidebarContainer').style.left = '0'">
+    ☰
+  </button>
+
+  <div class="main-content">
+    <!-- Quick Navigation Workflow Sidebar -->
+    <div class="collapse" id="workflowSidebarCollapse">
+      <div id="quickNavSidebar" class="card mb-4 bg-light sticky-top" style="top: 76px; z-index: 900">
+        <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center"
+          style="cursor: pointer" data-bs-toggle="collapse" data-bs-target="#workflowBody">
+          <span>📋 Quick Setup Workflow</span>
+          <button class="btn btn-sm btn-light" onclick="event.stopPropagation()" data-bs-toggle="collapse"
+            data-bs-target="#workflowBody">
+            <span id="workflowToggleIcon">▼</span>
+          </button>
+        </div>
+        <div id="workflowBody" class="collapse show">
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+              <button class="list-group-item list-group-item-action workflow-step active" data-step="1"
+                onclick="focusStep(1)">
+                <div class="d-flex align-items-center">
+                  <span class="badge bg-primary me-2">1</span>
+                  <div class="flex-grow-1">
+                    <div style="font-weight: 600">Select Day</div>
+                    <small class="text-muted">Choose which day to manage</small>
+
                     <span class="step-indicator" id="step1-indicator">○</span>
                   </div>
-                </button>
+              </button>
 
-                <button
-                  class="list-group-item list-group-item-action workflow-step"
-                  data-step="2"
-                  onclick="focusStep(2)"
-                >
-                  <div class="d-flex align-items-center">
-                    <span class="badge bg-secondary me-2">2</span>
-                    <div class="flex-grow-1">
-                      <div style="font-weight: 600">Add Absences</div>
-                      <small class="text-muted">Select absent teachers + reasons</small>
-                    </div>
-                    <span class="step-indicator" id="step2-indicator">○</span>
+              <button class="list-group-item list-group-item-action workflow-step" data-step="2" onclick="focusStep(2)">
+                <div class="d-flex align-items-center">
+                  <span class="badge bg-secondary me-2">2</span>
+                  <div class="flex-grow-1">
+                    <div style="font-weight: 600">Add Absences</div>
+                    <small class="text-muted">Select absent teachers + reasons</small>
                   </div>
-                </button>
+                  <span class="step-indicator" id="step2-indicator">○</span>
+                </div>
+              </button>
 
-                <button
-                  class="list-group-item list-group-item-action workflow-step"
-                  data-step="3"
-                  onclick="focusStep(3)"
-                >
-                  <div class="d-flex align-items-center">
-                    <span class="badge bg-secondary me-2">3</span>
-                    <div class="flex-grow-1">
-                      <div style="font-weight: 600">Auto-Assign</div>
-                      <small class="text-muted">Choose strategy & preview</small>
-                    </div>
-                    <span class="step-indicator" id="step3-indicator">○</span>
+              <button class="list-group-item list-group-item-action workflow-step" data-step="3" onclick="focusStep(3)">
+                <div class="d-flex align-items-center">
+                  <span class="badge bg-secondary me-2">3</span>
+                  <div class="flex-grow-1">
+                    <div style="font-weight: 600">Auto-Assign</div>
+                    <small class="text-muted">Choose strategy & preview</small>
                   </div>
-                </button>
+                  <span class="step-indicator" id="step3-indicator">○</span>
+                </div>
+              </button>
 
-                <button
-                  class="list-group-item list-group-item-action workflow-step"
-                  data-step="4"
-                  onclick="focusStep(4)"
-                >
-                  <div class="d-flex align-items-center">
-                    <span class="badge bg-secondary me-2">4</span>
-                    <div class="flex-grow-1">
-                      <div style="font-weight: 600">Apply & Export</div>
-                      <small class="text-muted">Confirm & save results</small>
-                    </div>
-                    <span class="step-indicator" id="step4-indicator">○</span>
+              <button class="list-group-item list-group-item-action workflow-step" data-step="4" onclick="focusStep(4)">
+                <div class="d-flex align-items-center">
+                  <span class="badge bg-secondary me-2">4</span>
+                  <div class="flex-grow-1">
+                    <div style="font-weight: 600">Apply & Export</div>
+                    <small class="text-muted">Confirm & save results</small>
                   </div>
-                </button>
-              </div>
+                  <span class="step-indicator" id="step4-indicator">○</span>
+                </div>
+              </button>
             </div>
           </div>
-          <div class="card-footer text-center text-muted small">
-            Progress: <span id="workflowProgress">1/4</span>
-            <button
-              class="btn btn-sm btn-link"
-              style="font-size: 0.8rem"
-              data-bs-toggle="modal"
-              data-bs-target="#workflowHelpModal"
-              title="Keyboard shortcuts & tips"
-            >
-              💡 Tips
-            </button>
-          </div>
+        </div>
+        <div class="card-footer text-center text-muted small">
+          Progress: <span id="workflowProgress">1/4</span>
+          <button class="btn btn-sm btn-link" style="font-size: 0.8rem" data-bs-toggle="modal"
+            data-bs-target="#workflowHelpModal" title="Keyboard shortcuts & tips">
+            💡 Tips
+          </button>
         </div>
       </div>
+    </div>
 
-      <!-- Floating Print Navigation Menu -->
-      <div
-        id="floatingPrintNav"
-        class="floating-print-nav no-print"
-        tabindex="0"
-        aria-label="Print Actions"
-      >
-        <div class="floating-print-handle">🖨️</div>
-        <div class="floating-print-content">
-          <button id="navPrintBtn" class="btn btn-sm btn-light mb-1 w-100">Print</button>
-          <button id="navPdfBtn" class="btn btn-sm btn-light mb-1 w-100">Save as PDF</button>
-          <button id="navImgBtn" class="btn btn-sm btn-light mb-1 w-100">Save as Image</button>
-          <button id="navEmailBtn" class="btn btn-sm btn-light w-100">Email</button>
-        </div>
+    <!-- Floating Print Navigation Menu -->
+    <div id="floatingPrintNav" class="floating-print-nav no-print" tabindex="0" aria-label="Print Actions">
+      <div class="floating-print-handle">🖨️</div>
+      <div class="floating-print-content">
+        <button id="navPrintBtn" class="btn btn-sm btn-light mb-1 w-100">Print</button>
+        <button id="navPdfBtn" class="btn btn-sm btn-light mb-1 w-100">Save as PDF</button>
+        <button id="navImgBtn" class="btn btn-sm btn-light mb-1 w-100">Save as Image</button>
+        <button id="navEmailBtn" class="btn btn-sm btn-light w-100">Email</button>
       </div>
+    </div>
 
-      <!-- Dashboard Summary Widget -->
-      <div
-        id="dashboardSummary"
-        class="card mb-4"
-        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;"
-      >
+    <!-- Dashboard Summary Widget -->
+    <div id="dashboardSummary" class="card mb-4"
+      style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <div class="collapse" id="dashboardSummaryBody">
+        <div class="card-header d-flex justify-content-between align-items-center"
+          style="background: rgba(0,0,0,0.12); border-bottom: 1px solid rgba(255,255,255,0.2);">
+          <span class="fw-bold">📊 Dashboard Summary</span>
+          <button id="dashboardSummaryToggleBtn" class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
+            data-bs-target="#dashboardSummaryBody" aria-controls="dashboardSummaryBody" aria-expanded="false"
+            title="Toggle dashboard summary">
+            <span id="dashboardSummaryToggleIcon">▼</span>
+          </button>
+        </div>
         <div class="collapse" id="dashboardSummaryBody">
-          <div
-            class="card-header d-flex justify-content-between align-items-center"
-            style="background: rgba(0,0,0,0.12); border-bottom: 1px solid rgba(255,255,255,0.2);"
-          >
-            <span class="fw-bold">📊 Dashboard Summary</span>
-            <button
-              id="dashboardSummaryToggleBtn"
-              class="btn btn-sm btn-light"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#dashboardSummaryBody"
-              aria-controls="dashboardSummaryBody"
-              aria-expanded="false"
-              title="Toggle dashboard summary"
-            >
-              <span id="dashboardSummaryToggleIcon">▼</span>
-            </button>
-          </div>
-          <div class="collapse" id="dashboardSummaryBody">
+          <div class="card-body">
             <div class="card-body">
-              <div class="card-body">
-                <div class="row g-3">
-                  <div class="col-md-3">
-                    <div class="text-center">
-                      <div style="font-size: 2.5rem; font-weight: bold" id="fairnessScoreDisplay">--</div>
-                      <small class="text-white-50">Fairness Score</small>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="text-center">
-                      <div style="font-size: 2rem; font-weight: bold" id="totalCoversDisplay">--</div>
-                      <small class="text-white-50">Total Covers (10W)</small>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="text-center">
-                      <div style="font-size: 2rem; font-weight: bold" id="teacherCountDisplay">--</div>
-                      <small class="text-white-50">Active Teachers</small>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="text-center">
-                      <div style="font-size: 2rem; font-weight: bold" id="imbalanceRatioDisplay">--</div>
-                      <small class="text-white-50">Max/Min Ratio</small>
-                    </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <div class="text-center">
+                    <div style="font-size: 2.5rem; font-weight: bold" id="fairnessScoreDisplay">--</div>
+                    <small class="text-white-50">Fairness Score</small>
                   </div>
                 </div>
-                <div class="mt-3 border-top border-white-50 pt-3">
-                  <small id="dashboardTrend" class="text-white-50">Loading status...</small>
+                <div class="col-md-3">
+                  <div class="text-center">
+                    <div style="font-size: 2rem; font-weight: bold" id="totalCoversDisplay">--</div>
+                    <small class="text-white-50">Total Covers (10W)</small>
+                  </div>
                 </div>
+                <div class="col-md-3">
+                  <div class="text-center">
+                    <div style="font-size: 2rem; font-weight: bold" id="teacherCountDisplay">--</div>
+                    <small class="text-white-50">Active Teachers</small>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center">
+                    <div style="font-size: 2rem; font-weight: bold" id="imbalanceRatioDisplay">--</div>
+                    <small class="text-white-50">Max/Min Ratio</small>
+                  </div>
+                </div>
+              </div>
+              <!-- Operational stats row -->
+              <div class="row g-2 mt-2 border-top border-white-50 pt-3" id="dashboardStatGrid">
+                <div class="col-4 text-center">
+                  <div style="font-size:1.4rem;font-weight:700" id="statAbsentCount">—</div>
+                  <small class="text-white-50">Absent Today</small>
+                </div>
+                <div class="col-4 text-center">
+                  <div style="font-size:1.4rem;font-weight:700" id="statAssignedCount">—</div>
+                  <small class="text-white-50">Covers Assigned</small>
+                </div>
+                <div class="col-4 text-center">
+                  <div style="font-size:1.4rem;font-weight:700" id="statUncoveredCount">—</div>
+                  <small class="text-white-50">Uncovered Periods</small>
+                </div>
+              </div>
+              <div class="mt-3 border-top border-white-50 pt-3">
+                <small id="dashboardTrend" class="text-white-50">Loading status...</small>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <h5>Cover Allocation</h5>
-      <div id="coverGrid"></div>
     </div>
 
-    <!-- Bottom Panel Hover Trigger Line -->
-    <div
-      class="panel-hover-trigger"
-      title="Hover to reveal available teachers panel"
-    ></div>
+    <h5>Cover Allocation</h5>
+    <div id="coverGrid"></div>
+  </div>
 
-    <!-- Floating Available Cover Teachers Panel -->
-    <div
-      id="floatingCoverPanel"
-      class="floating-cover-panel no-print"
-      aria-label="Available Cover Teachers"
-    >
-      <div class="floating-cover-handle">👥 Available Cover Teachers</div>
-      <div class="floating-cover-content" id="availableCoverList">
-        <!-- Populated by renderGrid() -->
-      </div>
+  <!-- Bottom Panel Hover Trigger Line -->
+  <div class="panel-hover-trigger" title="Hover to reveal available teachers panel"></div>
+
+  <!-- Floating Available Cover Teachers Panel -->
+  <div id="floatingCoverPanel" class="floating-cover-panel no-print" aria-label="Available Cover Teachers">
+    <div class="floating-cover-handle">👥 Available Cover Teachers</div>
+    <div class="floating-cover-content" id="availableCoverList">
+      <!-- Populated by renderGrid() -->
     </div>
+  </div>
 
-    <!-- Last 5 Days History Modal -->
-    <div class="modal fade" id="last5DaysModal" tabindex="-1">
-      <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header bg-dark text-white">
-            <h5 class="modal-title">📜 Recent Cover History — Last 5 Days</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body" id="last5DaysModalBody">
-            <!-- Populated by populateLast5DaysModal() in script.js -->
-          </div>
-          <div class="modal-footer justify-content-between">
-            <a href="history.html" target="_blank" class="btn btn-outline-primary">
-              📂 Open Full History Archive
-            </a>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
+  <!-- Last 5 Days History Modal -->
+  <div class="modal fade" id="last5DaysModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">📜 Recent Cover History — Last 5 Days</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="last5DaysModalBody">
+          <!-- Populated by populateLast5DaysModal() in script.js -->
+        </div>
+        <div class="modal-footer justify-content-between">
+          <a href="history.html" target="_blank" class="btn btn-outline-primary">
+            📂 Open Full History Archive
+          </a>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Data Management Modal -->
-    <div class="modal fade" id="dataManagementModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header bg-dark text-white">
-            <h5 class="modal-title">📁 Data Management</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body d-grid gap-2">
-            <button
-              class="btn btn-outline-dark"
-              data-bs-toggle="modal"
-              data-bs-target="#reportsModal"
-              data-bs-dismiss="modal"
-            >📊 Reports &amp; Analysis</button>
+  <!-- Data Management Modal -->
+  <div class="modal fade" id="dataManagementModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">📁 Data Management</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body d-grid gap-2">
+          <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#reportsModal"
+            data-bs-dismiss="modal">📊 Reports &amp; Analysis</button>
 
-            <button id="bulkBtn" class="btn btn-outline-dark">📂 Import Teachers</button>
-            <input type="file" id="bulkInput" webkitdirectory multiple class="d-none" />
+          <button id="bulkBtn" class="btn btn-outline-dark">📂 Import Teachers</button>
+          <input type="file" id="bulkInput" webkitdirectory multiple class="d-none" />
 
-            <button id="exportBtn" class="btn btn-outline-dark">💾 Backup Data</button>
-            <input type="file" id="importMetricsInput" class="d-none" />
-            <button id="importBtn" class="btn btn-outline-dark">♻️ Restore Data</button>
+          <button id="exportBtn" class="btn btn-outline-dark">💾 Backup Data</button>
+          <input type="file" id="importMetricsInput" class="d-none" />
+          <button id="importBtn" class="btn btn-outline-dark">♻️ Restore Data</button>
 
-            <button
-              class="btn btn-outline-dark"
-              data-bs-toggle="modal"
-              data-bs-target="#tenWeekModal"
-              data-bs-dismiss="modal"
-            >📅 Manage Period</button>
+          <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#tenWeekModal"
+            data-bs-dismiss="modal">📅 Manage Period</button>
 
-            <a href="history.html" target="_blank" class="btn btn-outline-dark">
-              📜 Full History Archive
-            </a>
+          <a href="history.html" target="_blank" class="btn btn-outline-dark">
+            📜 Full History Archive
+          </a>
 
-            <hr class="my-1" />
+          <hr class="my-1" />
 
-            <button id="clearBtn" class="btn btn-warning">🧹 Clear Day (Keep History)</button>
-            <button id="clearAllBtn" class="btn btn-danger">🔒 Full System Reset</button>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
+          <button id="clearBtn" class="btn btn-warning">🧹 Clear Day (Keep History)</button>
+          <button id="clearAllBtn" class="btn btn-danger">🔒 Full System Reset</button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Firebase Initial Prompt Modal -->
-    <div class="modal fade" id="firebasePromptModal" tabindex="-1" data-bs-backdrop="static">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-warning">
-            <h5 class="modal-title">☁️ Cloud Storage Setup</h5>
-          </div>
-          <div class="modal-body">
-            <p>Firebase cloud storage is not yet configured for this device.</p>
-            <p class="text-muted small">
-              Cloud sync lets you save and restore allocations across devices and schools.
-              You can configure it now in <strong>Settings → Firebase Storage</strong>,
-              or skip and continue using local storage only.
-            </p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Skip — Use Local Only
-            </button>
-            <button
-              type="button"
-              class="btn btn-warning"
-              data-bs-dismiss="modal"
-              data-bs-toggle="modal"
-              data-bs-target="#settingsModal"
-            >
-              ⚙️ Configure Now
-            </button>
-          </div>
+  <!-- Firebase Initial Prompt Modal -->
+  <div class="modal fade" id="firebasePromptModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">☁️ Cloud Storage Setup</h5>
+        </div>
+        <div class="modal-body">
+          <p>Firebase cloud storage is not yet configured for this device.</p>
+          <p class="text-muted small">
+            Cloud sync lets you save and restore allocations across devices and schools.
+            You can configure it now in <strong>Settings → Firebase Storage</strong>,
+            or skip and continue using local storage only.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Skip — Use Local Only
+          </button>
+          <button type="button" class="btn btn-warning" data-bs-dismiss="modal" data-bs-toggle="modal"
+            data-bs-target="#settingsModal">
+            ⚙️ Configure Now
+          </button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- NEW: Unified Add Absence Modal
+  <!-- NEW: Unified Add Absence Modal
          Replaces the old separate "Add" + "Partial" + reason dropdown
          ============================================================ -->
-    <div class="modal fade" id="addAbsenceModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">➕ Add Absent Teacher</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal fade" id="addAbsenceModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">➕ Add Absent Teacher</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <!-- Teacher name display -->
+          <div class="mb-3">
+            <label class="form-label"><strong>Teacher:</strong></label>
+            <div id="addAbsenceTeacherDisplay" class="alert alert-info mb-0 py-2"></div>
           </div>
-          <div class="modal-body">
 
-            <!-- Teacher name display -->
-            <div class="mb-3">
-              <label class="form-label"><strong>Teacher:</strong></label>
-              <div id="addAbsenceTeacherDisplay" class="alert alert-info mb-0 py-2"></div>
+          <!-- Reason for absence -->
+          <div class="mb-3">
+            <label class="form-label"><strong>Reason for Absence:</strong></label>
+            <select id="addAbsenceReasonSelect" class="form-select">
+              <option value="">-- Select reason --</option>
+            </select>
+          </div>
+
+          <!-- Full / Partial radio -->
+          <div class="mb-3">
+            <label class="form-label"><strong>Absence Type:</strong></label>
+            <div class="d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="absenceType" id="absenceTypeFull" value="full"
+                  checked />
+                <label class="form-check-label" for="absenceTypeFull">
+                  Full Day
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="absenceType" id="absenceTypePartial"
+                  value="partial" />
+                <label class="form-check-label" for="absenceTypePartial">
+                  Partial (specific periods)
+                </label>
+              </div>
             </div>
+          </div>
 
-            <!-- Reason for absence -->
+          <!-- Period checkboxes — shown only when Partial is selected -->
+          <div id="addAbsencePeriodSection" style="display: none;" class="mb-3">
+            <label class="form-label"><strong>Absent Periods:</strong></label>
+            <small class="text-muted d-block mb-2">
+              Check the periods this teacher will be absent for.
+            </small>
+            <div class="d-grid gap-1">
+              <div class="form-check">
+                <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod1" value="0" />
+                <label class="form-check-label" for="addPeriod1">Period 1</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod2" value="1" />
+                <label class="form-check-label" for="addPeriod2">Period 2</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod3" value="2" />
+                <label class="form-check-label" for="addPeriod3">Period 3</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod4" value="3" />
+                <label class="form-check-label" for="addPeriod4">Period 4</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod5" value="4" />
+                <label class="form-check-label" for="addPeriod5">Period 5</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod6" value="5" />
+                <label class="form-check-label" for="addPeriod6">Period 6</label>
+              </div>
+            </div>
+            <div class="alert alert-info small mt-2 mb-0">
+              <strong>ℹ️ Partial absences:</strong> This teacher can still cover
+              others during their free periods.
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmAddAbsenceBtn">
+            Add to Absent List
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plan Actions Modal -->
+  <div class="modal fade" id="actionsModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Plan Actions</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-grid gap-2">
             <div class="mb-3">
-              <label class="form-label"><strong>Reason for Absence:</strong></label>
-              <select id="addAbsenceReasonSelect" class="form-select">
-                <option value="">-- Select reason --</option>
+              <label class="form-label">Auto-Assign Strategy:</label>
+              <select id="autoAssignStrategy" class="form-select">
+                <option value="fair">Fair (Minimize Unfairness)</option>
+                <option value="roundRobin">Round-Robin (Sequential)</option>
+                <option value="dayBalancing">Day-Balancing (Spread Across Day)</option>
               </select>
+              <small class="text-muted d-block">Fair: Balances total covers. Round-Robin: Cycles sequentially.
+                Day-Balancing: Spreads covers across the day.</small>
             </div>
-
-            <!-- Full / Partial radio -->
-            <div class="mb-3">
-              <label class="form-label"><strong>Absence Type:</strong></label>
-              <div class="d-flex gap-3">
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    name="absenceType"
-                    id="absenceTypeFull"
-                    value="full"
-                    checked
-                  />
-                  <label class="form-check-label" for="absenceTypeFull">
-                    Full Day
-                  </label>
-                </div>
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    name="absenceType"
-                    id="absenceTypePartial"
-                    value="partial"
-                  />
-                  <label class="form-check-label" for="absenceTypePartial">
-                    Partial (specific periods)
-                  </label>
-                </div>
-              </div>
+            <button id="autoAssignBtn" class="btn btn-outline-dark btn-lg">🤖 Preview Auto-Assign</button>
+            <button id="undoAutoAssignBtn" class="btn btn-outline-warning btn-lg">↶ Undo Auto-Assign</button>
+            <button id="saveBtn" class="btn btn-outline-dark btn-lg">💾 Save Plan</button>
+            <button id="printBtn" class="btn btn-outline-dark btn-lg">🖨️ Print</button>
+            <button id="exportExcelBtn" class="btn btn-outline-dark btn-lg">📊 Export to Excel</button>
+            <button class="btn btn-outline-dark btn-lg" data-bs-toggle="modal" data-bs-target="#historyModal"
+              data-bs-dismiss="modal">📜 View History</button>
+            <button class="btn btn-outline-dark btn-lg" data-bs-toggle="modal" data-bs-target="#fairnessSettingsModal"
+              data-bs-dismiss="modal">⚙️ Fairness Settings</button>
+            <button class="btn btn-outline-dark btn-lg" data-bs-toggle="modal" data-bs-target="#absenceReasonsModal"
+              data-bs-dismiss="modal">📝 Manage Absence Reasons</button>
+            <hr />
+            <div class="input-group">
+              <input type="email" id="emailInput" class="form-control" placeholder="Email address" />
+              <button id="emailBtn" class="btn btn-outline-dark">📧 Send</button>
             </div>
-
-            <!-- Period checkboxes — shown only when Partial is selected -->
-            <div id="addAbsencePeriodSection" style="display: none;" class="mb-3">
-              <label class="form-label"><strong>Absent Periods:</strong></label>
-              <small class="text-muted d-block mb-2">
-                Check the periods this teacher will be absent for.
-              </small>
-              <div class="d-grid gap-1">
-                <div class="form-check">
-                  <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod1" value="0" />
-                  <label class="form-check-label" for="addPeriod1">Period 1</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod2" value="1" />
-                  <label class="form-check-label" for="addPeriod2">Period 2</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod3" value="2" />
-                  <label class="form-check-label" for="addPeriod3">Period 3</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod4" value="3" />
-                  <label class="form-check-label" for="addPeriod4">Period 4</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod5" value="4" />
-                  <label class="form-check-label" for="addPeriod5">Period 5</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input add-period-checkbox" type="checkbox" id="addPeriod6" value="5" />
-                  <label class="form-check-label" for="addPeriod6">Period 6</label>
-                </div>
-              </div>
-              <div class="alert alert-info small mt-2 mb-0">
-                <strong>ℹ️ Partial absences:</strong> This teacher can still cover
-                others during their free periods.
-              </div>
-            </div>
-
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="confirmAddAbsenceBtn">
-              Add to Absent List
-            </button>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Plan Actions Modal -->
-    <div class="modal fade" id="actionsModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Plan Actions</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <!-- View History Modal -->
+  <div class="modal fade" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cover History (10-Week Period)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="historyModalBody">
+          <table class="table table-striped table-sm">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Week</th>
+                <th>Absent</th>
+                <th>Cover</th>
+                <th>P</th>
+                <th>Subject</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ten Week Period Modal -->
+  <div class="modal fade" id="tenWeekModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">10-Week Period Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Period Start Date</label>
+            <input type="date" id="tenWeekStartDate" class="form-control" />
+            <small class="text-muted">The 10-week tracking period begins on this date</small>
           </div>
-          <div class="modal-body">
-            <div class="d-grid gap-2">
+          <div class="alert alert-info">
+            <strong>Current Status:</strong> <span id="periodStatus"></span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-warning" id="resetPeriodBtn">Reset Period</button>
+          <button type="button" class="btn btn-primary" id="savePeriodBtn">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Preview Modal -->
+  <div class="modal fade" id="printPreviewModal" tabindex="-1" aria-labelledby="printPreviewLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="printPreviewLabel">Print Preview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="printArea"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="confirmPrintBtn">Print</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal (Consolidated) -->
+  <div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">⚙️ System Settings</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#fairnessTab">Fairness Rules</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#absenceReasonsTab">Absence Reasons</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#periodTab">Period Management</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#firebaseTab">Firebase Storage</button>
+            </li>
+          </ul>
+
+          <div class="tab-content mt-3">
+            <!-- Firebase Storage Tab -->
+            <div class="tab-pane fade" id="firebaseTab">
+              <h6 class="border-bottom pb-2">Firebase Firestore — Cloud Storage</h6>
+              <p class="text-muted small">
+                Enter your Firebase project credentials and a unique School ID.
+                These are stored locally on this device and used only when you
+                click <strong>☁️ Cloud → Save To / Read From</strong>.
+              </p>
+              <div class="mb-2">
+                <label class="form-label fw-semibold">School ID <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="firebaseSchoolId" placeholder="e.g. springfield-high" />
+                <small class="text-muted">Unique identifier for this school — used as the Firestore document
+                  path.</small>
+              </div>
+              <div class="mb-2">
+                <label class="form-label fw-semibold">API Key <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="firebaseApiKey" placeholder="AIza…" />
+              </div>
+              <div class="mb-2">
+                <label class="form-label fw-semibold">Project ID <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="firebaseProjectId" placeholder="my-project-id" />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Auth Domain</label>
+                <input type="text" class="form-control" id="firebaseAuthDomain"
+                  placeholder="my-project.firebaseapp.com" />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Storage Bucket</label>
+                <input type="text" class="form-control" id="firebaseStorageBucket"
+                  placeholder="my-project.appspot.com" />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Messaging Sender ID</label>
+                <input type="text" class="form-control" id="firebaseMessagingSenderId" placeholder="123456789" />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">App ID</label>
+                <input type="text" class="form-control" id="firebaseAppId" placeholder="1:123:web:abc…" />
+              </div>
+              <button class="btn btn-warning w-100 mt-2" id="saveFirebaseSettingsBtn">
+                ☁️ Save Firebase Settings
+              </button>
+              <div class="alert alert-info small mt-3 mb-0">
+                <strong>Where to find these values:</strong> Firebase Console → Project Settings → Your Apps → SDK setup
+                and configuration.
+                Firestore must be enabled in your Firebase project.
+              </div>
+            </div>
+            <!-- Fairness Tab -->
+            <div class="tab-pane fade show active" id="fairnessTab">
+              <h6 class="border-bottom pb-2">Fairness & Assignment Rules</h6>
               <div class="mb-3">
-                <label class="form-label">Auto-Assign Strategy:</label>
-                <select id="autoAssignStrategy" class="form-select">
-                  <option value="fair">Fair (Minimize Unfairness)</option>
-                  <option value="roundRobin">Round-Robin (Sequential)</option>
-                  <option value="dayBalancing">Day-Balancing (Spread Across Day)</option>
-                </select>
-                <small class="text-muted d-block"
-                  >Fair: Balances total covers. Round-Robin: Cycles sequentially.
-                  Day-Balancing: Spreads covers across the day.</small
-                >
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="excludeDndSwitch2" />
+                  <label class="form-check-label" for="excludeDndSwitch2">
+                    <strong>Exclude "Do Not Disturb" Teachers</strong><br />
+                    <small class="text-muted">Never assign covers to DND-marked teachers</small>
+                  </label>
+                </div>
               </div>
-              <button id="autoAssignBtn" class="btn btn-outline-dark btn-lg">🤖 Preview Auto-Assign</button>
-              <button id="undoAutoAssignBtn" class="btn btn-outline-warning btn-lg">↶ Undo Auto-Assign</button>
-              <button id="saveBtn" class="btn btn-outline-dark btn-lg">💾 Save Plan</button>
-              <button id="printBtn" class="btn btn-outline-dark btn-lg">🖨️ Print</button>
-              <button id="exportExcelBtn" class="btn btn-outline-dark btn-lg">📊 Export to Excel</button>
-              <button
-                class="btn btn-outline-dark btn-lg"
-                data-bs-toggle="modal"
-                data-bs-target="#historyModal"
-                data-bs-dismiss="modal"
-              >📜 View History</button>
-              <button
-                class="btn btn-outline-dark btn-lg"
-                data-bs-toggle="modal"
-                data-bs-target="#fairnessSettingsModal"
-                data-bs-dismiss="modal"
-              >⚙️ Fairness Settings</button>
-              <button
-                class="btn btn-outline-dark btn-lg"
-                data-bs-toggle="modal"
-                data-bs-target="#absenceReasonsModal"
-                data-bs-dismiss="modal"
-              >📝 Manage Absence Reasons</button>
-              <hr />
-              <div class="input-group">
-                <input type="email" id="emailInput" class="form-control" placeholder="Email address" />
-                <button id="emailBtn" class="btn btn-outline-dark">📧 Send</button>
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="freePeriodsOnlySwitch2" />
+                  <label class="form-check-label" for="freePeriodsOnlySwitch2">
+                    <strong>Free Periods Only</strong><br />
+                    <small class="text-muted">Only assign teachers during their actual free periods</small>
+                  </label>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label"><strong>Max Covers Per Day:</strong></label>
+                <input type="number" class="form-control" id="maxCoversPerDay2" min="1" max="6" value="2" />
+                <small class="text-muted">Maximum cover assignments per teacher per day</small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label"><strong>Max Covers Per Week:</strong></label>
+                <input type="number" class="form-control" id="maxCoversPerWeek2" min="1" max="20" value="3" />
+                <small class="text-muted">Maximum cover assignments per teacher per week</small>
+              </div>
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="useLastResortSwitch2" checked />
+                  <label class="form-check-label" for="useLastResortSwitch2">
+                    <strong>Use "Last Resort" Teachers</strong><br />
+                    <small class="text-muted">Assign Last Resort teachers when no other options available</small>
+                  </label>
+                </div>
+              </div>
+              <button class="btn btn-primary w-100" id="saveFairnessSettings2">Save Fairness Settings</button>
+            </div>
+
+            <!-- Absence Reasons Tab -->
+            <div class="tab-pane fade" id="absenceReasonsTab">
+              <h6 class="border-bottom pb-2">Manage Absence Reasons</h6>
+              <div class="mb-3">
+                <label class="form-label"><strong>Add New Reason:</strong></label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="newAbsenceReason2" placeholder="e.g., Staff Meeting" />
+                  <button class="btn btn-primary" id="addAbsenceReasonBtn2">Add</button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label"><strong>Current Reasons:</strong></label>
+                <div id="absenceReasonsList2" class="list-group"></div>
+              </div>
+              <button class="btn btn-outline-secondary w-100" id="resetAbsenceReasonsBtn2">Reset to Defaults</button>
+            </div>
+
+            <!-- Period Management Tab -->
+            <div class="tab-pane fade" id="periodTab">
+              <h6 class="border-bottom pb-2">10-Week Period Management</h6>
+              <div class="mb-3">
+                <label class="form-label"><strong>Current 10-Week Period Start:</strong></label>
+                <input type="date" class="form-control" id="tenWeekStartDate2" />
+                <small class="text-muted">All fairness tracking resets to this date</small>
+              </div>
+              <button class="btn btn-primary w-100 mb-2" id="saveTenWeekPeriod2">Save Period Start</button>
+              <button class="btn btn-outline-danger w-100" id="resetTenWeekPeriod2">Reset Period (Clear All
+                History)</button>
+              <div class="alert alert-warning mt-3">
+                <strong>⚠️ Warning:</strong> Resetting the period will clear all cover history and fairness data.
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- View History Modal -->
-    <div class="modal fade" id="historyModal" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Cover History (10-Week Period)</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body" id="historyModalBody">
-            <table class="table table-striped table-sm">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Week</th>
-                  <th>Absent</th>
-                  <th>Cover</th>
-                  <th>P</th>
-                  <th>Subject</th>
-                </tr>
-              </thead>
-              <tbody id="historyTableBody"></tbody>
-            </table>
-          </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Ten Week Period Modal -->
-    <div class="modal fade" id="tenWeekModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">10-Week Period Settings</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <!-- Fairness Settings Modal -->
+  <div class="modal fade" id="fairnessSettingsModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Fairness Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <h6>Auto-Assignment Rules</h6>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="excludeDndSwitch" checked />
+              <label class="form-check-label" for="excludeDndSwitch">
+                Exclude DND (Do Not Disturb) teachers from auto-assign
+              </label>
+            </div>
+            <small class="text-muted d-block">DND teachers can still be assigned manually (drag-drop)</small>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="freePeriodsOnlySwitch" />
+              <label class="form-check-label" for="freePeriodsOnlySwitch">Free Periods Only</label>
+            </div>
+            <small class="text-muted d-block">Auto-assign only free periods, skip meetings (safer)</small>
           </div>
-          <div class="modal-body">
+          <div class="mb-3">
+            <h6>Cover Caps (Auto-Assign Only)</h6>
+            <div class="mb-2">
+              <label class="form-label">Max covers per teacher per day:</label>
+              <input type="number" id="maxCoversPerDay" class="form-control" min="1" max="6" value="2" />
+              <small class="text-muted">Prevents overloading a single day (default: 2)</small>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Max covers per teacher per week:</label>
+              <input type="number" id="maxCoversPerWeek" class="form-control" min="1" max="15" value="3" />
+              <small class="text-muted">Balances fairness across the week (default: 3)</small>
+            </div>
+          </div>
+          <div class="mb-3">
+            <h6>Last Resort Teachers</h6>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="useLastResortSwitch" checked />
+              <label class="form-check-label" for="useLastResortSwitch">
+                Only assign Last Resort teachers when no others available
+              </label>
+            </div>
+            <small class="text-muted d-block">Last Resort teachers can still be assigned manually</small>
+          </div>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="avoidYesterdayStrictToggle">
+            <label class="form-check-label" for="avoidYesterdayStrictToggle">
+              Avoid Yesterday’s Teachers (Strict)
+            </label>
+          </div>
+          <div class="alert alert-info mt-3">
+            <small>
+              <strong>Note:</strong> Manual assignments (drag-drop) bypass all fairness rules to preserve
+              user intent and override fairness when necessary.
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveFairnessBtn">Save Settings</button>
+          <button type="button" class="btn btn-outline-secondary" id="resetFairnessBtn">Reset to Defaults</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Absence Reasons Management Modal -->
+  <div class="modal fade" id="absenceReasonsModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Manage Absence Reasons</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Add New Reason:</label>
+            <div class="input-group">
+              <input type="text" id="newAbsenceReasonInput" class="form-control" placeholder="e.g., Extended Leave" />
+              <button type="button" class="btn btn-primary" id="addAbsenceReasonBtn">Add</button>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Current Reasons:</label>
+            <div id="absenceReasonsList" class="list-group"></div>
+          </div>
+          <div class="alert alert-info small">
+            <strong>Tip:</strong> Reasons appear in the modal when adding absent teachers.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-outline-secondary" id="resetAbsenceReasonsBtn">Reset to Defaults</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports & Analysis Modal -->
+  <div class="modal fade" id="reportsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">📊 Reports & Analysis</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">Select a report to preview or export from live system data.</p>
+          <div class="list-group">
+            <div class="list-group-item">
+              <strong>Daily Operations</strong>
+              <button class="list-group-item list-group-item-action mt-2" data-report="daily-cover">
+                Daily Cover Allocation
+                <div class="small text-muted">All covers for the selected day</div>
+              </button>
+              <button class="list-group-item list-group-item-action" data-report="daily-absence-summary">
+                Daily Absence Summary
+                <div class="small text-muted">Absences, lessons, coverage status</div>
+              </button>
+            </div>
+            <div class="list-group-item mt-2">
+              <strong>Weekly & Fairness</strong>
+              <button class="list-group-item list-group-item-action mt-2" data-report="weekly-cover-load">
+                Weekly Cover Load
+                <div class="small text-muted">Covers per teacher (current week)</div>
+              </button>
+              <button class="list-group-item list-group-item-action" data-report="ten-week-fairness">
+                10‑Week Fairness Overview
+                <div class="small text-muted">Equity trends and balance</div>
+              </button>
+            </div>
+            <div class="list-group-item mt-2">
+              <strong>Automation & Audit</strong>
+              <button class="list-group-item list-group-item-action mt-2" data-report="auto-assign-effectiveness">
+                Auto‑Assign Effectiveness
+                <div class="small text-muted">Success, conflicts, strategy used</div>
+              </button>
+              <button class="list-group-item list-group-item-action" data-report="audit-log">
+                System Audit Log
+                <div class="small text-muted">Key changes and actions</div>
+              </button>
+              <button class="list-group-item list-group-item-action" data-report="cover-teacher">
+                Cover Teacher Report ⭐
+                <div class="small text-muted">Individual teacher assignment history</div>
+              </button>
+            </div>
+          </div>
+
+          <div id="coverTeacherSelection" style="display: none" class="border-top mt-3 pt-3">
+            <label class="form-label">Select Cover Teacher:</label>
+            <input type="text" id="coverTeacherSearchInput" class="form-control mb-2"
+              placeholder="Search teacher name..." autocomplete="off" />
+            <div id="coverTeacherResults" class="list-group" style="max-height: 200px; overflow-y: auto; display: none">
+            </div>
+            <select id="coverTeacherSelect" class="form-select" style="display: none">
+              <option value="">-- Select a teacher --</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-primary" id="previewReportBtn" disabled>Preview Report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Report Modal -->
+  <div class="modal fade" id="previewReportModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Report Preview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="reportPreviewBody"></div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workflow Help Modal -->
+  <div class="modal fade" id="workflowHelpModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title">⚡ Quick Navigation Guide</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-4">
+            <h6 class="border-bottom pb-2">📋 Workflow Steps</h6>
             <div class="mb-3">
-              <label class="form-label">Period Start Date</label>
-              <input type="date" id="tenWeekStartDate" class="form-control" />
-              <small class="text-muted">The 10-week tracking period begins on this date</small>
+              <strong>Step 1: Select Day</strong><br />
+              <small class="text-muted">Choose the day to manage covers. All operations apply to this day.</small>
             </div>
-            <div class="alert alert-info">
-              <strong>Current Status:</strong> <span id="periodStatus"></span>
+            <div class="mb-3">
+              <strong>Step 2: Add Absences</strong><br />
+              <small class="text-muted">Click Add (or search) to open the absence modal. Choose Full Day or Partial,
+                select the reason, and confirm.</small>
+            </div>
+            <div class="mb-3">
+              <strong>Step 3: Auto-Assign</strong><br />
+              <small class="text-muted">Choose a strategy (Fair, Round-Robin, or Day-Balancing) and preview assignments
+                before applying.</small>
+            </div>
+            <div class="mb-3">
+              <strong>Step 4: Apply & Export</strong><br />
+              <small class="text-muted">Confirm your plan and export to Excel, PDF, or email. Save progress to
+                localStorage.</small>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-warning" id="resetPeriodBtn">Reset Period</button>
-            <button type="button" class="btn btn-primary" id="savePeriodBtn">Save Changes</button>
+          <div class="mb-4">
+            <h6 class="border-bottom pb-2">⌨️ Keyboard Shortcuts</h6>
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <tbody>
+                  <tr>
+                    <td><kbd>Ctrl</kbd> + <kbd>1-4</kbd></td>
+                    <td>Jump to workflow step</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>Ctrl</kbd> + <kbd>→</kbd></td>
+                    <td>Next workflow step</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>Ctrl</kbd> + <kbd>←</kbd></td>
+                    <td>Previous workflow step</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>Alt</kbd> + <kbd>A</kbd></td>
+                    <td>Run auto-assign preview</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>Alt</kbd> + <kbd>E</kbd></td>
+                    <td>Export to Excel</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Print Preview Modal -->
-    <div class="modal fade" id="printPreviewModal" tabindex="-1" aria-labelledby="printPreviewLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="printPreviewLabel">Print Preview</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body" id="printArea"></div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" id="confirmPrintBtn">Print</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Settings Modal (Consolidated) -->
-    <div class="modal fade" id="settingsModal" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header bg-dark text-white">
-            <h5 class="modal-title">⚙️ System Settings</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <ul class="nav nav-tabs" role="tablist">
-              <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#fairnessTab">Fairness Rules</button>
-              </li>
-              <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#absenceReasonsTab">Absence Reasons</button>
-              </li>
-              <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#periodTab">Period Management</button>
-              </li>
-              <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#firebaseTab">Firebase Storage</button>
-              </li>
+          <div class="alert alert-info">
+            <strong>💡 Tips for Speed:</strong>
+            <ul class="mb-0 small">
+              <li>Use keyboard shortcuts to navigate between steps quickly</li>
+              <li>🟡 Gold badge — teacher has only one free period left today</li>
+              <li>🟠 Orange border — teacher is approaching their daily or weekly cover cap</li>
+              <li>🔴 Red border — teacher has reached their daily or weekly cover cap</li>
+              <li>↩ Cyan border — teacher covered on the prior calendar day</li>
+              <li>D / W / A / F badges show daily, weekly, average and free-period counts</li>
+              <li>Search for absent teachers by typing — filtered results appear instantly</li>
+              <li>Use the Dashboard Summary Widget to track fairness in real-time</li>
             </ul>
-
-            <div class="tab-content mt-3">
-              <!-- Firebase Storage Tab -->
-              <div class="tab-pane fade" id="firebaseTab">
-                <h6 class="border-bottom pb-2">Firebase Firestore — Cloud Storage</h6>
-                <p class="text-muted small">
-                  Enter your Firebase project credentials and a unique School ID.
-                  These are stored locally on this device and used only when you
-                  click <strong>☁️ Cloud → Save To / Read From</strong>.
-                </p>
-                <div class="mb-2">
-                  <label class="form-label fw-semibold">School ID <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" id="firebaseSchoolId" placeholder="e.g. springfield-high" />
-                  <small class="text-muted">Unique identifier for this school — used as the Firestore document path.</small>
-                </div>
-                <div class="mb-2">
-                  <label class="form-label fw-semibold">API Key <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" id="firebaseApiKey" placeholder="AIza…" />
-                </div>
-                <div class="mb-2">
-                  <label class="form-label fw-semibold">Project ID <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" id="firebaseProjectId" placeholder="my-project-id" />
-                </div>
-                <div class="mb-2">
-                  <label class="form-label">Auth Domain</label>
-                  <input type="text" class="form-control" id="firebaseAuthDomain" placeholder="my-project.firebaseapp.com" />
-                </div>
-                <div class="mb-2">
-                  <label class="form-label">Storage Bucket</label>
-                  <input type="text" class="form-control" id="firebaseStorageBucket" placeholder="my-project.appspot.com" />
-                </div>
-                <div class="mb-2">
-                  <label class="form-label">Messaging Sender ID</label>
-                  <input type="text" class="form-control" id="firebaseMessagingSenderId" placeholder="123456789" />
-                </div>
-                <div class="mb-2">
-                  <label class="form-label">App ID</label>
-                  <input type="text" class="form-control" id="firebaseAppId" placeholder="1:123:web:abc…" />
-                </div>
-                <button class="btn btn-warning w-100 mt-2" id="saveFirebaseSettingsBtn">
-                  ☁️ Save Firebase Settings
-                </button>
-                <div class="alert alert-info small mt-3 mb-0">
-                  <strong>Where to find these values:</strong> Firebase Console → Project Settings → Your Apps → SDK setup and configuration.
-                  Firestore must be enabled in your Firebase project.
-                </div>
-              </div>
-              <!-- Fairness Tab -->
-              <div class="tab-pane fade show active" id="fairnessTab">
-                <h6 class="border-bottom pb-2">Fairness & Assignment Rules</h6>
-                <div class="mb-3">
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="excludeDndSwitch2" />
-                    <label class="form-check-label" for="excludeDndSwitch2">
-                      <strong>Exclude "Do Not Disturb" Teachers</strong><br />
-                      <small class="text-muted">Never assign covers to DND-marked teachers</small>
-                    </label>
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="freePeriodsOnlySwitch2" />
-                    <label class="form-check-label" for="freePeriodsOnlySwitch2">
-                      <strong>Free Periods Only</strong><br />
-                      <small class="text-muted">Only assign teachers during their actual free periods</small>
-                    </label>
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label"><strong>Max Covers Per Day:</strong></label>
-                  <input type="number" class="form-control" id="maxCoversPerDay2" min="1" max="6" value="2" />
-                  <small class="text-muted">Maximum cover assignments per teacher per day</small>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label"><strong>Max Covers Per Week:</strong></label>
-                  <input type="number" class="form-control" id="maxCoversPerWeek2" min="1" max="20" value="3" />
-                  <small class="text-muted">Maximum cover assignments per teacher per week</small>
-                </div>
-                <div class="mb-3">
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="useLastResortSwitch2" checked />
-                    <label class="form-check-label" for="useLastResortSwitch2">
-                      <strong>Use "Last Resort" Teachers</strong><br />
-                      <small class="text-muted">Assign Last Resort teachers when no other options available</small>
-                    </label>
-                  </div>
-                </div>
-                <button class="btn btn-primary w-100" id="saveFairnessSettings2">Save Fairness Settings</button>
-              </div>
-
-              <!-- Absence Reasons Tab -->
-              <div class="tab-pane fade" id="absenceReasonsTab">
-                <h6 class="border-bottom pb-2">Manage Absence Reasons</h6>
-                <div class="mb-3">
-                  <label class="form-label"><strong>Add New Reason:</strong></label>
-                  <div class="input-group">
-                    <input type="text" class="form-control" id="newAbsenceReason2" placeholder="e.g., Staff Meeting" />
-                    <button class="btn btn-primary" id="addAbsenceReasonBtn2">Add</button>
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label"><strong>Current Reasons:</strong></label>
-                  <div id="absenceReasonsList2" class="list-group"></div>
-                </div>
-                <button class="btn btn-outline-secondary w-100" id="resetAbsenceReasonsBtn2">Reset to Defaults</button>
-              </div>
-
-              <!-- Period Management Tab -->
-              <div class="tab-pane fade" id="periodTab">
-                <h6 class="border-bottom pb-2">10-Week Period Management</h6>
-                <div class="mb-3">
-                  <label class="form-label"><strong>Current 10-Week Period Start:</strong></label>
-                  <input type="date" class="form-control" id="tenWeekStartDate2" />
-                  <small class="text-muted">All fairness tracking resets to this date</small>
-                </div>
-                <button class="btn btn-primary w-100 mb-2" id="saveTenWeekPeriod2">Save Period Start</button>
-                <button class="btn btn-outline-danger w-100" id="resetTenWeekPeriod2">Reset Period (Clear All History)</button>
-                <div class="alert alert-warning mt-3">
-                  <strong>⚠️ Warning:</strong> Resetting the period will clear all cover history and fairness data.
-                </div>
-              </div>
-            </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Fairness Settings Modal -->
-    <div class="modal fade" id="fairnessSettingsModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Fairness Settings</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <h6>Auto-Assignment Rules</h6>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="excludeDndSwitch" checked />
-                <label class="form-check-label" for="excludeDndSwitch">
-                  Exclude DND (Do Not Disturb) teachers from auto-assign
-                </label>
-              </div>
-              <small class="text-muted d-block">DND teachers can still be assigned manually (drag-drop)</small>
-              <div class="form-check mt-2">
-                <input class="form-check-input" type="checkbox" id="freePeriodsOnlySwitch" />
-                <label class="form-check-label" for="freePeriodsOnlySwitch">Free Periods Only</label>
-              </div>
-              <small class="text-muted d-block">Auto-assign only free periods, skip meetings (safer)</small>
-            </div>
-            <div class="mb-3">
-              <h6>Cover Caps (Auto-Assign Only)</h6>
-              <div class="mb-2">
-                <label class="form-label">Max covers per teacher per day:</label>
-                <input type="number" id="maxCoversPerDay" class="form-control" min="1" max="6" value="2" />
-                <small class="text-muted">Prevents overloading a single day (default: 2)</small>
-              </div>
-              <div class="mb-2">
-                <label class="form-label">Max covers per teacher per week:</label>
-                <input type="number" id="maxCoversPerWeek" class="form-control" min="1" max="15" value="3" />
-                <small class="text-muted">Balances fairness across the week (default: 3)</small>
-              </div>
-            </div>
-            <div class="mb-3">
-              <h6>Last Resort Teachers</h6>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="useLastResortSwitch" checked />
-                <label class="form-check-label" for="useLastResortSwitch">
-                  Only assign Last Resort teachers when no others available
-                </label>
-              </div>
-              <small class="text-muted d-block">Last Resort teachers can still be assigned manually</small>
-            </div>
-            <div class="alert alert-info mt-3">
-              <small>
-                <strong>Note:</strong> Manual assignments (drag-drop) bypass all fairness rules to preserve
-                user intent and override fairness when necessary.
-              </small>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="saveFairnessBtn">Save Settings</button>
-            <button type="button" class="btn btn-outline-secondary" id="resetFairnessBtn">Reset to Defaults</button>
-          </div>
+  <!-- Preview Auto-Assign Modal -->
+  <div class="modal fade" id="previewAutoAssignModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Preview Auto-Assign</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="previewAssignmentsList" style="max-height: 400px; overflow-y: auto"></div>
+          <div id="previewWarnings" class="alert alert-warning mt-3" style="display: none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmAutoAssignBtn">✓ Apply Assignments</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Absence Reasons Management Modal -->
-    <div class="modal fade" id="absenceReasonsModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Manage Absence Reasons</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">Add New Reason:</label>
-              <div class="input-group">
-                <input type="text" id="newAbsenceReasonInput" class="form-control" placeholder="e.g., Extended Leave" />
-                <button type="button" class="btn btn-primary" id="addAbsenceReasonBtn">Add</button>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Current Reasons:</label>
-              <div id="absenceReasonsList" class="list-group"></div>
-            </div>
-            <div class="alert alert-info small">
-              <strong>Tip:</strong> Reasons appear in the modal when adding absent teachers.
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-outline-secondary" id="resetAbsenceReasonsBtn">Reset to Defaults</button>
-          </div>
-        </div>
-      </div>
-    </div>
+  <!-- Firebase SDK v8 compat (CDN — no npm required) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="./firebase-adapter.js"></script>
 
-    <!-- Reports & Analysis Modal -->
-    <div class="modal fade" id="reportsModal" tabindex="-1">
-      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">📊 Reports & Analysis</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <p class="text-muted small mb-3">Select a report to preview or export from live system data.</p>
-            <div class="list-group">
-              <div class="list-group-item">
-                <strong>Daily Operations</strong>
-                <button class="list-group-item list-group-item-action mt-2" data-report="daily-cover">
-                  Daily Cover Allocation
-                  <div class="small text-muted">All covers for the selected day</div>
-                </button>
-                <button class="list-group-item list-group-item-action" data-report="daily-absence-summary">
-                  Daily Absence Summary
-                  <div class="small text-muted">Absences, lessons, coverage status</div>
-                </button>
-              </div>
-              <div class="list-group-item mt-2">
-                <strong>Weekly & Fairness</strong>
-                <button class="list-group-item list-group-item-action mt-2" data-report="weekly-cover-load">
-                  Weekly Cover Load
-                  <div class="small text-muted">Covers per teacher (current week)</div>
-                </button>
-                <button class="list-group-item list-group-item-action" data-report="ten-week-fairness">
-                  10‑Week Fairness Overview
-                  <div class="small text-muted">Equity trends and balance</div>
-                </button>
-              </div>
-              <div class="list-group-item mt-2">
-                <strong>Automation & Audit</strong>
-                <button class="list-group-item list-group-item-action mt-2" data-report="auto-assign-effectiveness">
-                  Auto‑Assign Effectiveness
-                  <div class="small text-muted">Success, conflicts, strategy used</div>
-                </button>
-                <button class="list-group-item list-group-item-action" data-report="audit-log">
-                  System Audit Log
-                  <div class="small text-muted">Key changes and actions</div>
-                </button>
-                <button class="list-group-item list-group-item-action" data-report="cover-teacher">
-                  Cover Teacher Report ⭐
-                  <div class="small text-muted">Individual teacher assignment history</div>
-                </button>
-              </div>
-            </div>
+  <script src="./bootstrap.bundle.min.js"></script>
+  <script src="./jspdf.umd.min.js"></script>
+  <script src="./xlsx.full.min.js"></script>
+  <script src="script.js"></script>
+  <script src="reports.js"></script>
+</body>
 
-            <div id="coverTeacherSelection" style="display: none" class="border-top mt-3 pt-3">
-              <label class="form-label">Select Cover Teacher:</label>
-              <input type="text" id="coverTeacherSearchInput" class="form-control mb-2" placeholder="Search teacher name..." autocomplete="off" />
-              <div id="coverTeacherResults" class="list-group" style="max-height: 200px; overflow-y: auto; display: none"></div>
-              <select id="coverTeacherSelect" class="form-select" style="display: none">
-                <option value="">-- Select a teacher --</option>
-              </select>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button class="btn btn-primary" id="previewReportBtn" disabled>Preview Report</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Preview Report Modal -->
-    <div class="modal fade" id="previewReportModal" tabindex="-1">
-      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Report Preview</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body" id="reportPreviewBody"></div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Workflow Help Modal -->
-    <div class="modal fade" id="workflowHelpModal" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header bg-info text-white">
-            <h5 class="modal-title">⚡ Quick Navigation Guide</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-4">
-              <h6 class="border-bottom pb-2">📋 Workflow Steps</h6>
-              <div class="mb-3">
-                <strong>Step 1: Select Day</strong><br />
-                <small class="text-muted">Choose the day to manage covers. All operations apply to this day.</small>
-              </div>
-              <div class="mb-3">
-                <strong>Step 2: Add Absences</strong><br />
-                <small class="text-muted">Click Add (or search) to open the absence modal. Choose Full Day or Partial, select the reason, and confirm.</small>
-              </div>
-              <div class="mb-3">
-                <strong>Step 3: Auto-Assign</strong><br />
-                <small class="text-muted">Choose a strategy (Fair, Round-Robin, or Day-Balancing) and preview assignments before applying.</small>
-              </div>
-              <div class="mb-3">
-                <strong>Step 4: Apply & Export</strong><br />
-                <small class="text-muted">Confirm your plan and export to Excel, PDF, or email. Save progress to localStorage.</small>
-              </div>
-            </div>
-            <div class="mb-4">
-              <h6 class="border-bottom pb-2">⌨️ Keyboard Shortcuts</h6>
-              <div class="table-responsive">
-                <table class="table table-sm">
-                  <tbody>
-                    <tr><td><kbd>Ctrl</kbd> + <kbd>1-4</kbd></td><td>Jump to workflow step</td></tr>
-                    <tr><td><kbd>Ctrl</kbd> + <kbd>→</kbd></td><td>Next workflow step</td></tr>
-                    <tr><td><kbd>Ctrl</kbd> + <kbd>←</kbd></td><td>Previous workflow step</td></tr>
-                    <tr><td><kbd>Alt</kbd> + <kbd>A</kbd></td><td>Run auto-assign preview</td></tr>
-                    <tr><td><kbd>Alt</kbd> + <kbd>E</kbd></td><td>Export to Excel</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div class="alert alert-info">
-              <strong>💡 Tips for Speed:</strong>
-              <ul class="mb-0 small">
-                <li>Use keyboard shortcuts to navigate between steps quickly</li>
-                <li>🟡 Gold badge — teacher has only one free period left today</li>
-                <li>🟠 Orange border — teacher is approaching their daily or weekly cover cap</li>
-                <li>🔴 Red border — teacher has reached their daily or weekly cover cap</li>
-                <li>↩ Cyan border — teacher covered on the prior calendar day</li>
-                <li>D / W / A / F badges show daily, weekly, average and free-period counts</li>
-                <li>Search for absent teachers by typing — filtered results appear instantly</li>
-                <li>Use the Dashboard Summary Widget to track fairness in real-time</li>
-              </ul>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Preview Auto-Assign Modal -->
-    <div class="modal fade" id="previewAutoAssignModal" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Preview Auto-Assign</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div id="previewAssignmentsList" style="max-height: 400px; overflow-y: auto"></div>
-            <div id="previewWarnings" class="alert alert-warning mt-3" style="display: none"></div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="confirmAutoAssignBtn">✓ Apply Assignments</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Firebase SDK v8 compat (CDN — no npm required) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="./firebase-adapter.js"></script>
-
-    <script src="./bootstrap.bundle.min.js"></script>
-    <script src="./jspdf.umd.min.js"></script>
-    <script src="./xlsx.full.min.js"></script>
-    <script src="script.js"></script>
-    <script src="reports.js"></script>
-  </body>
 </html>
