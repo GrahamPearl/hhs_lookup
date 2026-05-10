@@ -71,6 +71,24 @@
     "link": "./build_cover3/index.html",
     "buttonClass": "btn-hhs"
   },
+   {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Viewer",
+    "description": "Cover teacher Viewer - daily list.",
+    "buttonText": "Open Cover Teacher Viewer",
+    "link": "./viewer_cover/index.html",
+    "buttonClass": "btn-hhs"
+  },
+   {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Viewer (Admin)",
+    "description": "Cover teacher Viewer - reports.",
+    "buttonText": "Open Cover Teacher Viewer - Admin",
+    "link": "./viewer_coverAdmin/index.html",
+    "buttonClass": "btn-hhs"
+  },
   {
     "badge": "Support Staff",
       "badgeClass": "bg-success",
