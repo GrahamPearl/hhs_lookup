@@ -843,6 +843,7 @@ function getAppState() {
   };
 }
 
+/*
 function applyAppState(data) {
   // Global variables
   if (data.coverDate) coverDate = data.coverDate;
@@ -868,11 +869,87 @@ function applyAppState(data) {
   renderAbsentTeachersTable();
   scheduleRenderGrid();
 }
+  */
+ function applyAppState(data) {
+  // ✅ MUTATE existing arrays/objects instead of reassigning
+  
+  // 1. Sync global state variables
+  if (data.coverDate) coverDate = data.coverDate;
+  
+  // 2. Mutate absentTeachers array (don't reassign)
+  absentTeachers.length = 0; // Clear without losing reference
+  if (data.absentTeachers) {
+    absentTeachers.push(...data.absentTeachers);
+  }
+
+  // 3. Mutate partialAbsentTeachers object (clear & rebuild)
+  for (const key in partialAbsentTeachers) {
+    delete partialAbsentTeachers[key];
+  }
+  if (data.partialAbsentTeachers) {
+    Object.assign(partialAbsentTeachers, data.partialAbsentTeachers);
+  }
+
+  // 4. Mutate absentTeacherReasons object (clear & rebuild)
+  for (const key in absentTeacherReasons) {
+    delete absentTeacherReasons[key];
+  }
+  if (data.absentTeacherReasons) {
+    Object.assign(absentTeacherReasons, data.absentTeacherReasons);
+  }
+
+  // 5. Mutate coverAssignments object (clear & rebuild)
+  for (const key in coverAssignments) {
+    delete coverAssignments[key];
+  }
+  if (data.coverAssignments) {
+    Object.assign(coverAssignments, data.coverAssignments);
+  }
+
+  // 6. Mutate noCoverNeeded object (clear & rebuild)
+  for (const key in noCoverNeeded) {
+    delete noCoverNeeded[key];
+  }
+  if (data.noCoverNeeded) {
+    Object.assign(noCoverNeeded, data.noCoverNeeded);
+  }
+
+  // ✅ Sync DOM inputs IMMEDIATELY (before rendering)
+  if (data.coverDate) {
+    document.getElementById("coverDate").value = data.coverDate;
+    updateWeekDisplay();
+  }
+  if (data.day !== undefined) {
+    document.getElementById("absenceDaySelect").value = String(data.day);
+  }
+
+  // ✅ Refresh teacher dropdown
+  refreshTeachers();
+  
+  // ✅ Render absent teachers table IMMEDIATELY
+  renderAbsentTeachersTable();
+}
+
+function syncAndRenderNow() {
+  // ✅ Called after state is fully loaded from cloud
+  // ✅ No requestAnimationFrame — render immediately
+  
+  // 1. Update week display
+  updateWeekDisplay();
+  
+  // 2. Render the grid immediately
+  renderGrid();
+  
+  // 3. Update dashboard
+  updateDashboardStats();
+  updateDashboardSummary();
+}
 
 // ── Centralised full snapshot (includes persistence layers) ───
 function getDailyAllocationState() {
   return {
     ...getAppState(),
+    date: coverDate,
     absenceReasons: loadAbsenceReasons(),
     fairnessSettings: loadFairnessSettings(),
     history: loadCoverHistory(),
@@ -3019,6 +3096,22 @@ document
     alert("✓ Fairness settings saved!");
   });
 
+function populateAbsenceReasonDropdown() {
+  const dropdown = document.getElementById("addAbsenceReasonSelect");
+  if (!dropdown) return;
+
+  const reasons = getAbsenceReasons();
+
+  dropdown.innerHTML = '<option value="">-- Select reason --</option>';
+
+  reasons.forEach((reason) => {
+    const opt = document.createElement("option");
+    opt.value = reason;
+    opt.textContent = reason;
+    dropdown.appendChild(opt);
+  });
+}
+
 function populateAbsenceReasonsList2() {
   const reasons = getAbsenceReasons(),
     list = document.getElementById("absenceReasonsList2");
@@ -3349,6 +3442,7 @@ async function cloudSaveTo() {
 }
 
 // ── Firebase: Cloud Read ───────────────────────────────────────
+/*
 async function cloudReadFrom() {
   const btn = document.getElementById("cloudReadBtn");
   try {
@@ -3376,6 +3470,13 @@ async function cloudReadFrom() {
       )
     )
       return;
+
+    // ✅ FULL RESET BEFORE APPLY
+    coverAssignments = {};
+    noCoverNeeded = {};
+    absentTeachers = [];
+    partialAbsentTeachers = {};
+    absentTeacherReasons = {};
 
     // 3. Apply session state via unified pattern
     if (data.allocation)
@@ -3431,6 +3532,117 @@ async function cloudReadFrom() {
     }
   }
 }
+*/
+async function cloudReadFrom() {
+  const btn = document.getElementById("cloudReadBtn");
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "⏳ Reading…";
+    }
+    const data = await FirebaseAdapter.readFrom(coverDate);
+
+    // 1. Extract date and day from source
+    const srcDate =
+      data.allocation?.coverDate || data.allocation?.date || coverDate;
+    const srcDay =
+      data.allocation?.day ??
+      parseInt(document.getElementById("absenceDaySelect").value);
+    const fmtDate = new Date(srcDate + "T00:00:00").toLocaleDateString(
+      undefined,
+      { weekday: "long", year: "numeric", month: "long", day: "numeric" },
+    );
+
+    // 2. Confirm
+    if (
+      !confirm(
+        `Load cloud data?\n\nDate : ${fmtDate}\nDay  : Day ${srcDay + 1}\n\nThis will merge with current local data.`,
+      )
+    )
+      return;
+
+    // ✅ STEP 1: Cancel any pending renders
+    if (_renderGridRAF !== null) {
+      cancelAnimationFrame(_renderGridRAF);
+      _renderGridRAF = null;
+    }
+
+    // ✅ STEP 2: FULLY RESET state globals BEFORE applying
+    coverAssignments = {};
+    noCoverNeeded = {};
+    absentTeachers.length = 0;
+    for (const key in partialAbsentTeachers) delete partialAbsentTeachers[key];
+    for (const key in absentTeacherReasons) delete absentTeacherReasons[key];
+
+    // ✅ STEP 3: Apply cloud allocation (mutates globals)
+    if (data.allocation) {
+      applyAppState({ ...data.allocation, coverDate: srcDate, day: srcDay });
+    } else {
+      applyAppState({
+        coverDate: srcDate,
+        day: srcDay,
+        absentTeachers: [],
+        partialAbsentTeachers: {},
+        absentTeacherReasons: {},
+        coverAssignments: {},
+        noCoverNeeded: {},
+      });
+    }
+
+    // ✅ STEP 4: Merge history (don't replace — merge)
+    if (data.history?.length) {
+      const existing = loadCoverHistory();
+      const existingKeys = new Set(
+        existing.map(
+          (h) => `${h.date}_${h.coveredTeacher}_P${h.period}_${h.coverTeacher}`,
+        ),
+      );
+      const newEntries = data.history.filter(
+        (h) =>
+          !existingKeys.has(
+            `${h.date}_${h.coveredTeacher}_P${h.period}_${h.coverTeacher}`,
+          ),
+      );
+      if (newEntries.length > 0) {
+        saveCoverHistory([...existing, ...newEntries]);
+      }
+    }
+
+    // ✅ STEP 5: Merge metrics (local wins conflicts)
+    if (data.metrics && Object.keys(data.metrics).length) {
+      saveMetrics(Object.assign({}, data.metrics, loadMetrics()));
+    }
+
+    // ✅ STEP 6: Apply settings
+    if (data.settings?.fairnessSettings)
+      saveFairnessSettings(data.settings.fairnessSettings);
+    if (data.settings?.tenWeekStart)
+      setCachedTenWeekStart(data.settings.tenWeekStart);
+    if (data.settings?.absenceReasons) {
+      saveAbsenceReasons(data.settings.absenceReasons);
+      populateAbsenceReasonDropdown();
+    }
+
+    // ✅ STEP 7: IMMEDIATE render sequence (NO deferral)
+    syncAndRenderNow();
+
+    // ✅ STEP 8: Log success
+    addToHistoryLog("CLOUD_READ", {
+      date: srcDate,
+      schoolId: FirebaseAdapter.getStoredSchoolId(),
+    });
+
+    alert("✅ Cloud data loaded successfully.");
+  } catch (e) {
+    alert("❌ Cloud read failed:\n" + e.message);
+    console.error("cloudReadFrom:", e);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "📥 Read From";
+    }
+  }
+}  
 
 // ── Firebase: UI visibility ────────────────────────────────────
 function initCloudUI() {

@@ -13,9 +13,45 @@
 <body>
   <h4>☁️ Firebase Structure Setup</h4>
   <p class="text-muted small">Reads config from localStorage. Run once per school to initialise Firestore collections.</p>
+
+  <div class="card bg-dark text-white mb-4" style="border: 1px solid #334155; max-width: 600px;">
+    <div class="card-body">
+      <h6 class="card-title border-bottom pb-2 mb-3">Firebase Configuration</h6>
+      <div class="mb-2">
+        <label class="form-label fw-semibold">School ID <span class="text-danger">*</span></label>
+        <input type="text" class="form-control bg-secondary text-white border-0" id="firebaseSchoolId" placeholder="e.g. springfield-high" />
+      </div>
+      <div class="mb-2">
+        <label class="form-label fw-semibold">API Key <span class="text-danger">*</span></label>
+        <input type="text" class="form-control bg-secondary text-white border-0" id="firebaseApiKey" placeholder="AIza…" />
+      </div>
+      <div class="mb-2">
+        <label class="form-label fw-semibold">Project ID <span class="text-danger">*</span></label>
+        <input type="text" class="form-control bg-secondary text-white border-0" id="firebaseProjectId" placeholder="my-project-id" />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Auth Domain</label>
+        <input type="text" class="form-control bg-secondary text-white border-0" id="firebaseAuthDomain" placeholder="my-project.firebaseapp.com" />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Storage Bucket</label>
+        <input type="text" class="form-control bg-secondary text-white border-0" id="firebaseStorageBucket" placeholder="my-project.appspot.com" />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Messaging Sender ID</label>
+        <input type="text" class="form-control bg-secondary text-white border-0" id="firebaseMessagingSenderId" placeholder="123456789" />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">App ID</label>
+        <input type="text" class="form-control bg-secondary text-white border-0" id="firebaseAppId" placeholder="1:123:web:abc…" />
+      </div>
+      <button id="saveSettingsBtn" class="btn btn-primary w-100 mt-2">💾 Save Firebase Settings</button>
+    </div>
+  </div>
+
   <button id="runBtn" class="btn btn-warning mb-3">▶ Run Setup</button>
   <button id="clearBtn" class="btn btn-outline-secondary mb-3 ms-2">Clear Log</button>
-  <pre id="log">Ready. Press Run Setup.</pre>
+  <pre id="log">Ready. Configure settings (if needed) and press Run Setup.</pre>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -29,13 +65,51 @@
 
     document.getElementById("clearBtn").onclick = () => logEl.innerHTML = "";
 
+    // Load existing settings on page load
+    const loadSettings = () => {
+      const config = JSON.parse(localStorage.getItem("firebaseConfig") || "{}");
+      const schoolId = localStorage.getItem("firebaseSchoolId") || "";
+      
+      document.getElementById("firebaseSchoolId").value = schoolId;
+      document.getElementById("firebaseApiKey").value = config.apiKey || "";
+      document.getElementById("firebaseProjectId").value = config.projectId || "";
+      document.getElementById("firebaseAuthDomain").value = config.authDomain || "";
+      document.getElementById("firebaseStorageBucket").value = config.storageBucket || "";
+      document.getElementById("firebaseMessagingSenderId").value = config.messagingSenderId || "";
+      document.getElementById("firebaseAppId").value = config.appId || "";
+    };
+
+    loadSettings();
+
+    // Save settings
+    document.getElementById("saveSettingsBtn").onclick = () => {
+      const schoolId = document.getElementById("firebaseSchoolId").value.trim();
+      const config = {
+        apiKey: document.getElementById("firebaseApiKey").value.trim(),
+        projectId: document.getElementById("firebaseProjectId").value.trim(),
+        authDomain: document.getElementById("firebaseAuthDomain").value.trim(),
+        storageBucket: document.getElementById("firebaseStorageBucket").value.trim(),
+        messagingSenderId: document.getElementById("firebaseMessagingSenderId").value.trim(),
+        appId: document.getElementById("firebaseAppId").value.trim()
+      };
+
+      if (!schoolId || !config.apiKey || !config.projectId) {
+        log("❌ Cannot save: School ID, API Key, and Project ID are required.", "log-err");
+        return;
+      }
+
+      localStorage.setItem("firebaseSchoolId", schoolId);
+      localStorage.setItem("firebaseConfig", JSON.stringify(config));
+      log("✅ Firebase settings saved to localStorage.", "log-ok");
+    };
+
     document.getElementById("runBtn").onclick = async () => {
       logEl.innerHTML = "";
       const config   = JSON.parse(localStorage.getItem("firebaseConfig") || "null");
       const schoolId = localStorage.getItem("firebaseSchoolId");
 
       if (!config?.apiKey || !config?.projectId || !schoolId) {
-        log("❌ Firebase config or School ID missing. Configure via index.html → Settings → Firebase Storage.", "log-err");
+        log("❌ Firebase config or School ID missing. Please configure them in the form above and click Save.", "log-err");
         return;
       }
 
