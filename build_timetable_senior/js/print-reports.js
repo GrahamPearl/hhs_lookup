@@ -11,6 +11,25 @@
 // HEAT-MAP REPORT (Free Periods Availability)
 // ─────────────────────────────────────────────────────────────
 
+function getAllTeacherNames() {
+  try {
+    return Object.keys(localStorage)
+      .filter(key => key.startsWith("teacher_"))
+      .map(key => key.replace("teacher_", ""));
+  } catch {
+    return [];
+  }
+}
+
+function getTeacherKey(name) {
+    const t = normalizeTeacherName(name);
+    return t ? STORAGE_PREFIX + t : "";
+  }
+
+  function normalizeTeacherName(name) {
+    return (name || "").trim().replace(/\s+/g, " ");
+  }
+
 function generateHeatMapReport() {
   const teachers = getAllTeacherNames();
   if (teachers.length === 0) {
@@ -65,158 +84,7 @@ function generateHeatMapReport() {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Heat-Map Report - Free Periods</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          padding: 20px;
-          background: #f5f5f5;
-        }
-        .report-container {
-          max-width: 1200px;
-          margin: 0 auto;
-          background: white;
-          padding: 40px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .report-header {
-          border-bottom: 3px solid #0d6efd;
-          padding-bottom: 20px;
-          margin-bottom: 30px;
-        }
-        .report-header h1 {
-          font-size: 28px;
-          color: #1a1a1a;
-          margin-bottom: 10px;
-        }
-        .header-meta {
-          display: flex;
-          gap: 30px;
-          color: #666;
-          font-size: 14px;
-        }
-        .meta-item {
-          display: flex;
-          flex-direction: column;
-        }
-        .meta-label {
-          font-weight: 600;
-          color: #333;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .meta-value {
-          margin-top: 4px;
-          font-size: 16px;
-        }
-
-        .heat-map-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 20px 0;
-          font-size: 13px;
-        }
-        .heat-map-table th,
-        .heat-map-table td {
-          padding: 12px 8px;
-          text-align: center;
-          border: 1px solid #ddd;
-        }
-        .heat-map-table th {
-          background: #f8f9fa;
-          font-weight: 600;
-          color: #333;
-        }
-        .heat-map-table tbody tr:first-child td { border-top: 2px solid #333; }
-        .heat-map-table tbody tr:last-child td { border-bottom: 2px solid #333; }
-        .heat-map-table tbody td:first-child { border-left: 2px solid #333; }
-        .heat-map-table tbody td:last-child { border-right: 2px solid #333; }
-
-        .heat-cell {
-          font-weight: 600;
-          color: white;
-          position: relative;
-        }
-        .heat-cell-value {
-          position: relative;
-          z-index: 1;
-        }
-
-        .legend {
-          margin-top: 30px;
-          padding: 20px;
-          background: #f8f9fa;
-          border-radius: 6px;
-          border-left: 4px solid #0d6efd;
-        }
-        .legend h3 {
-          margin-bottom: 15px;
-          font-size: 14px;
-          color: #333;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .legend-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 10px;
-          font-size: 13px;
-        }
-        .legend-swatch {
-          width: 40px;
-          height: 30px;
-          border-radius: 3px;
-          border: 1px solid #ccc;
-        }
-
-        .summary-section {
-          margin-top: 30px;
-          padding: 20px;
-          background: #e7f1ff;
-          border-radius: 6px;
-          border-left: 4px solid #0d6efd;
-        }
-        .summary-section h3 {
-          margin-bottom: 10px;
-          color: #0d6efd;
-          font-size: 14px;
-          text-transform: uppercase;
-        }
-        .summary-section p {
-          color: #333;
-          font-size: 13px;
-          line-height: 1.6;
-          margin-bottom: 8px;
-        }
-
-        @media print {
-          body { background: white; padding: 0; }
-          .report-container { box-shadow: none; padding: 30px; max-width: 100%; }
-          .print-btn { display: none; }
-        }
-
-        .print-btn {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          padding: 12px 24px;
-          background: #0d6efd;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 600;
-          box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-          z-index: 100;
-        }
-        .print-btn:hover {
-          background: #0b5ed7;
-          box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4);
-        }
-      </style>
+      <link rel="stylesheet" href=".././css/print1.css">
     </head>
     <body>
       <div class="report-container">
@@ -357,6 +225,7 @@ function printTeacherTimetable(teacherName) {
     const timeStr = today.toLocaleTimeString();
 
     // Generate print-friendly HTML
+
     let html = `
       <!DOCTYPE html>
       <html lang="en">
@@ -364,200 +233,7 @@ function printTeacherTimetable(teacherName) {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Timetable - ${escapeHtml(teacherName)}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            padding: 20px;
-            background: #f5f5f5;
-          }
-          .page {
-            background: white;
-            padding: 40px;
-            max-width: 210mm;
-            margin: 0 auto 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            page-break-inside: avoid;
-            page-break-after: always;
-          }
-
-          .page-header {
-            border-bottom: 3px solid #2e7d32;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-            page-break-inside: avoid;
-          }
-          .page-header h1 {
-            font-size: 26px;
-            color: #1a1a1a;
-            margin-bottom: 12px;
-          }
-          .header-meta {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            font-size: 12px;
-          }
-          .meta-item {
-            display: flex;
-            flex-direction: column;
-          }
-          .meta-label {
-            font-weight: 700;
-            color: #555;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 11px;
-          }
-          .meta-value {
-            margin-top: 4px;
-            color: #2e7d32;
-            font-size: 14px;
-            font-weight: 600;
-          }
-
-          .timetable {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            font-size: 12px;
-            page-break-inside: avoid;
-          }
-          .timetable th {
-            background: #e6f4ea;
-            color: #1b5e20;
-            font-weight: 700;
-            padding: 10px 6px;
-            border: 1px solid #4caf50;
-            text-align: center;
-          }
-          .timetable td {
-            padding: 10px 6px;
-            border: 1px solid #ddd;
-            min-height: 60px;
-            vertical-align: top;
-          }
-          .timetable tbody td {
-            font-size: 11px;
-            background: white;
-          }
-
-          .cell-lesson {
-            background: #e3f2fd;
-            border-left: 4px solid #1976d2;
-          }
-          .cell-meeting {
-            background: #fff3e0;
-            border-left: 4px solid #f57c00;
-          }
-          .cell-free {
-            background: #c8e6c9;
-            border-left: 4px solid #27ae60;
-            font-weight: 700;
-            color: #1b5e20;
-          }
-          .cell-empty {
-            background: #fafafa;
-            color: #999;
-            font-style: italic;
-            text-align: center;
-          }
-
-          .cell-content {
-            line-height: 1.5;
-          }
-          .cell-icon {
-            font-size: 16px;
-            margin-bottom: 4px;
-            display: block;
-          }
-          .cell-title {
-            font-weight: 600;
-            color: #222;
-            margin-bottom: 2px;
-          }
-          .cell-class {
-            color: #666;
-            font-size: 10px;
-          }
-          .cell-venue {
-            color: #999;
-            font-size: 10px;
-          }
-          .cell-dnd {
-            display: inline-block;
-            background: #d32f2f;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: 600;
-            margin-top: 4px;
-          }
-
-          .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 11px;
-            color: #999;
-            display: flex;
-            justify-content: space-between;
-            page-break-inside: avoid;
-          }
-
-          .summary {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f5f5f5;
-            border-radius: 4px;
-            font-size: 11px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            page-break-inside: avoid;
-          }
-          .summary-item {
-            text-align: center;
-          }
-          .summary-label {
-            font-weight: 600;
-            color: #666;
-            font-size: 10px;
-            text-transform: uppercase;
-          }
-          .summary-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #2e7d32;
-            margin-top: 4px;
-          }
-
-          @media print {
-            body { background: white; padding: 0; }
-            .page { box-shadow: none; margin: 0; padding: 15mm; max-width: 100%; }
-            .print-btn { display: none; }
-          }
-
-          .print-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 24px;
-            background: #2e7d32;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-            z-index: 100;
-          }
-          .print-btn:hover {
-            background: #1b5e20;
-          }
-        </style>
+        <link rel="stylesheet" href=".././css/print2.css">
       </head>
       <body>
         <div class="page">
@@ -731,7 +407,7 @@ function printAllTeachersSummary() {
       return null;
     }
   }).filter(Boolean);
-
+  
   let html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -739,161 +415,7 @@ function printAllTeachersSummary() {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>All Teachers Summary Report</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          padding: 20px;
-          background: #f5f5f5;
-        }
-        .report-container {
-          max-width: 1200px;
-          margin: 0 auto;
-          background: white;
-          padding: 40px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          page-break-inside: avoid;
-        }
-        .report-header {
-          border-bottom: 3px solid #0d6efd;
-          padding-bottom: 20px;
-          margin-bottom: 30px;
-          page-break-inside: avoid;
-        }
-        .report-header h1 {
-          font-size: 28px;
-          color: #1a1a1a;
-          margin-bottom: 10px;
-        }
-        .header-meta {
-          display: flex;
-          gap: 30px;
-          color: #666;
-          font-size: 14px;
-          flex-wrap: wrap;
-        }
-        .meta-item {
-          display: flex;
-          flex-direction: column;
-        }
-        .meta-label {
-          font-weight: 600;
-          color: #333;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .meta-value {
-          margin-top: 4px;
-          font-size: 16px;
-        }
-
-        .summary-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 20px 0;
-          font-size: 13px;
-          page-break-inside: avoid;
-        }
-        .summary-table th {
-          background: #f8f9fa;
-          font-weight: 600;
-          color: #333;
-          padding: 12px 10px;
-          border: 1px solid #ddd;
-          text-align: left;
-        }
-        .summary-table td {
-          padding: 12px 10px;
-          border: 1px solid #ddd;
-        }
-        .summary-table tbody tr:nth-child(even) {
-          background: #f9f9f9;
-        }
-        .summary-table tbody tr:hover {
-          background: #f0f8ff;
-        }
-        .teacher-name {
-          font-weight: 600;
-          color: #0d6efd;
-        }
-        .badge {
-          display: inline-block;
-          padding: 4px 8px;
-          border-radius: 3px;
-          font-size: 11px;
-          font-weight: 600;
-          margin-right: 4px;
-        }
-        .badge-last-resort {
-          background: #fff3cd;
-          color: #856404;
-        }
-        .badge-complete {
-          background: #d4edda;
-          color: #155724;
-        }
-        .badge-incomplete {
-          background: #f8d7da;
-          color: #721c24;
-        }
-        .percent-bar {
-          display: inline-block;
-          width: 100px;
-          height: 20px;
-          background: #e9ecef;
-          border-radius: 3px;
-          overflow: hidden;
-          margin-right: 8px;
-          vertical-align: middle;
-        }
-        .percent-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #28a745, #20c997);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 10px;
-          font-weight: 600;
-        }
-
-        .footer {
-          margin-top: 30px;
-          padding-top: 20px;
-          border-top: 1px solid #ddd;
-          font-size: 11px;
-          color: #999;
-          display: flex;
-          justify-content: space-between;
-          page-break-inside: avoid;
-        }
-
-        @media print {
-          body { background: white; padding: 0; }
-          .report-container { box-shadow: none; padding: 15mm; max-width: 100%; }
-          .print-btn { display: none; }
-        }
-
-        .print-btn {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          padding: 12px 24px;
-          background: #0d6efd;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 600;
-          box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-          z-index: 100;
-        }
-        .print-btn:hover {
-          background: #0b5ed7;
-        }
-      </style>
+      <link rel="stylesheet" href=".././css/print3.css">
     </head>
     <body>
       <div class="report-container">
@@ -1023,128 +545,7 @@ function printAllTeachersTimetablesBulk() {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Bulk Timetables Print</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          padding: 10px;
-          background: #f5f5f5;
-        }
-        .page {
-          background: white;
-          padding: 15mm;
-          max-width: 210mm;
-          margin: 0 auto 5mm;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          page-break-after: always;
-          page-break-inside: avoid;
-        }
-        .page-header {
-          border-bottom: 2px solid #333;
-          padding-bottom: 10px;
-          margin-bottom: 15px;
-          text-align: center;
-        }
-        .page-header h1 {
-          font-size: 20px;
-          color: #1a1a1a;
-          margin-bottom: 4px;
-        }
-        .page-meta {
-          font-size: 10px;
-          color: #666;
-        }
-
-        .timetables-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
-        }
-
-        .timetable-card {
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          padding: 12px;
-          page-break-inside: avoid;
-        }
-        .card-header {
-          background: #e6f4ea;
-          padding: 8px 10px;
-          border-radius: 3px;
-          margin-bottom: 10px;
-          border-left: 3px solid #27ae60;
-        }
-        .card-title {
-          font-weight: 700;
-          color: #1b5e20;
-          font-size: 12px;
-          margin-bottom: 2px;
-        }
-        .card-subtitle {
-          font-size: 10px;
-          color: #666;
-        }
-
-        .compact-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 9px;
-        }
-        .compact-table th {
-          background: #f0f0f0;
-          color: #333;
-          font-weight: 600;
-          padding: 4px 2px;
-          border: 1px solid #ddd;
-          text-align: center;
-        }
-        .compact-table td {
-          padding: 4px 2px;
-          border: 1px solid #eee;
-          text-align: center;
-          min-height: 20px;
-          vertical-align: top;
-          font-size: 8px;
-        }
-        .compact-table tbody td:first-child { text-align: left; font-weight: 600; }
-
-        .cell-lesson { background: #e3f2fd; }
-        .cell-meeting { background: #fff3e0; }
-        .cell-free { background: #c8e6c9; color: #1b5e20; font-weight: 600; }
-        .cell-empty { background: #fafafa; color: #ccc; }
-
-        .footer {
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid #ddd;
-          font-size: 9px;
-          color: #999;
-          text-align: center;
-        }
-
-        @media print {
-          body { background: white; padding: 0; }
-          .page { box-shadow: none; margin: 0; }
-          .print-btn { display: none; }
-        }
-
-        .print-btn {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          padding: 12px 24px;
-          background: #2e7d32;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 600;
-          box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-          z-index: 100;
-        }
-        .print-btn:hover { background: #1b5e20; }
-      </style>
+      <link rel="stylesheet" href=".././css/print4.css">
     </head>
     <body>
       <div class="page">
@@ -1299,200 +700,7 @@ function printCompletenessAnalysisReport() {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Completeness Analysis Report</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          padding: 20px;
-          background: #f5f5f5;
-        }
-        .report-container {
-          max-width: 1200px;
-          margin: 0 auto;
-          background: white;
-          padding: 40px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          page-break-inside: avoid;
-        }
-        .report-header {
-          border-bottom: 3px solid #ff9800;
-          padding-bottom: 20px;
-          margin-bottom: 30px;
-          page-break-inside: avoid;
-        }
-        .report-header h1 {
-          font-size: 28px;
-          color: #1a1a1a;
-          margin-bottom: 10px;
-        }
-        .header-meta {
-          display: flex;
-          gap: 30px;
-          color: #666;
-          font-size: 14px;
-          flex-wrap: wrap;
-        }
-        .meta-item {
-          display: flex;
-          flex-direction: column;
-        }
-        .meta-label {
-          font-weight: 600;
-          color: #333;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .meta-value {
-          margin-top: 4px;
-          font-size: 16px;
-          font-weight: 600;
-        }
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 15px;
-          margin: 20px 0;
-          page-break-inside: avoid;
-        }
-        .stat-box {
-          padding: 20px;
-          border-radius: 6px;
-          text-align: center;
-          border-left: 4px solid #333;
-        }
-        .stat-box.complete { background: #d4edda; border-color: #28a745; }
-        .stat-box.incomplete { background: #fff3cd; border-color: #ff9800; }
-        .stat-box.nogrid { background: #f8d7da; border-color: #dc3545; }
-        .stat-box.overall { background: #d1ecf1; border-color: #0c5460; }
-        .stat-label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #666;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .stat-value {
-          font-size: 28px;
-          font-weight: 700;
-          margin-top: 8px;
-          color: #333;
-        }
-        .stat-box.complete .stat-value { color: #28a745; }
-        .stat-box.incomplete .stat-value { color: #ff9800; }
-        .stat-box.nogrid .stat-value { color: #dc3545; }
-        .stat-box.overall .stat-value { color: #0c5460; }
-
-        .analysis-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 30px 0;
-          font-size: 13px;
-          page-break-inside: avoid;
-        }
-        .analysis-table th {
-          background: #f8f9fa;
-          font-weight: 600;
-          color: #333;
-          padding: 12px 10px;
-          border: 1px solid #ddd;
-          text-align: left;
-        }
-        .analysis-table td {
-          padding: 12px 10px;
-          border: 1px solid #ddd;
-        }
-        .analysis-table tbody tr:nth-child(even) { background: #f9f9f9; }
-        .analysis-table tbody tr:hover { background: #f0f8ff; }
-
-        .teacher-name { font-weight: 600; color: #0d6efd; }
-        .status-badge {
-          display: inline-block;
-          padding: 4px 8px;
-          border-radius: 3px;
-          font-size: 11px;
-          font-weight: 600;
-        }
-        .badge-complete { background: #d4edda; color: #155724; }
-        .badge-incomplete { background: #fff3cd; color: #856404; }
-        .badge-nogrid { background: #f8d7da; color: #721c24; }
-
-        .progress-bar {
-          display: inline-block;
-          width: 100px;
-          height: 20px;
-          background: #e9ecef;
-          border-radius: 3px;
-          overflow: hidden;
-          vertical-align: middle;
-        }
-        .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #ff9800, #ff9800);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 10px;
-          font-weight: 600;
-        }
-
-        .insights-section {
-          margin-top: 30px;
-          padding: 20px;
-          background: #f0f7ff;
-          border-radius: 6px;
-          border-left: 4px solid #ff9800;
-          page-break-inside: avoid;
-        }
-        .insights-section h3 {
-          color: #ff9800;
-          margin-bottom: 15px;
-          text-transform: uppercase;
-          font-size: 14px;
-        }
-        .insights-section p {
-          margin-bottom: 10px;
-          font-size: 13px;
-          color: #333;
-          line-height: 1.6;
-        }
-
-        .footer {
-          margin-top: 30px;
-          padding-top: 20px;
-          border-top: 1px solid #ddd;
-          font-size: 11px;
-          color: #999;
-          display: flex;
-          justify-content: space-between;
-          page-break-inside: avoid;
-        }
-
-        @media print {
-          body { background: white; padding: 0; }
-          .report-container { box-shadow: none; padding: 15mm; }
-          .print-btn { display: none; }
-        }
-
-        .print-btn {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          padding: 12px 24px;
-          background: #ff9800;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 600;
-          box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
-          z-index: 100;
-        }
-        .print-btn:hover { background: #f57c00; }
-      </style>
+      <link rel="stylesheet" href=".././css/print5.css">
     </head>
     <body>
       <div class="report-container">
@@ -1590,7 +798,7 @@ function printCompletenessAnalysisReport() {
                   <td style="text-align: center;">\${a.free}</td>
                   <td>\${badge} \${a.lastResort ? '<span class="status-badge" style="background: #fff3cd; color: #856404;">⚠ Last Resort</span>' : ''}</td>
                 </tr>
-              \`;
+              `;
                 }
               )
               .join('')}
@@ -1718,176 +926,7 @@ function printDataQualityReport() {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Data Quality Report</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          padding: 20px;
-          background: #f5f5f5;
-        }
-        .report-container {
-          max-width: 1200px;
-          margin: 0 auto;
-          background: white;
-          padding: 40px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          page-break-inside: avoid;
-        }
-        .report-header {
-          border-bottom: 3px solid #6f42c1;
-          padding-bottom: 20px;
-          margin-bottom: 30px;
-          page-break-inside: avoid;
-        }
-        .report-header h1 {
-          font-size: 28px;
-          color: #1a1a1a;
-          margin-bottom: 10px;
-        }
-        .header-meta {
-          display: flex;
-          gap: 30px;
-          color: #666;
-          font-size: 14px;
-          flex-wrap: wrap;
-        }
-        .meta-item {
-          display: flex;
-          flex-direction: column;
-        }
-        .meta-label {
-          font-weight: 600;
-          color: #333;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .meta-value {
-          margin-top: 4px;
-          font-size: 16px;
-          font-weight: 600;
-        }
-
-        .quality-score-box {
-          padding: 20px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border-radius: 6px;
-          color: white;
-          text-align: center;
-          margin: 20px 0;
-        }
-        .score-value {
-          font-size: 48px;
-          font-weight: 700;
-          margin-bottom: 8px;
-        }
-        .score-label {
-          font-size: 14px;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-
-        .quality-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 30px 0;
-          font-size: 13px;
-          page-break-inside: avoid;
-        }
-        .quality-table th {
-          background: #f8f9fa;
-          font-weight: 600;
-          color: #333;
-          padding: 12px 10px;
-          border: 1px solid #ddd;
-          text-align: left;
-        }
-        .quality-table td {
-          padding: 12px 10px;
-          border: 1px solid #ddd;
-        }
-        .quality-table tbody tr:nth-child(even) { background: #f9f9f9; }
-
-        .teacher-name { font-weight: 600; color: #0d6efd; }
-        .quality-score {
-          font-weight: 700;
-          padding: 4px 8px;
-          border-radius: 3px;
-          text-align: center;
-        }
-        .score-excellent { background: #d4edda; color: #155724; }
-        .score-good { background: #d1ecf1; color: #0c5460; }
-        .score-fair { background: #fff3cd; color: #856404; }
-        .score-poor { background: #f8d7da; color: #721c24; }
-
-        .issues-list {
-          font-size: 12px;
-          color: #666;
-          max-width: 300px;
-        }
-        .issues-list ul {
-          margin: 0;
-          padding-left: 18px;
-        }
-        .issues-list li {
-          margin-bottom: 3px;
-        }
-
-        .insights-section {
-          margin-top: 30px;
-          padding: 20px;
-          background: #f5e6ff;
-          border-radius: 6px;
-          border-left: 4px solid #6f42c1;
-          page-break-inside: avoid;
-        }
-        .insights-section h3 {
-          color: #6f42c1;
-          margin-bottom: 15px;
-          text-transform: uppercase;
-          font-size: 14px;
-        }
-        .insights-section p {
-          margin-bottom: 10px;
-          font-size: 13px;
-          color: #333;
-          line-height: 1.6;
-        }
-
-        .footer {
-          margin-top: 30px;
-          padding-top: 20px;
-          border-top: 1px solid #ddd;
-          font-size: 11px;
-          color: #999;
-          display: flex;
-          justify-content: space-between;
-          page-break-inside: avoid;
-        }
-
-        @media print {
-          body { background: white; padding: 0; }
-          .report-container { box-shadow: none; padding: 15mm; }
-          .print-btn { display: none; }
-        }
-
-        .print-btn {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          padding: 12px 24px;
-          background: #6f42c1;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 600;
-          box-shadow: 0 4px 12px rgba(111, 66, 193, 0.3);
-          z-index: 100;
-        }
-        .print-btn:hover { background: #5a32a3; }
-      </style>
+      <link rel="stylesheet" href=".././css/print6.css">
     </head>
     <body>
       <div class="report-container">
@@ -1934,11 +973,19 @@ function printDataQualityReport() {
                   else if (m.qualityScore < 80) scoreClass = 'score-fair';
                   else if (m.qualityScore < 90) scoreClass = 'score-good';
 
-                  const issuesHtml = m.issues.length
-                    ? \`<ul>\${m.issues.map((i) => \`<li>\${i}</li>\`).join('')}</ul>\`
-                    : '<em style="color: #28a745;">✓ No issues detected</em>';
+                  let issuesHtml = "";
 
-                  return \`
+if (m.issues.length) {
+  const listItems = m.issues.map(function(i) {
+    return "<li>" + i + "</li>";
+  }).join("");
+
+  issuesHtml = "<ul>" + listItems + "</ul>";
+} else {
+  issuesHtml = '<em style="color: #28a745;">✓ No issues detected</em>';
+}
+
+                  return `
                 <tr>
                   <td class="teacher-name">\${escapeHtml(m.name)}</td>
                   <td class="quality-score \${scoreClass}">\${m.qualityScore}/100</td>
@@ -1948,7 +995,7 @@ function printDataQualityReport() {
                   <td style="text-align: center;">\${m.meetings}</td>
                   <td style="text-align: center;">\${m.free}</td>
                 </tr>
-              \`;
+              `;
                 }
               )
               .join('')}

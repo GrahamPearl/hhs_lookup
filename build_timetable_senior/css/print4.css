@@ -1,0 +1,165 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 10px;
+    background: #f5f5f5;
+}
+
+.page {
+    background: white;
+    padding: 15mm;
+    max-width: 210mm;
+    margin: 0 auto 5mm;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    page-break-after: always;
+    page-break-inside: avoid;
+}
+
+.page-header {
+    border-bottom: 2px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.page-header h1 {
+    font-size: 20px;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+}
+
+.page-meta {
+    font-size: 10px;
+    color: #666;
+}
+
+.timetables-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.timetable-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px;
+    page-break-inside: avoid;
+}
+
+.card-header {
+    background: #e6f4ea;
+    padding: 8px 10px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    border-left: 3px solid #27ae60;
+}
+
+.card-title {
+    font-weight: 700;
+    color: #1b5e20;
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+
+.card-subtitle {
+    font-size: 10px;
+    color: #666;
+}
+
+.compact-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+}
+
+.compact-table th {
+    background: #f0f0f0;
+    color: #333;
+    font-weight: 600;
+    padding: 4px 2px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.compact-table td {
+    padding: 4px 2px;
+    border: 1px solid #eee;
+    text-align: center;
+    min-height: 20px;
+    vertical-align: top;
+    font-size: 8px;
+}
+
+.compact-table tbody td:first-child {
+    text-align: left;
+    font-weight: 600;
+}
+
+.cell-lesson {
+    background: #e3f2fd;
+}
+
+.cell-meeting {
+    background: #fff3e0;
+}
+
+.cell-free {
+    background: #c8e6c9;
+    color: #1b5e20;
+    font-weight: 600;
+}
+
+.cell-empty {
+    background: #fafafa;
+    color: #ccc;
+}
+
+.footer {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+    font-size: 9px;
+    color: #999;
+    text-align: center;
+}
+
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+
+    .page {
+        box-shadow: none;
+        margin: 0;
+    }
+
+    .print-btn {
+        display: none;
+    }
+}
+
+.print-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 24px;
+    background: #2e7d32;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+    z-index: 100;
+}
+
+.print-btn:hover {
+    background: #1b5e20;
+}

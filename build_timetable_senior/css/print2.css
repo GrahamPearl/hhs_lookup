@@ -1,0 +1,230 @@
+ * {
+     margin: 0;
+     padding: 0;
+     box-sizing: border-box;
+ }
+
+ body {
+     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+     padding: 20px;
+     background: #f5f5f5;
+ }
+
+ .page {
+     background: white;
+     padding: 40px;
+     max-width: 210mm;
+     margin: 0 auto 20px;
+     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+     page-break-inside: avoid;
+     page-break-after: always;
+ }
+
+ .page-header {
+     border-bottom: 3px solid #2e7d32;
+     padding-bottom: 20px;
+     margin-bottom: 30px;
+     page-break-inside: avoid;
+ }
+
+ .page-header h1 {
+     font-size: 26px;
+     color: #1a1a1a;
+     margin-bottom: 12px;
+ }
+
+ .header-meta {
+     display: grid;
+     grid-template-columns: repeat(4, 1fr);
+     gap: 20px;
+     font-size: 12px;
+ }
+
+ .meta-item {
+     display: flex;
+     flex-direction: column;
+ }
+
+ .meta-label {
+     font-weight: 700;
+     color: #555;
+     text-transform: uppercase;
+     letter-spacing: 0.5px;
+     font-size: 11px;
+ }
+
+ .meta-value {
+     margin-top: 4px;
+     color: #2e7d32;
+     font-size: 14px;
+     font-weight: 600;
+ }
+
+ .timetable {
+     width: 100%;
+     border-collapse: collapse;
+     margin: 20px 0;
+     font-size: 12px;
+     page-break-inside: avoid;
+ }
+
+ .timetable th {
+     background: #e6f4ea;
+     color: #1b5e20;
+     font-weight: 700;
+     padding: 10px 6px;
+     border: 1px solid #4caf50;
+     text-align: center;
+ }
+
+ .timetable td {
+     padding: 10px 6px;
+     border: 1px solid #ddd;
+     min-height: 60px;
+     vertical-align: top;
+ }
+
+ .timetable tbody td {
+     font-size: 11px;
+     background: white;
+ }
+
+ .cell-lesson {
+     background: #e3f2fd;
+     border-left: 4px solid #1976d2;
+ }
+
+ .cell-meeting {
+     background: #fff3e0;
+     border-left: 4px solid #f57c00;
+ }
+
+ .cell-free {
+     background: #c8e6c9;
+     border-left: 4px solid #27ae60;
+     font-weight: 700;
+     color: #1b5e20;
+ }
+
+ .cell-empty {
+     background: #fafafa;
+     color: #999;
+     font-style: italic;
+     text-align: center;
+ }
+
+ .cell-content {
+     line-height: 1.5;
+ }
+
+ .cell-icon {
+     font-size: 16px;
+     margin-bottom: 4px;
+     display: block;
+ }
+
+ .cell-title {
+     font-weight: 600;
+     color: #222;
+     margin-bottom: 2px;
+ }
+
+ .cell-class {
+     color: #666;
+     font-size: 10px;
+ }
+
+ .cell-venue {
+     color: #999;
+     font-size: 10px;
+ }
+
+ .cell-dnd {
+     display: inline-block;
+     background: #d32f2f;
+     color: white;
+     padding: 2px 6px;
+     border-radius: 3px;
+     font-size: 9px;
+     font-weight: 600;
+     margin-top: 4px;
+ }
+
+ .footer {
+     margin-top: 30px;
+     padding-top: 20px;
+     border-top: 1px solid #ddd;
+     font-size: 11px;
+     color: #999;
+     display: flex;
+     justify-content: space-between;
+     page-break-inside: avoid;
+ }
+
+ .summary {
+     margin-top: 20px;
+     padding: 15px;
+     background: #f5f5f5;
+     border-radius: 4px;
+     font-size: 11px;
+     display: grid;
+     grid-template-columns: repeat(3, 1fr);
+     gap: 15px;
+     page-break-inside: avoid;
+ }
+
+ .summary-item {
+     text-align: center;
+ }
+
+ .summary-label {
+     font-weight: 600;
+     color: #666;
+     font-size: 10px;
+     text-transform: uppercase;
+ }
+
+ .summary-value {
+     font-size: 18px;
+     font-weight: 700;
+     color: #2e7d32;
+     margin-top: 4px;
+ }
+
+ @media print {
+     body {
+         background: white;
+         padding: 0;
+     }
+
+     .page {
+         box-shadow: none;
+         margin: 0;
+         padding: 15mm;
+         max-width: 100%;
+     }
+
+     .print-btn {
+         display: none;
+     }
+ }
+
+ .print-btn {
+     position: fixed;
+     bottom: 20px;
+     right: 20px;
+     padding: 12px 24px;
+     background: #2e7d32;
+     color: white;
+     border: none;
+     border-radius: 6px;
+     cursor: pointer;
+     font-size: 14px;
+     font-weight: 600;
+     box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+     z-index: 100;
+ }
+
+ .print-btn:hover {
+     background: #1b5e20;
+ }
