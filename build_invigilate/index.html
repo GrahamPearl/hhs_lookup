@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Exam Marking Planner</title>
+  <style>
+    body { font-family: Arial; }
+
+    .teacher {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px;
+    }
+
+    .day {
+      padding: 3px;
+      margin: 2px;
+      display: inline-block;
+    }
+
+    .low { background: #c8f7c5; }      /* green */
+    .medium { background: #ffe4b3; }   /* orange */
+    .high { background: #ffb3b3; }     /* red */
+
+  </style>
+</head>
+<body>
+
+<h2>Teacher Examination Marking Planner</h2>
+
+<h3>Add Marking Entry</h3>
+
+<input id="teacherName" placeholder="Teacher Name">
+<input id="subject" placeholder="Subject">
+<input id="grade" placeholder="Grade">
+<input id="session" placeholder="Session (1 or 2)">
+<input id="examDate" type="date">
+<input id="markingDays" type="number" value="2">
+
+<button onclick="addMarking()">Add</button>
+<button onclick="exportJSON()">Export JSON</button>
+
+<hr>
+
+<h3>Teacher Marking Schedules</h3>
+<div id="teachers"></div>
+
+<script>
+
+let teachers = [];
+
+// ✅ Generate LAST RESORT days (after exam only)
+function generateDates(examDate, days) {
+  let dates = [];
+  let start = new Date(examDate);
+
+  for (let i = 1; i <= days; i++) {
+    let d = new Date(start);
+    d.setDate(d.getDate() + i);
+    dates.push(d.toISOString().split("T")[0]);
+  }
+
+  return dates;
+}
+
+// ✅ Add marking entry
+function addMarking() {
+  let name = document.getElementById("teacherName").value;
+  let subject = document.getElementById("subject").value;
+  let grade = document.getElementById("grade").value;
+  let session = document.getElementById("session").value;
+  let examDate = document.getElementById("examDate").value;
+  let markingDays = parseInt(document.getElementById("markingDays").value);
+
+  let teacher = teachers.find(t => t.name === name);
+
+  if (!teacher) {
+    teacher = { name: name, entries: [] };
+    teachers.push(teacher);
+  }
+
+  let markingDates = generateDates(examDate, markingDays);
+
+  teacher.entries.push({
+    subject,
+    grade,
+    session,
+    examDate,
+    markingDays,
+    markingDates
+  });
+
+  render();
+}
+
+// ✅ Compute heat levels for a teacher
+function computeHeatMap(entries) {
+  let count = {};
+
+  entries.forEach(e => {
+    e.markingDates.forEach(d => {
+      if (!count[d]) count[d] = 0;
+      count[d]++;
+    });
+  });
+
+  return count;
+}
+
+// ✅ Get CSS class
+function getHeatClass(n) {
+  if (n >= 3) return "high";
+  if (n === 2) return "medium";
+  return "low";
+}
+
+// ✅ Render teachers
+function render() {
+  let container = document.getElementById("teachers");
+  container.innerHTML = "";
+
+  teachers.forEach(t => {
+
+    let heat = computeHeatMap(t.entries);
+
+    let div = document.createElement("div");
+    div.className = "teacher";
+
+    let html = `<h4>${t.name}</h4>`;
+
+    t.entries.forEach(e => {
+      html += `
+        <b>${e.subject} (Grade ${e.grade}, Session ${e.session})</b><br>
+        Exam: ${e.examDate}<br>
+        Marking Days: ${e.markingDays}<br>
+

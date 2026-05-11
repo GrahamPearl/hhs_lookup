@@ -1610,12 +1610,14 @@ document.addEventListener("DOMContentLoaded", () => {
       : [];
     const set = new Set();
     let dndMeetings = 0;
+    let freeCount = 0;
 
     for (const e of entries) {
       if (!e || typeof e.row !== "number" || typeof e.col !== "number")
         continue;
       set.add(e.row + "-" + e.col);
       if (e.type === "meeting" && e.doNotDisturb) dndMeetings++;
+      if (e.type === "free") freeCount++;
     }
 
     const captured = set.size;
@@ -1631,6 +1633,7 @@ document.addEventListener("DOMContentLoaded", () => {
       percent,
       lastResort: !!(payload && payload.lastResort),
       dndMeetings,
+      freeCount,
     };
   }
 
@@ -1662,6 +1665,7 @@ document.addEventListener("DOMContentLoaded", () => {
           missing: 0,
           percent: 0,
           dndMeetings: 0,
+          freeCount: 0,
           lastResort: false,
           missingPayload: true,
         };
@@ -1680,6 +1684,7 @@ document.addEventListener("DOMContentLoaded", () => {
           missing: 0,
           percent: 0,
           dndMeetings: 0,
+          freeCount: 0,
           lastResort: false,
           parseError: true,
         };
@@ -1728,7 +1733,7 @@ document.addEventListener("DOMContentLoaded", () => {
               ? "text-success"
               : "text-warning";
         const missingText = r.total === 0 ? "—" : String(r.missing);
-        const badges = `${r.lastResort ? '<span class="badge bg-warning text-dark me-1">Last Resort</span>' : ""}${r.dndMeetings ? `<span class="badge bg-danger">DND:${r.dndMeetings}</span>` : ""}`;
+        const badges = `${r.lastResort ? '<span class="badge bg-warning text-dark me-1">Last Resort</span>' : ""}${r.dndMeetings ? `<span class="badge bg-danger me-1">DND:${r.dndMeetings}</span>` : ""}${r.freeCount ? `<span class="badge bg-success">${r.freeCount} - Free</span>` : ""}`;
 
         return `
       <tr>
@@ -1784,6 +1789,81 @@ document.addEventListener("DOMContentLoaded", () => {
     "change",
     refreshCompletenessDashboard,
   );
+
+  // ---------------------- PRINT REPORTS ----------------------
+
+  const printTeacherSelectModal = document.getElementById("printTeacherSelectModal")
+    ? new bootstrap.Modal(document.getElementById("printTeacherSelectModal"))
+    : null;
+  const printTeacherSelect = document.getElementById("printTeacherSelect");
+  const printHeatMapBtn = document.getElementById("printHeatMapBtn");
+  const printCurrentTeacherBtn = document.getElementById("printCurrentTeacherBtn");
+  const printTeacherSelectBtn = document.getElementById("printTeacherSelectBtn");
+  const printAllTeachersSummaryBtn = document.getElementById("printAllTeachersSummaryBtn");
+  const confirmPrintTeacherBtn = document.getElementById("confirmPrintTeacherBtn");
+
+  printHeatMapBtn?.addEventListener("click", () => {
+    generateHeatMapReport();
+  });
+
+  printCurrentTeacherBtn?.addEventListener("click", () => {
+    if (!currentTeacherName) {
+      alert("Please load a teacher timetable first.");
+      return;
+    }
+    printTeacherTimetable(currentTeacherName);
+  });
+
+  printTeacherSelectBtn?.addEventListener("click", () => {
+    if (!printTeacherSelectModal) return;
+    
+    // Populate the modal dropdown
+    const teachers = getAllTeacherNames();
+    if (teachers.length === 0) {
+      alert("No teachers found.");
+      return;
+    }
+
+    printTeacherSelect.innerHTML = '<option value="">-- Select a teacher --</option>';
+    teachers.forEach((name) => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      printTeacherSelect.appendChild(opt);
+    });
+
+    printTeacherSelectModal.show();
+  });
+
+  confirmPrintTeacherBtn?.addEventListener("click", () => {
+    const selected = printTeacherSelect.value;
+    if (!selected) {
+      alert("Please select a teacher.");
+      return;
+    }
+    if (printTeacherSelectModal) printTeacherSelectModal.hide();
+    printTeacherTimetable(selected);
+  });
+
+  printAllTeachersSummaryBtn?.addEventListener("click", () => {
+    printAllTeachersSummary();
+  });
+
+  const printAllTeachersBulkBtn = document.getElementById("printAllTeachersBulkBtn");
+  const printCompletenessAnalysisBtn = document.getElementById("printCompletenessAnalysisBtn");
+  const printDataQualityBtn = document.getElementById("printDataQualityBtn");
+
+  printAllTeachersBulkBtn?.addEventListener("click", () => {
+    printAllTeachersTimetablesBulk();
+  });
+
+  printCompletenessAnalysisBtn?.addEventListener("click", () => {
+    printCompletenessAnalysisReport();
+  });
+
+  printDataQualityBtn?.addEventListener("click", () => {
+    printDataQualityReport();
+  });
 
   // ---------------------- INITIAL UI STATE ---------------------
 

@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Planning System - Phase 1 (Enhanced)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            font-size: 14px;
+            opacity: 0.95;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            padding: 30px;
+            min-height: calc(100vh - 200px);
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Form Styling */
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .form-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .file-upload-section {
+            background: white;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 2px dashed #667eea;
+        }
+
+        .file-upload-section h3 {
+            font-size: 13px;
+            color: #667eea;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .file-upload-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 640px) {
+            .file-upload-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .file-input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .file-input-wrapper label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            flex: 1;
+            font-size: 11px;
+            padding: 6px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .loaded-items {
+            font-size: 11px;
+            color: #28a745;
+            margin-top: 6px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 10px 16px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+
+        .btn-secondary:hover {
+            background: #f0f3ff;
+        }
+
+        .btn-action {
+            background: #2ed573;
+            color: white;
+            padding: 10px 16px;
+            font-size: 12px;
+            width: auto;
+        }
+
+        .btn-action:hover {
+            background: #26de81;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+            padding: 8px 12px;
+            font-size: 11px;
+            width: auto;
+        }
+
+        .btn-danger:hover {
+            background: #ff3838;
+        }
+
+        .btn-export {
+            background: #2ed573;
+            color: white;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn-export:hover {
+            background: #26de81;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(46, 213, 115, 0.3);
+        }
+
+        /* Teachers Display */
+        .teachers-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .teachers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .teacher-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+
+        .teacher-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+
+        .teacher-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f3ff;
+        }
+
+        .teacher-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .entries-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .entry-item {
+            background: #f8f9fa;
+            padding: 14px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .entry-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            color: #999;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .meta-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .marking-dates {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .marking-dates-label {
+            font-size: 11px;
+            color: #999;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .marking-dates-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .date-badge {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+            position: relative;
+        }
+
+        .date-badge.heat-low {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .date-badge.heat-medium {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .date-badge.heat-high {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .heat-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .do-not-disturb-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0;
+            padding: 10px;
+            background: #fff3cd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            background: #ccc;
+            border-radius: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-switch.active {
+            background: #ff4757;
+        }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: left 0.2s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            left: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .stats-bar {
+            background: #f0f3ff;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            font-size: 12px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #999;
+            margin-top: 4px;
+            font-size: 11px;
+        }
+
+        .validation-error {
+            color: #ff4757;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.2s;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f3ff;
+        }
+
+        .modal-header h2 {
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: auto;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .request-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .request-form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .request-form-group label {
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .request-form-group input,
+        .request-form-group select {
+            padding: 10px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .request-form-group input:focus,
+        .request-form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .available-teachers {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+        }
+
+        .available-teachers h3 {
+            color: #667eea;
+            font-size: 13px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .teacher-result {
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left: 4px solid #2ed573;
+            font-size: 12px;
+        }
+
+        .teacher-result-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .teacher-result-reason {
+            color: #666;
+            font-size: 11px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .btn-request {
+            background: #667eea;
+            color: white;
+            padding: 10px 16px;
+            font-size: 12px;
+            width: auto;
+            align-self: flex-start;
+        }
+
+        .btn-request:hover {
+            background: #764ba2;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Exam Planning System</h1>
+            <p>Phase 1: Teacher Marking Workload Capture &amp; Visualization</p>
+        </header>
+
+        <div class="content">
+            <!-- Left Panel: Form -->
+            <div class="form-section">
+                <h2>Add Marking Entry</h2>
+                
+                <div id="successMessage" class="success-message hidden"></div>
+
+                <!-- File Upload Section -->
+                <div class="file-upload-section">
+                    <h3>📁 Load Data Files</h3>
+                    <div class="file-upload-group">
+                        <div class="file-input-wrapper">
+                            <label for="subjectFile">Subjects:</label>
+                            <input type="file" id="subjectFile" accept=".txt">
+                        </div>
+                        <div class="file-input-wrapper">
+                            <label for="teacherFile">Teachers:</label>
+                            <input type="file" id="teacherFile" accept=".txt">
+                        </div>
+                    </div>
+                    <div class="loaded-items" id="loadedItems"></div>
+                </div>
+
+                <form id="entryForm">
+                    <div class="form-group">
+                        <label for="teacherName">Teacher Name *</label>
+                        <select id="teacherName" required>
+                            <option value="">-- Select or Type Teacher --</option>
+                        </select>
+                        <div class="validation-error hidden" id="teacherNameError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">Subject *</label>
+                        <select id="subject" required>
+                            <option value="">-- Select Subject --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="grade">Grade *</label>
+                            <select id="grade" required>
+                                <option value="">-- Select --</option>
+                                <option value="8">Grade 8</option>
+                                <option value="9">Grade 9</option>
+                                <option value="10">Grade 10</option>
+                                <option value="11">Grade 11</option>
+                                <option value="12">Grade 12</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="session">Session *</label>
+                            <select id="session" required>
+                                <option value="">-- Select --</option>
+                                <option value="1">Session 1</option>
+                                <option value="2">Session 2</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="examDate">Exam Date *</label>
+                        <input 
+                            type="date" 
+                            id="examDate" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="markingDays">Number of Marking Days</label>
+                        <select id="markingDays">
+                            <option value="1">1 day</option>
+                            <option value="2" selected>2 days</option>
+                            <option value="3">3 days</option>
+                            <option value="4">4 days</option>
+                            <option value="5">5 days</option>
+                        </select>
+                        <small style="color: #999; margin-top: 6px; display: block; font-size: 11px;">
+                            Marking begins the day AFTER exam day
+                        </small>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Add Entry</button>
+                </form>
+
+                <button type="button" class="btn-export" id="exportBtn">
+                    ⬇️ Export as JSON
+                </button>
+
+                <button type="button" class="btn-secondary" style="width: 100%; margin-top: 10px;" id="importBtn">
+                    ⬆️ Import JSON
+                </button>
+                <input type="file" id="fileInput" accept=".json" style="display: none;">
+            </div>
+
+            <!-- Right Panel: Teachers & Entries -->
+            <div class="teachers-section">
+                <div class="section-header">
+                    <h2>Teachers & Marking Schedule</h2>
+                    <button type="button" class="btn-request" id="requestTeacherBtn">
+                        🔍 Request Teacher
+                    </button>
+                </div>
+                
+                <div id="statsBar" class="stats-bar hidden">
+                    <div class="stat-item">
+                        <div class="stat-value" id="statTeachers">0</div>
+                        <div class="stat-label">Teachers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statEntries">0</div>
+                        <div class="stat-label">Entries</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statDays">0</div>
+                        <div class="stat-label">Marking Days</div>
+                    </div>
+                </div>
+
+                <div id="teachersList" class="teachers-list">
+                    <div class="empty-state">
+                        <p>📝 No entries yet. Add a teacher marking entry to get started!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Teacher Modal -->
+    <div id="requestModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔍 Request Teacher for Invigilation</h2>
+                <button type="button" class="modal-close" onclick="closeRequestModal()">✕</button>
+            </div>
+
+            <div class="request-form">
+                <div class="request-form-group">
+                    <label for="requestExamDate">Exam Date *</label>
+                    <input type="date" id="requestExamDate" required>
+                </div>
+
+                <div class="request-form-group">
+                    <label for="requestSession">Session *</label>
+                    <select id="requestSession" required>
+                        <option value="">-- Select --</option>
+                        <option value="1">Session 1</option>
+                        <option value="2">Session 2</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn-primary" onclick="searchAvailableTeachers()">
+                    Search Available Teachers
+                </button>
+
+                <div id="availableTeachersResults" class="available-teachers hidden">
+                    <h3>Available Teachers</h3>
+                    <div id="teacherResultsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================================================================
+        // DATA MANAGEMENT
+        // ===================================================================
+
+        let teachers = [];
+        let subjectsList = [];
+        let teachersList = [];
+
+        /**
+         * Initialize teachers from localStorage if available
+         */
+        function initializeData() {
+            const stored = localStorage.getItem('examSystemData');
+            if (stored) {
+                try {
+                    teachers = JSON.parse(stored);
+                } catch (e) {
+                    console.error('Failed to parse stored data:', e);
+                    teachers = [];
+                }
+            }
+        }
+
+        /**
+         * Save teachers data to localStorage
+         */
+        function saveData() {
+            localStorage.setItem('examSystemData', JSON.stringify(teachers));
+        }
+
+        /**
+         * Find or create teacher by name
+         */
+        function getOrCreateTeacher(name) {
+            let teacher = teachers.find(t => t.name.toLowerCase() === name.toLowerCase());
+            if (!teacher) {
+                teacher = {
+                    name: name,
+                    entries: []
+                };
+                teachers.push(teacher);
+            }
+            return teacher;
+        }
+
+        /**
+         * Add new entry to teacher
+         */
+        function addEntry(teacherName, subject, grade, session, examDate, markingDays) {
+            const teacher = getOrCreateTeacher(teacherName);
+            const markingDates = calculateMarkingDates(examDate, markingDays);
+            
+            const entry = {
+                subject: subject,
+                grade: grade,
+                session: session,
+                examDate: examDate,
+                markingDays: markingDays,
+                markingDates: markingDates,
+                doNotDisturb: true,  // Default: Do Not Disturb
+                id: Date.now()
+            };
+
+            teacher.entries.push(entry);
+            saveData();
+            return entry;
+        }
+
+        /**
+         * Toggle Do Not Disturb flag
+         */
+        function toggleDoNotDisturb(teacherName, entryId) {
+            const teacher = teachers.find(t => t.name === teacherName);
+            if (teacher) {
+                const entry = teacher.entries.find(e => e.id === entryId);
+                if (entry) {
+                    entry.doNotDisturb = !entry.doNotDisturb;
+                    saveData();
+                    renderTeachers();
+                }
+            }
+        }
+
+        /**
+         * Delete entry from teacher
+         */
+        function deleteEntry(teacherName, entryId) {
+            const teacher = teachers.find(t => t.name === teacherName);
+            if (teacher) {
+                teacher.entries = teacher.entries.filter(e => e.id !== entryId);
+                
+                if (teacher.entries.length === 0) {
+                    teachers = teachers.filter(t => t.name !== teacherName);
+                }
+                
+                saveData();
+            }
+        }
+
+        // ===================================================================
+        // FILE LOADING
+        // ===================================================================
+
+        /**
+         * Load subjects from text file
+         */
+        function loadSubjects(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    subjectsList = text
+                        .split('\n')
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0);
+                    
+                    updateSubjectDropdown();
+                    updateLoadedItemsDisplay();
+                    showMessage(`Loaded ${subjectsList.length} subjects`);
+                } catch (error) {
+                    alert('Error loading subjects: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        /**
+         * Load teachers from text file
+         */
+        function loadTeachers(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    teachersList = text
+                        .split('\n')
+                        .map(t => t.trim())
+                        .filter(t => t.length > 0);
+                    
+                    updateTeacherDropdown();
+                    updateLoadedItemsDisplay();
+                    showMessage(`Loaded ${teachersList.length} teachers`);
+                } catch (error) {
+                    alert('Error loading teachers: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        /**
+         * Update subject dropdown
+         */
+        function updateSubjectDropdown() {
+            const select = document.getElementById('subject');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">-- Select Subject --</option>' +
+                subjectsList.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+            
+            select.value = currentValue;
+        }
+
+        /**
+         * Update teacher dropdown
+         */
+        function updateTeacherDropdown() {
+            const select = document.getElementById('teacherName');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">-- Select or Type Teacher --</option>' +
+                teachersList.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+            
+            select.value = currentValue;
+        }
+
+        /**
+         * Update loaded items display
+         */
+        function updateLoadedItemsDisplay() {
+            const display = document.getElementById('loadedItems');
+            const items = [];
+            
+            if (subjectsList.length > 0) {
+                items.push(`✅ ${subjectsList.length} subjects`);
+            }
+            if (teachersList.length > 0) {
+                items.push(`✅ ${teachersList.length} teachers`);
+            }
+            
+            display.textContent = items.length > 0 ? items.join(' | ') : '';
+        }
+
+        // ===================================================================
+        // DATE UTILITIES
+        // ===================================================================
+
+        /**
+         * Calculate marking dates based on exam date and number of marking days
+         */
+        function calculateMarkingDates(examDateString, markingDays) {
+            const examDate = new Date(examDateString);
+            const markingDates = [];
+
+            for (let i = 1; i <= parseInt(markingDays); i++) {
+                const markingDate = new Date(examDate);
+                markingDate.setDate(markingDate.getDate() + i);
+                markingDates.push(markingDate.toISOString().split('T')[0]);
+            }
+
+            return markingDates;
+        }
+
+        /**
+         * Format date for display
+         */
+        function formatDate(dateString) {
+            const date = new Date(dateString + 'T00:00:00');
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        // ===================================================================
+        // HEAT MAP LOGIC
+        // ===================================================================
+
+        /**
+         * Calculate heat map for all marking dates
+         */
+        function calculateHeatMap() {
+            const heatMap = {};
+
+            teachers.forEach(teacher => {
+                teacher.entries.forEach(entry => {
+                    entry.markingDates.forEach(date => {
+                        heatMap[date] = (heatMap[date] || 0) + 1;
+                    });
+                });
+            });
+
+            return heatMap;
+        }
+
+        /**
+         * Get heat level based on count
+         */
+        function getHeatLevel(count) {
+            if (count >= 3) return 'high';
+            if (count >= 2) return 'medium';
+            return 'low';
+        }
+
+        /**
+         * Get heat label with indicator
+         */
+        function getHeatLabel(count) {
+            const levels = {
+                low: { label: 'Low', color: '#28a745' },
+                medium: { label: 'Medium', color: '#ffc107' },
+                high: { label: 'High', color: '#dc3545' }
+            };
+            const level = getHeatLevel(count);
+            return levels[level];
+        }
+
+        // ===================================================================
+        // STATISTICS
+        // ===================================================================
+
+        /**
+         * Calculate statistics
+         */
+        function calculateStats() {
+            let totalTeachers = teachers.length;
+            let totalEntries = 0;
+            let totalMarkingDays = 0;
+
+            teachers.forEach(teacher => {
+                totalEntries += teacher.entries.length;
+                teacher.entries.forEach(entry => {
+                    totalMarkingDays += entry.markingDates.length;
+                });
+            });
+
+            return {
+                teachers: totalTeachers,
+                entries: totalEntries,
+                days: totalMarkingDays
+            };
+        }
+
+        // ===================================================================
+        // TEACHER REQUEST LOGIC
+        // ===================================================================
+
+        /**
+         * Open request teacher modal
+         */
+        function openRequestModal() {
+            document.getElementById('requestModal').classList.add('active');
+            document.getElementById('requestExamDate').value = '';
+            document.getElementById('requestSession').value = '';
+            document.getElementById('availableTeachersResults').classList.add('hidden');
+        }
+
+        /**
+         * Close request teacher modal
+         */
+        function closeRequestModal() {
+            document.getElementById('requestModal').classList.remove('active');
+        }
+
+        /**
+         * Search available teachers for invigilation
+         * Session 1 teachers (not on Do Not Disturb) can invigilate Session 2 on same exam day
+         */
+        function searchAvailableTeachers() {
+            const examDate = document.getElementById('requestExamDate').value;
+            const session = document.getElementById('requestSession').value;
+
+            if (!examDate || !session) {
+                alert('Please select both exam date and session');
+                return;
+            }
+
+            const availableTeachers = [];
+
+            teachers.forEach(teacher => {
+                teacher.entries.forEach(entry => {
+                    // Session 1 teachers can invigilate Session 2 on same day
+                    if (entry.session === '1' && session === '2' && entry.examDate === examDate) {
+                        // Only suggest if NOT marked "Do Not Disturb"
+                        if (!entry.doNotDisturb) {
+                            availableTeachers.push({
+                                name: teacher.name,
+                                subject: entry.subject,
+                                reason: `Teaching ${entry.subject} Session 1 - Available for Session 2`
+                            });
+                        }
+                    }
+                });
+            });
+
+            displayAvailableTeachers(availableTeachers);
+        }
+
+        /**
+         * Display available teachers results
+         */
+        function displayAvailableTeachers(teacherResults) {
+            const resultsDiv = document.getElementById('availableTeachersResults');
+            const resultsList = document.getElementById('teacherResultsList');
+
+            if (teacherResults.length === 0) {
+                resultsList.innerHTML = '<div class="no-results">No available teachers found for this exam date and session.</div>';
+            } else {
+                resultsList.innerHTML = teacherResults
+                    .map(t => `
+                        <div class="teacher-result">
+                            <div class="teacher-result-name">👨‍🏫 ${escapeHtml(t.name)}</div>
+                            <div class="teacher-result-reason">${escapeHtml(t.reason)}</div>
+                        </div>
+                    `)
+                    .join('');
+            }
+
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // ===================================================================
+        // UI RENDERING
+        // ===================================================================
+
+        /**
+         * Render all teachers and their entries
+         */
+        function renderTeachers() {
+            const container = document.getElementById('teachersList');
+            const heatMap = calculateHeatMap();
+
+            if (teachers.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>📝 No entries yet. Add a teacher marking entry to get started!</p>
+                    </div>
+                `;
+                document.getElementById('statsBar').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('statsBar').classList.remove('hidden');
+            const stats = calculateStats();
+            document.getElementById('statTeachers').textContent = stats.teachers;
+            document.getElementById('statEntries').textContent = stats.entries;
+            document.getElementById('statDays').textContent = stats.days;
+
+            container.innerHTML = teachers.map(teacher => `
+                <div class="teacher-card">
+                    <div class="teacher-header">
+                        <div class="teacher-name">👨‍🏫 ${escapeHtml(teacher.name)}</div>
+                        <div style="font-size: 12px; color: #999;">
+                            ${teacher.entries.length} ${teacher.entries.length === 1 ? 'entry' : 'entries'}
+                        </div>
+                    </div>
+
+                    <div class="entries-container">
+                        ${teacher.entries.map(entry => renderEntry(teacher.name, entry, heatMap)).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * Render single entry
+         */
+        function renderEntry(teacherName, entry, heatMap) {
+            return `
+                <div class="entry-item">
+                    <div class="entry-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">Subject</div>
+                            <div class="meta-value">${escapeHtml(entry.subject)}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Grade</div>
+                            <div class="meta-value">Grade ${entry.grade}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Session</div>
+                            <div class="meta-value">Session ${entry.session}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Exam Date</div>
+                            <div class="meta-value">${formatDate(entry.examDate)}</div>
+                        </div>
+                    </div>
+
+                    <div class="marking-dates">
+                        <div class="marking-dates-label">
+                            Marking Dates (Last Resort for Invigilation)
+                        </div>
+                        <div class="marking-dates-list">
+                            ${entry.markingDates.map(date => {
+                                const count = heatMap[date] || 0;
+                                const level = getHeatLevel(count);
+                                const heatData = getHeatLabel(count);
+                                return `
+                                    <span class="date-badge heat-${level}" title="Load: ${heatData.label} (${count} marking${count !== 1 ? 's' : ''})">
+                                        <span class="heat-indicator" style="background: ${heatData.color};"></span>
+                                        ${formatDate(date)}
+                                    </span>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <div class="do-not-disturb-toggle">
+                        <span>${entry.doNotDisturb ? '🚫 Do Not Disturb' : '✅ Available for Session 2'}</span>
+                        <div class="toggle-switch ${entry.doNotDisturb ? 'active' : ''}" onclick="toggleDoNotDisturb('${escapeHtml(teacherName)}', ${entry.id})">
+                            <div class="toggle-slider"></div>
+                            <input type="checkbox" ${entry.doNotDisturb ? 'checked' : ''}>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="button" class="btn-danger" onclick="deleteEntryHandler('${escapeHtml(teacherName)}', ${entry.id})">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Delete entry handler
+         */
+        function deleteEntryHandler(teacherName, entryId) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                deleteEntry(teacherName, entryId);
+                renderTeachers();
+                showMessage('Entry deleted successfully');
+            }
+        }
+
+        /**
+         * Escape HTML to prevent XSS
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /**
+         * Show success message
+         */
+        function showMessage(message) {
+            const msgEl = document.getElementById('successMessage');
+            msgEl.textContent = message;
+            msgEl.classList.remove('hidden');
+            setTimeout(() => msgEl.classList.add('hidden'), 3000);
+        }
+
+        // ===================================================================
+        // FORM HANDLING
+        // ===================================================================
+
+        /**
+         * Validate form inputs
+         */
+        function validateForm() {
+            const teacherName = document.getElementById('teacherName').value.trim();
+            const subject = document.getElementById('subject').value;
+            const grade = document.getElementById('grade').value;
+            const session = document.getElementById('session').value;
+            const examDate = document.getElementById('examDate').value;
+
+            let isValid = true;
+
+            document.getElementById('teacherNameError').classList.add('hidden');
+
+            if (!teacherName) {
+                document.getElementById('teacherNameError').textContent = 'Teacher name is required';
+                document.getElementById('teacherNameError').classList.remove('hidden');
+                isValid = false;
+            }
+
+            if (!subject || !grade || !session || !examDate) {
+                alert('All fields are required');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        /**
+         * Handle form submission
+         */
+        document.getElementById('entryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!validateForm()) {
+                return;
+            }
+
+            const teacherName = document.getElementById('teacherName').value.trim();
+            const subject = document.getElementById('subject').value;
+            const grade = document.getElementById('grade').value;
+            const session = document.getElementById('session').value;
+            const examDate = document.getElementById('examDate').value;
+            const markingDays = document.getElementById('markingDays').value;
+
+            addEntry(teacherName, subject, grade, session, examDate, markingDays);
+
+            this.reset();
+            document.getElementById('markingDays').value = '2';
+
+            renderTeachers();
+            showMessage('Entry added successfully!');
+        });
+
+        // ===================================================================
+        // FILE UPLOAD HANDLERS
+        // ===================================================================
+
+        document.getElementById('subjectFile').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                loadSubjects(e.target.files[0]);
+                e.target.value = '';
+            }
+        });
+
+        document.getElementById('teacherFile').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                loadTeachers(e.target.files[0]);
+                e.target.value = '';
+            }
+        });
+
+        // ===================================================================
+        // EXPORT / IMPORT
+        // ===================================================================
+
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const dataStr = JSON.stringify(teachers, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `exam-planning-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            showMessage('Data exported successfully!');
+        });
+
+        document.getElementById('importBtn').addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    
+                    if (!Array.isArray(imported)) {
+                        throw new Error('Invalid file format');
+                    }
+
+                    teachers = imported;
+                    saveData();
+                    renderTeachers();
+                    showMessage('Data imported successfully!');
+                } catch (error) {
+                    alert('Failed to import file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            e.target.value = '';
+        });
+
+        // ===================================================================
+        // REQUEST TEACHER MODAL
+        // ===================================================================
+
+        document.getElementById('requestTeacherBtn').addEventListener('click', openRequestModal);
+
+        document.getElementById('requestModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeRequestModal();
+            }
+        });
+
+        // ===================================================================
+        // INITIALIZATION
+        // ===================================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeData();
+            renderTeachers();
+        });
+    </script>
+</body>
+</html>

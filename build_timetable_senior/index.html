@@ -214,6 +214,10 @@
             <i class="fa-solid fa-database"></i>
             <small>Data</small>
           </a>
+          <a class="nav-link" href="#section-print" data-target="section-print" title="Print Reports">
+            <i class="fa-solid fa-print"></i>
+            <small>Print</small>
+          </a>
         </nav>
       </div>
 
@@ -561,6 +565,57 @@
             </div>
           </section>
 
+          <!-- PRINT REPORTS -->
+          <section id="section-print">
+            <div class="card shadow-sm mb-3">
+              <div class="card-header">
+                <strong><i class="fa-solid fa-print me-2"></i>Print Reports</strong>
+              </div>
+              <div class="card-body d-grid gap-2">
+                <button id="printHeatMapBtn" class="btn btn-outline-info">
+                  <i class="fa-solid fa-fire-flame-curved me-1"></i> Heat-Map (Free Periods)
+                </button>
+                <div class="panel-hint">Shows availability density across all teachers to identify batting risks.</div>
+
+                <div class="border-top my-3"></div>
+
+                <button id="printCurrentTeacherBtn" class="btn btn-outline-success">
+                  <i class="fa-solid fa-file-pdf me-1"></i> Print Current Teacher Timetable
+                </button>
+                <div class="panel-hint">Single-page layout of the currently loaded teacher's timetable.</div>
+
+                <button id="printTeacherSelectBtn" class="btn btn-outline-secondary">
+                  <i class="fa-solid fa-user-tie me-1"></i> Print Specific Teacher
+                </button>
+                <div class="panel-hint">Select a teacher and print their timetable.</div>
+
+                <button id="printAllTeachersSummaryBtn" class="btn btn-outline-primary">
+                  <i class="fa-solid fa-users me-1"></i> All Teachers Summary
+                </button>
+                <div class="panel-hint">Print completion scores and status for all teachers.</div>
+
+                <div class="border-top my-3"></div>
+
+                <button id="printAllTeachersBulkBtn" class="btn btn-outline-success">
+                  <i class="fa-solid fa-print me-1"></i> Bulk Print All Timetables
+                </button>
+                <div class="panel-hint">Paper-efficient printing: 2 timetables per page. Compact layout for all teachers.</div>
+
+                <div class="border-top my-3"></div>
+
+                <button id="printCompletenessAnalysisBtn" class="btn btn-outline-warning">
+                  <i class="fa-solid fa-chart-bar me-1"></i> Completeness Analysis
+                </button>
+                <div class="panel-hint">Detailed analysis showing which timetables are complete, incomplete, or missing setup.</div>
+
+                <button id="printDataQualityBtn" class="btn btn-outline-info">
+                  <i class="fa-solid fa-magnifying-glass me-1"></i> Data Quality Metrics
+                </button>
+                <div class="panel-hint">Evaluate data accuracy: missing fields, grid completeness, schedule balance.</div>
+              </div>
+            </div>
+          </section>
+
         </div>
       </div>
 
@@ -621,6 +676,30 @@
 
     </div>
   </main>
+
+  <!-- SELECT TEACHER FOR PRINT MODAL -->
+  <div class="modal fade" id="printTeacherSelectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-user-tie me-2"></i>Select Teacher to Print</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label for="printTeacherSelect" class="form-label">Choose a teacher</label>
+          <select id="printTeacherSelect" class="form-select">
+            <option value="">-- Select a teacher --</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmPrintTeacherBtn">
+            <i class="fa-solid fa-print me-1"></i> Print
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- COMMAND PALETTE MODAL -->
   <div class="modal fade" id="cmdPaletteModal" tabindex="-1" aria-hidden="true">
@@ -839,7 +918,9 @@
   </div>
 
   <script src="./../js/bootstrap.bundle.min.js"></script>
+  <script src="./js/print-reports.js"></script>
   <script src="./js/smt-script.js"></script>
+  
 </body>
 
 </html>
