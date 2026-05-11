@@ -1572,7 +1572,7 @@ function printCompletenessAnalysisReport() {
                   }
 
                   const progress = a.total > 0 ? a.percent : 0;
-                  return \`
+                  return `
                 <tr>
                   <td class="teacher-name">\${escapeHtml(a.name)}</td>
                   <td>\${a.rows}×\${a.cols > 0 ? a.cols : '?'}</td>

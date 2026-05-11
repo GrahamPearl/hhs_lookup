@@ -1792,15 +1792,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ---------------------- PRINT REPORTS ----------------------
 
-  const printTeacherSelectModal = document.getElementById("printTeacherSelectModal")
+  const printTeacherSelectModal = document.getElementById(
+    "printTeacherSelectModal",
+  )
     ? new bootstrap.Modal(document.getElementById("printTeacherSelectModal"))
     : null;
   const printTeacherSelect = document.getElementById("printTeacherSelect");
   const printHeatMapBtn = document.getElementById("printHeatMapBtn");
-  const printCurrentTeacherBtn = document.getElementById("printCurrentTeacherBtn");
-  const printTeacherSelectBtn = document.getElementById("printTeacherSelectBtn");
-  const printAllTeachersSummaryBtn = document.getElementById("printAllTeachersSummaryBtn");
-  const confirmPrintTeacherBtn = document.getElementById("confirmPrintTeacherBtn");
+  const printCurrentTeacherBtn = document.getElementById(
+    "printCurrentTeacherBtn",
+  );
+  const printTeacherSelectBtn = document.getElementById(
+    "printTeacherSelectBtn",
+  );
+  const printAllTeachersSummaryBtn = document.getElementById(
+    "printAllTeachersSummaryBtn",
+  );
+  const confirmPrintTeacherBtn = document.getElementById(
+    "confirmPrintTeacherBtn",
+  );
 
   printHeatMapBtn?.addEventListener("click", () => {
     generateHeatMapReport();
@@ -1816,7 +1826,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   printTeacherSelectBtn?.addEventListener("click", () => {
     if (!printTeacherSelectModal) return;
-    
+
     // Populate the modal dropdown
     const teachers = getAllTeacherNames();
     if (teachers.length === 0) {
@@ -1824,7 +1834,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    printTeacherSelect.innerHTML = '<option value="">-- Select a teacher --</option>';
+    printTeacherSelect.innerHTML =
+      '<option value="">-- Select a teacher --</option>';
     teachers.forEach((name) => {
       const opt = document.createElement("option");
       opt.value = name;
@@ -1849,8 +1860,12 @@ document.addEventListener("DOMContentLoaded", () => {
     printAllTeachersSummary();
   });
 
-  const printAllTeachersBulkBtn = document.getElementById("printAllTeachersBulkBtn");
-  const printCompletenessAnalysisBtn = document.getElementById("printCompletenessAnalysisBtn");
+  const printAllTeachersBulkBtn = document.getElementById(
+    "printAllTeachersBulkBtn",
+  );
+  const printCompletenessAnalysisBtn = document.getElementById(
+    "printCompletenessAnalysisBtn",
+  );
   const printDataQualityBtn = document.getElementById("printDataQualityBtn");
 
   printAllTeachersBulkBtn?.addEventListener("click", () => {
