@@ -11,6 +11,16 @@
 // HEAT-MAP REPORT (Free Periods Availability)
 // ─────────────────────────────────────────────────────────────
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function getAllTeacherNames() {
   try {
     return Object.keys(localStorage)
@@ -451,8 +461,7 @@ function printAllTeachersSummary() {
           <tbody>
             ${summaries
               .map(
-                (s) => `
-              <tr>
+                (s) => `<tr>
                 <td class="teacher-name">${escapeHtml(s.name)}</td>
                 <td>
                   <div class="percent-bar">
