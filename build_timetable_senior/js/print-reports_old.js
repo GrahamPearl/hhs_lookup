@@ -5,7 +5,6 @@
   - Heat-map showing free period distribution (batting issues)
   - Individual teacher timetable printing
   - Professional single-page layouts
-  - Teacher Availability by Day (new)
 */
 
 // ─────────────────────────────────────────────────────────────
@@ -792,21 +791,21 @@ function printCompletenessAnalysisReport() {
                   const progress = a.total > 0 ? a.percent : 0;
                   return `
                 <tr>
-                  <td class="teacher-name">${escapeHtml(a.name)}</td>
-                  <td>${a.rows}×${a.cols > 0 ? a.cols : '?'}</td>
-                  <td>${a.captured}</td>
-                  <td>${a.missing}</td>
+                  <td class="teacher-name">\${escapeHtml(a.name)}</td>
+                  <td>\${a.rows}×\${a.cols > 0 ? a.cols : '?'}</td>
+                  <td>\${a.captured}</td>
+                  <td>\${a.missing}</td>
                   <td>
                     <div class="progress-bar">
-                      <div class="progress-fill" style="width: ${progress}%; background: ${progress === 100 ? '#28a745' : '#ff9800'};;">
-                        ${progress}%
+                      <div class="progress-fill" style="width: \${progress}%; background: \${progress === 100 ? '#28a745' : '#ff9800'};;">
+                        \${progress}%
                       </div>
                     </div>
                   </td>
-                  <td style="text-align: center;">${a.lessons}</td>
-                  <td style="text-align: center;">${a.meetings} ${a.dnd ? '(' + a.dnd + ' DND)' : ''}</td>
-                  <td style="text-align: center;">${a.free}</td>
-                  <td>${badge} ${a.lastResort ? '<span class="status-badge" style="background: #fff3cd; color: #856404;">⚠ Last Resort</span>' : ''}</td>
+                  <td style="text-align: center;">\${a.lessons}</td>
+                  <td style="text-align: center;">\${a.meetings} \${a.dnd ? '(' + a.dnd + ' DND)' : ''}</td>
+                  <td style="text-align: center;">\${a.free}</td>
+                  <td>\${badge} \${a.lastResort ? '<span class="status-badge" style="background: #fff3cd; color: #856404;">⚠ Last Resort</span>' : ''}</td>
                 </tr>
               `;
                 }
@@ -985,25 +984,25 @@ function printDataQualityReport() {
 
                   let issuesHtml = "";
 
-                  if (m.issues.length) {
-                    const listItems = m.issues.map(function(i) {
-                      return "<li>" + i + "</li>";
-                    }).join("");
+if (m.issues.length) {
+  const listItems = m.issues.map(function(i) {
+    return "<li>" + i + "</li>";
+  }).join("");
 
-                    issuesHtml = "<ul>" + listItems + "</ul>";
-                  } else {
-                    issuesHtml = '<em style="color: #28a745;">✓ No issues detected</em>';
-                  }
+  issuesHtml = "<ul>" + listItems + "</ul>";
+} else {
+  issuesHtml = '<em style="color: #28a745;">✓ No issues detected</em>';
+}
 
                   return `
                 <tr>
-                  <td class="teacher-name">${escapeHtml(m.name)}</td>
-                  <td class="quality-score ${scoreClass}">${m.qualityScore}/100</td>
-                  <td>${m.completeness}% (${m.captured}/${m.total})</td>
-                  <td class="issues-list">${issuesHtml}</td>
-                  <td style="text-align: center;">${m.lessons}</td>
-                  <td style="text-align: center;">${m.meetings}</td>
-                  <td style="text-align: center;">${m.free}</td>
+                  <td class="teacher-name">\${escapeHtml(m.name)}</td>
+                  <td class="quality-score \${scoreClass}">\${m.qualityScore}/100</td>
+                  <td>\${m.completeness}% (\${m.captured}/\${m.total})</td>
+                  <td class="issues-list">\${issuesHtml}</td>
+                  <td style="text-align: center;">\${m.lessons}</td>
+                  <td style="text-align: center;">\${m.meetings}</td>
+                  <td style="text-align: center;">\${m.free}</td>
                 </tr>
               `;
                 }
@@ -1025,198 +1024,6 @@ function printDataQualityReport() {
           <div>Timetable System – Data Quality Report</div>
           <div>Page 1 of 1</div>
           <div>${dateStr}</div>
-        </div>
-      </div>
-
-      <button class="print-btn" onclick="window.print(); return false;">🖨️ Print Report</button>
-    </body>
-    </html>
-  `;
-
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(html);
-  printWindow.document.close();
-}
-
-// ─────────────────────────────────────────────────────────────
-// TEACHER AVAILABILITY BY DAY REPORT
-// ─────────────────────────────────────────────────────────────
-
-function printTeacherAvailabilityByDay() {
-  const teachers = getAllTeacherNames();
-  if (teachers.length === 0) {
-    alert("No teachers found.");
-    return;
-  }
-
-  const config = getStoredConfig();
-  if (!config || !config.rows || !config.cols) {
-    alert("No timetable configuration found.");
-    return;
-  }
-
-  const { rows, dayNames } = config;
-  const today = new Date();
-  const dateStr = today.toLocaleDateString();
-  const timeStr = today.toLocaleTimeString();
-
-  // Build availability data per day
-  const availabilityByDay = [];
-
-  for (let dayIdx = 0; dayIdx < rows; dayIdx++) {
-    const dayName = dayNames[dayIdx] || `Day ${dayIdx + 1}`;
-    const dayTeachers = [];
-
-    // Analyze each teacher for this day
-    teachers.forEach((name) => {
-      const key = getTeacherKey(name);
-      const raw = localStorage.getItem(key);
-      if (!raw) return;
-
-      try {
-        const payload = JSON.parse(raw);
-        const entries = payload.entries || [];
-
-        // Count free and meeting periods on this day
-        let freeCount = 0;
-        let meetingCount = 0;
-        let lessonCount = 0;
-
-        entries.forEach((e) => {
-          if (e.row === dayIdx) {
-            if (e.type === "free") freeCount++;
-            else if (e.type === "meeting") meetingCount++;
-            else if (e.type === "lesson") lessonCount++;
-          }
-        });
-
-        // Include if teacher has ANY availability (free OR meetings)
-        // = teacher is NOT teaching all day
-        if (freeCount > 0 || meetingCount > 0) {
-          dayTeachers.push({
-            name,
-            free: freeCount,
-            meetings: meetingCount,
-            lessons: lessonCount,
-          });
-        }
-      } catch {}
-    });
-
-    // Sort by free count (desc), then meetings (desc)
-    dayTeachers.sort((a, b) => {
-      if (b.free !== a.free) return b.free - a.free;
-      return b.meetings - a.meetings;
-    });
-
-    availabilityByDay.push({
-      dayIdx,
-      dayName,
-      teachers: dayTeachers,
-    });
-  }
-
-  // Generate HTML report
-  let html = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>Teacher Availability by Day Report</title>
-      <link rel="stylesheet" href=".././css/print7.css">
-    </head>
-    <body>
-      <div class="report-container">
-        <div class="report-header">
-          <h1>📅 Teacher Availability by Day</h1>
-          <div class="header-meta">
-            <div class="meta-item">
-              <span class="meta-label">Generated</span>
-              <span class="meta-value">${dateStr}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Time</span>
-              <span class="meta-value">${timeStr}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Total Teachers</span>
-              <span class="meta-value">${teachers.length}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Schedule Span</span>
-              <span class="meta-value">${rows} days</span>
-            </div>
-          </div>
-        </div>
-
-        <p style="color: #666; margin-bottom: 20px;">
-          This report shows which teachers are available for cover on each day, sorted by availability.
-          Teachers are listed by number of <strong>free periods</strong> (descending), then by number of <strong>meetings</strong> (descending).
-          Teachers with only lessons (no free/meeting periods) are excluded from each day.
-        </p>
-  `;
-
-  // Add a section for each day
-  availabilityByDay.forEach((dayData) => {
-    html += `
-      <div class="day-section">
-        <div class="day-title">📌 ${escapeHtml(dayData.dayName)}</div>
-    `;
-
-    if (dayData.teachers.length === 0) {
-      html += `
-        <table class="availability-table">
-          <tbody>
-            <tr>
-              <td class="no-availability">No teachers with available periods on this day.</td>
-            </tr>
-          </tbody>
-        </table>
-      `;
-    } else {
-      html += `
-        <table class="availability-table">
-          <thead>
-            <tr>
-              <th>Teacher Name</th>
-              <th style="text-align: center; width: 20%;">Free Periods</th>
-              <th style="text-align: center; width: 20%;">Meetings</th>
-              <th style="text-align: center; width: 15%;">Lessons</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      dayData.teachers.forEach((t) => {
-        html += `
-          <tr>
-            <td class="teacher-name">${escapeHtml(t.name)}</td>
-            <td style="text-align: center;">
-              <span class="free-badge">☕ ${t.free}</span>
-            </td>
-            <td style="text-align: center;">
-              <span class="meeting-badge">🕐 ${t.meetings}</span>
-            </td>
-            <td style="text-align: center; color: #666;">${t.lessons}</td>
-          </tr>
-        `;
-      });
-
-      html += `
-          </tbody>
-        </table>
-      `;
-    }
-
-    html += `</div>`;
-  });
-
-  html += `
-        <div class="footer">
-          <div>Timetable System – Teacher Availability Report</div>
-          <div>Page 1 of 1</div>
-          <div>${dateStr} at ${timeStr}</div>
         </div>
       </div>
 
