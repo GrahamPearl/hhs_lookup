@@ -8,7 +8,7 @@
 
   <link rel="stylesheet" href="./../css/bootstrap.min.css" />
   <link rel="stylesheet" href="./../css/font-awesome/all.min.css" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="./css/styles.css" />
 
   <style>
     .role-badge {
@@ -257,7 +257,7 @@
               <div class="card-header d-flex justify-content-between align-items-center">
                 <strong><i class="fa-solid fa-gauge-high me-2"></i>Completeness Dashboard</strong>
                 <button id="refreshCompletenessBtn" class="btn btn-sm btn-outline-secondary" type="button">
-                  <i class="fa-solid fa-rotate"></i>
+                  <i class="fa-solid fa-rotate">Refresh Completeness</i>
                 </button>
               </div>
               <div class="card-body">
@@ -317,6 +317,7 @@
                   <button id="bulkFolderBtn" class="btn btn-outline-primary" type="button">
                     <i class="fa-solid fa-upload me-1"></i> Select Folder & Import
                   </button>
+                  <label for="bulkFolderInput" class="form-label mt-2">Or drag and drop files/folder here</label>
                   <input id="bulkFolderInput" type="file" class="d-none" webkitdirectory directory multiple />
                   <div class="alert alert-light border mb-0" role="status">
                     <div class="small text-muted">Bulk import status</div>
@@ -540,6 +541,7 @@
 
                 <button id="importBtn" class="btn btn-outline-info"><i class="fa-solid fa-file-import me-1"></i> Import
                   from JSON (single)</button>
+                  <label for="importFileInput" class="form-label mt-2">Or drag and drop a JSON file here</label>
                 <input type="file" id="importFileInput" accept="application/json" class="d-none" />
 
                 <button id="exportBtn" class="btn btn-warning"><i class="fa-solid fa-file-export me-1"></i> Export
@@ -612,6 +614,10 @@
                   <i class="fa-solid fa-magnifying-glass me-1"></i> Data Quality Metrics
                 </button>
                 <div class="panel-hint">Evaluate data accuracy: missing fields, grid completeness, schedule balance.</div>
+
+                <button id="printTeacherAvailabilityByDayBtn" class="btn btn-outline-info">
+                <i class="fa-solid fa-people-line me-1"></i> Teacher Availability by Day
+                </button>
               </div>
             </div>
           </section>
