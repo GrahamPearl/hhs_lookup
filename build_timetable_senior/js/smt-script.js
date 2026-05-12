@@ -1880,6 +1880,12 @@ document.addEventListener("DOMContentLoaded", () => {
     printDataQualityReport();
   });
 
+  document
+    .getElementById("printTeacherAvailabilityByDayBtn")
+    ?.addEventListener("click", () => {
+      printTeacherAvailabilityByDay();
+    });
+
   // ---------------------- INITIAL UI STATE ---------------------
 
   rebuildTeacherNamesCache();
