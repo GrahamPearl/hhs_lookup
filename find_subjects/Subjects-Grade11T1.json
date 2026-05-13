@@ -1,5 +1,23 @@
 [
   {
+    "student_number": 14579,
+    "name": "Chiliza, AT (Aphelele)",
+    "gender": "M",
+    "class": "11SR",
+    "subject": "Accounting",
+    "line": 6,
+    "teacher": "JA Chabant"
+  },
+  {
+    "student_number": 14618,
+    "name": "Danisa, N (Nkanyiso)",
+    "gender": "M",
+    "class": "11LZ",
+    "subject": "Accounting",
+    "line": 6,
+    "teacher": "JA Chabant"
+  },
+  {
     "student_number": 14581,
     "name": "Enslin, KC (Katelyn)",
     "gender": "F",
@@ -11,6 +29,24 @@
   {
     "student_number": 14700,
     "name": "Maharaj, AA (Aurav)",
+    "gender": "M",
+    "class": "11LZ",
+    "subject": "Accounting",
+    "line": 6,
+    "teacher": "JA Chabant"
+  },
+  {
+    "student_number": 15230,
+    "name": "Majola, NAN (Noli)",
+    "gender": "F",
+    "class": "11JC",
+    "subject": "Accounting",
+    "line": 6,
+    "teacher": "JA Chabant"
+  },
+  {
+    "student_number": 14447,
+    "name": "Mapotse, SM (Sibusiso)",
     "gender": "M",
     "class": "11LZ",
     "subject": "Accounting",
@@ -45,10 +81,28 @@
     "teacher": "JA Chabant"
   },
   {
+    "student_number": 14418,
+    "name": "Mkhize, SK (Sethu)",
+    "gender": "M",
+    "class": "11NJ",
+    "subject": "Accounting",
+    "line": 6,
+    "teacher": "JA Chabant"
+  },
+  {
     "student_number": 14261,
     "name": "Mkhwanazi, N (Nontobeko )",
     "gender": "F",
     "class": "11JC",
+    "subject": "Accounting",
+    "line": 6,
+    "teacher": "JA Chabant"
+  },
+  {
+    "student_number": 14743,
+    "name": "Mndaweni, TS (Thato )",
+    "gender": "M",
+    "class": "11DH",
     "subject": "Accounting",
     "line": 6,
     "teacher": "JA Chabant"
@@ -67,15 +121,6 @@
     "name": "Motaung, PN (Philasande)",
     "gender": "F",
     "class": "11NJ",
-    "subject": "Accounting",
-    "line": 6,
-    "teacher": "JA Chabant"
-  },
-  {
-    "student_number": 15688,
-    "name": "Ndokweni, BN (Bayanda)",
-    "gender": "M",
-    "class": "11AS",
     "subject": "Accounting",
     "line": 6,
     "teacher": "JA Chabant"
@@ -387,6 +432,15 @@
     "teacher": "N Nkosi"
   },
   {
+    "student_number": 14706,
+    "name": "Groenewald, ES (Eloise )",
+    "gender": "F",
+    "class": "11MB",
+    "subject": "Accounting",
+    "line": 6,
+    "teacher": "N Nkosi"
+  },
+  {
     "student_number": 14681,
     "name": "Henley, E (Ethan)",
     "gender": "M",
@@ -547,6 +601,15 @@
     "subject": "Accounting",
     "line": 6,
     "teacher": "N Nkosi"
+  },
+  {
+    "student_number": 14614,
+    "name": "Campbell, LV (Luke)",
+    "gender": "M",
+    "class": "11NJ",
+    "subject": "Afrikaans First Additional Language",
+    "line": 2,
+    "teacher": "M Henderson"
   },
   {
     "student_number": 14432,
@@ -751,24 +814,6 @@
     "name": "van Niekerk, CP (Caitlyn)",
     "gender": "F",
     "class": "11LU",
-    "subject": "Afrikaans First Additional Language",
-    "line": 2,
-    "teacher": "M Henderson"
-  },
-  {
-    "student_number": 14483,
-    "name": "van Rooyen, TG (Tauren)",
-    "gender": "M",
-    "class": "11JC",
-    "subject": "Afrikaans First Additional Language",
-    "line": 2,
-    "teacher": "M Henderson"
-  },
-  {
-    "student_number": 15333,
-    "name": "Whitaker, KS (Kaylee)",
-    "gender": "F",
-    "class": "11JC",
     "subject": "Afrikaans First Additional Language",
     "line": 2,
     "teacher": "M Henderson"
@@ -1062,6 +1107,15 @@
     "teacher": "TL Pape"
   },
   {
+    "student_number": 14585,
+    "name": "Clegg, MS (Michaela)",
+    "gender": "F",
+    "class": "11JC",
+    "subject": "Afrikaans First Additional Language",
+    "line": 2,
+    "teacher": "TL Pape"
+  },
+  {
     "student_number": 14641,
     "name": "de Almeida, RRA (Ricardo)",
     "gender": "M",
@@ -1237,6 +1291,15 @@
     "name": "Watson, LC (Luke)",
     "gender": "M",
     "class": "11MB",
+    "subject": "Afrikaans First Additional Language",
+    "line": 2,
+    "teacher": "TL Pape"
+  },
+  {
+    "student_number": 15333,
+    "name": "Whitaker, KS (Kaylee)",
+    "gender": "F",
+    "class": "11JC",
     "subject": "Afrikaans First Additional Language",
     "line": 2,
     "teacher": "TL Pape"
@@ -1422,15 +1485,6 @@
     "teacher": "S Strydom"
   },
   {
-    "student_number": 14515,
-    "name": "Scheepers, NB (Nathan)",
-    "gender": "M",
-    "class": "11JC",
-    "subject": "Afrikaans First Additional Language",
-    "line": 2,
-    "teacher": "S Strydom"
-  },
-  {
     "student_number": 14622,
     "name": "Smith, GC (Garth)",
     "gender": "M",
@@ -1452,6 +1506,15 @@
     "student_number": 14665,
     "name": "Thompson, CS (Cali)",
     "gender": "F",
+    "class": "11JC",
+    "subject": "Afrikaans First Additional Language",
+    "line": 2,
+    "teacher": "S Strydom"
+  },
+  {
+    "student_number": 14483,
+    "name": "van Rooyen, TG (Tauren)",
+    "gender": "M",
     "class": "11JC",
     "subject": "Afrikaans First Additional Language",
     "line": 2,
@@ -1480,15 +1543,6 @@
     "name": "Clarkson, C (Chloe)",
     "gender": "F",
     "class": "11MB",
-    "subject": "Afrikaans First Additional Language",
-    "line": 2,
-    "teacher": "AS Wessels"
-  },
-  {
-    "student_number": 14585,
-    "name": "Clegg, MS (Michaela)",
-    "gender": "F",
-    "class": "11JC",
     "subject": "Afrikaans First Additional Language",
     "line": 2,
     "teacher": "AS Wessels"
@@ -1728,6 +1782,15 @@
     "teacher": "MB Leppan"
   },
   {
+    "student_number": 14643,
+    "name": "Clark  , KW (Kingston )",
+    "gender": "M",
+    "class": "11LZ",
+    "subject": "Business Studies",
+    "line": 5,
+    "teacher": "MB Leppan"
+  },
+  {
     "student_number": 14486,
     "name": "Haynes, BR (Bethany)",
     "gender": "F",
@@ -1813,6 +1876,15 @@
     "name": "Mkhize, L (Lindokuhle)",
     "gender": "M",
     "class": "11DH",
+    "subject": "Business Studies",
+    "line": 5,
+    "teacher": "MB Leppan"
+  },
+  {
+    "student_number": 14707,
+    "name": "Ngcobo, ANL (Andisiwe)",
+    "gender": "F",
+    "class": "11JC",
     "subject": "Business Studies",
     "line": 5,
     "teacher": "MB Leppan"
@@ -2178,6 +2250,15 @@
     "teacher": "N Zulu"
   },
   {
+    "student_number": 15381,
+    "name": "Linda, AAA (Afezeka)",
+    "gender": "F",
+    "class": "11LZ",
+    "subject": "Business Studies",
+    "line": 7,
+    "teacher": "N Zulu"
+  },
+  {
     "student_number": 14667,
     "name": "Majola, M (Mluleki)",
     "gender": "M",
@@ -2245,6 +2326,15 @@
     "name": "Ngxongo, A (Alwande)",
     "gender": "M",
     "class": "11NJ",
+    "subject": "Business Studies",
+    "line": 7,
+    "teacher": "N Zulu"
+  },
+  {
+    "student_number": 15233,
+    "name": "Noble, JA (Jaylah)",
+    "gender": "F",
+    "class": "11GB",
     "subject": "Business Studies",
     "line": 7,
     "teacher": "N Zulu"
@@ -2331,15 +2421,6 @@
     "teacher": "N Zulu"
   },
   {
-    "student_number": 14659,
-    "name": "Zungu, SM (Sinabobonke)",
-    "gender": "M",
-    "class": "11NJ",
-    "subject": "Business Studies",
-    "line": 7,
-    "teacher": "N Zulu"
-  },
-  {
     "student_number": 14492,
     "name": "Zwane, S (Sibahle)",
     "gender": "F",
@@ -2367,15 +2448,6 @@
     "teacher": "JM Bega"
   },
   {
-    "student_number": 15060,
-    "name": "Dlamini, A (Andisokuhle)",
-    "gender": "F",
-    "class": "11NJ",
-    "subject": "Consumer Studies",
-    "line": 6,
-    "teacher": "JM Bega"
-  },
-  {
     "student_number": 14733,
     "name": "Gumbi, B (Bayanda)",
     "gender": "M",
@@ -2389,6 +2461,24 @@
     "name": "Hlengwa, VT (Vuyiswa)",
     "gender": "F",
     "class": "11JC",
+    "subject": "Consumer Studies",
+    "line": 6,
+    "teacher": "JM Bega"
+  },
+  {
+    "student_number": 15381,
+    "name": "Linda, AAA (Afezeka)",
+    "gender": "F",
+    "class": "11LZ",
+    "subject": "Consumer Studies",
+    "line": 6,
+    "teacher": "JM Bega"
+  },
+  {
+    "student_number": 14979,
+    "name": "Mazibuko, S (Sphelele)",
+    "gender": "M",
+    "class": "11SR",
     "subject": "Consumer Studies",
     "line": 6,
     "teacher": "JM Bega"
@@ -2484,15 +2574,6 @@
     "teacher": "JM Bega"
   },
   {
-    "student_number": 14505,
-    "name": "Shange, NS (Nompilo)",
-    "gender": "F",
-    "class": "11LZ",
-    "subject": "Consumer Studies",
-    "line": 6,
-    "teacher": "JM Bega"
-  },
-  {
     "student_number": 14635,
     "name": "Sibiya, A (Anele)",
     "gender": "M",
@@ -2506,15 +2587,6 @@
     "name": "van Ballegooyen, KH (Katelyn)",
     "gender": "F",
     "class": "11MB",
-    "subject": "Consumer Studies",
-    "line": 6,
-    "teacher": "JM Bega"
-  },
-  {
-    "student_number": 14482,
-    "name": "Vukeka, LA (Lwandle)",
-    "gender": "F",
-    "class": "11DH",
     "subject": "Consumer Studies",
     "line": 6,
     "teacher": "JM Bega"
@@ -2659,15 +2731,6 @@
     "name": "Marinda, R (Ropafadzo)",
     "gender": "F",
     "class": "11SR",
-    "subject": "Consumer Studies",
-    "line": 6,
-    "teacher": "SJ Geel"
-  },
-  {
-    "student_number": 15672,
-    "name": "Matata, KL (Kgopotso)",
-    "gender": "F",
-    "class": "11LU",
     "subject": "Consumer Studies",
     "line": 6,
     "teacher": "SJ Geel"
@@ -2961,6 +3024,15 @@
     "teacher": "JM Bega"
   },
   {
+    "student_number": 14643,
+    "name": "Clark  , KW (Kingston )",
+    "gender": "M",
+    "class": "11LZ",
+    "subject": "Consumer Studies",
+    "line": 7,
+    "teacher": "SJ Geel"
+  },
+  {
     "student_number": 14585,
     "name": "Clegg, MS (Michaela)",
     "gender": "F",
@@ -3064,15 +3136,6 @@
     "name": "Ngcobo, ANL (Andisiwe)",
     "gender": "F",
     "class": "11JC",
-    "subject": "Consumer Studies",
-    "line": 7,
-    "teacher": "SJ Geel"
-  },
-  {
-    "student_number": 14452,
-    "name": "Nhatave, NF (Nolwandle)",
-    "gender": "F",
-    "class": "11DH",
     "subject": "Consumer Studies",
     "line": 7,
     "teacher": "SJ Geel"
@@ -3213,6 +3276,15 @@
     "teacher": "S MacDonald"
   },
   {
+    "student_number": 14628,
+    "name": "Hlongwa, UM (Uyanda)",
+    "gender": "M",
+    "class": "11MB",
+    "subject": "Dramatic Arts",
+    "line": 7,
+    "teacher": "S MacDonald"
+  },
+  {
     "student_number": 14510,
     "name": "Hughes, E (Emma)",
     "gender": "F",
@@ -3226,6 +3298,15 @@
     "name": "Klijnstra, RBJ (Rudy)",
     "gender": "M",
     "class": "11GB",
+    "subject": "Dramatic Arts",
+    "line": 7,
+    "teacher": "S MacDonald"
+  },
+  {
+    "student_number": 14658,
+    "name": "Luthuli, AS (Abongwe )",
+    "gender": "F",
+    "class": "11AS",
     "subject": "Dramatic Arts",
     "line": 7,
     "teacher": "S MacDonald"
@@ -3267,6 +3348,15 @@
     "teacher": "S MacDonald"
   },
   {
+    "student_number": 14452,
+    "name": "Nhatave, NF (Nolwandle)",
+    "gender": "F",
+    "class": "11DH",
+    "subject": "Dramatic Arts",
+    "line": 7,
+    "teacher": "S MacDonald"
+  },
+  {
     "student_number": 15638,
     "name": "Ntshalintshali, L (Landa)",
     "gender": "M",
@@ -3280,6 +3370,15 @@
     "name": "Reddy, JM (Joshua)",
     "gender": "M",
     "class": "11JC",
+    "subject": "Dramatic Arts",
+    "line": 7,
+    "teacher": "S MacDonald"
+  },
+  {
+    "student_number": 14505,
+    "name": "Shange, NS (Nompilo)",
+    "gender": "F",
+    "class": "11LZ",
     "subject": "Dramatic Arts",
     "line": 7,
     "teacher": "S MacDonald"
@@ -3307,6 +3406,15 @@
     "name": "Sondezi, KFJ (Kutlwano)",
     "gender": "M",
     "class": "11LZ",
+    "subject": "Dramatic Arts",
+    "line": 7,
+    "teacher": "S MacDonald"
+  },
+  {
+    "student_number": 14603,
+    "name": "Vezi, A (Azamahle)",
+    "gender": "F",
+    "class": "11LU",
     "subject": "Dramatic Arts",
     "line": 7,
     "teacher": "S MacDonald"
@@ -3451,6 +3559,15 @@
     "name": "Mngomeni, A (Alwande)",
     "gender": "F",
     "class": "11JC",
+    "subject": "Economics",
+    "line": 5,
+    "teacher": "B Moffatt"
+  },
+  {
+    "student_number": 14611,
+    "name": "Ndlovu, LS (Lethokuhle)",
+    "gender": "F",
+    "class": "11LZ",
     "subject": "Economics",
     "line": 5,
     "teacher": "B Moffatt"
@@ -3834,6 +3951,15 @@
     "teacher": "GDZ Bastion"
   },
   {
+    "student_number": 14673,
+    "name": "Mhlongo, OL (Osphile)",
+    "gender": "M",
+    "class": "11DH",
+    "subject": "English Home Language",
+    "line": 1,
+    "teacher": "GDZ Bastion"
+  },
+  {
     "student_number": 14464,
     "name": "Miya, SN (Siphosethu)",
     "gender": "M",
@@ -3928,6 +4054,15 @@
     "name": "Shezi, SNN (Sandisizwe )",
     "gender": "M",
     "class": "11NJ",
+    "subject": "English Home Language",
+    "line": 1,
+    "teacher": "GDZ Bastion"
+  },
+  {
+    "student_number": 14737,
+    "name": "Tembe, S (Sabelo)",
+    "gender": "M",
+    "class": "11LZ",
     "subject": "English Home Language",
     "line": 1,
     "teacher": "GDZ Bastion"
@@ -5175,15 +5310,6 @@
     "teacher": "AE Sebeikin"
   },
   {
-    "student_number": 15688,
-    "name": "Ndokweni, BN (Bayanda)",
-    "gender": "M",
-    "class": "11AS",
-    "subject": "English Home Language",
-    "line": 1,
-    "teacher": "AE Sebeikin"
-  },
-  {
     "student_number": 14417,
     "name": "Nxumalo, L (Lungelo)",
     "gender": "M",
@@ -5427,15 +5553,6 @@
     "teacher": "JB Silva"
   },
   {
-    "student_number": 14515,
-    "name": "Scheepers, NB (Nathan)",
-    "gender": "M",
-    "class": "11JC",
-    "subject": "English Home Language",
-    "line": 1,
-    "teacher": "JB Silva"
-  },
-  {
     "student_number": 14107,
     "name": "Sebitloane, KOM (Kagiso)",
     "gender": "M",
@@ -5508,15 +5625,6 @@
     "teacher": "ER Smith"
   },
   {
-    "student_number": 14673,
-    "name": "Mhlongo, OL (Osphile)",
-    "gender": "M",
-    "class": "11DH",
-    "subject": "English Home Language",
-    "line": 1,
-    "teacher": "ER Smith"
-  },
-  {
     "student_number": 14971,
     "name": "Mkhize, MK (Mayenziwe)",
     "gender": "M",
@@ -5571,13 +5679,13 @@
     "teacher": "ER Smith"
   },
   {
-    "student_number": 14737,
-    "name": "Tembe, S (Sabelo)",
+    "student_number": 14601,
+    "name": "Chabata, LN (Lefika)",
     "gender": "M",
     "class": "11LZ",
     "subject": "English Home Language",
     "line": 1,
-    "teacher": "ER Smith"
+    "teacher": "DJ van Heerden"
   },
   {
     "student_number": 14643,
@@ -5886,6 +5994,15 @@
     "teacher": "P Ramsern"
   },
   {
+    "student_number": 14478,
+    "name": "Geldenhuys, SB (Shaelyn)",
+    "gender": "F",
+    "class": "11JC",
+    "subject": "Geography",
+    "line": 11,
+    "teacher": "P Ramsern"
+  },
+  {
     "student_number": 14563,
     "name": "Howes, JD (Jordan)",
     "gender": "M",
@@ -5958,15 +6075,6 @@
     "teacher": "P Ramsern"
   },
   {
-    "student_number": 15688,
-    "name": "Ndokweni, BN (Bayanda)",
-    "gender": "M",
-    "class": "11AS",
-    "subject": "Geography",
-    "line": 11,
-    "teacher": "P Ramsern"
-  },
-  {
     "student_number": 14571,
     "name": "Padayachee, CE (Clive)",
     "gender": "M",
@@ -6030,8 +6138,35 @@
     "teacher": "P Ramsern"
   },
   {
+    "student_number": 15060,
+    "name": "Dlamini, A (Andisokuhle)",
+    "gender": "F",
+    "class": "11NJ",
+    "subject": "Geography",
+    "line": 11,
+    "teacher": "P Ramsern"
+  },
+  {
     "student_number": 14456,
     "name": "Dlamini, MD (Mpilo)",
+    "gender": "M",
+    "class": "11LZ",
+    "subject": "Geography",
+    "line": 11,
+    "teacher": "P Ramsern"
+  },
+  {
+    "student_number": 15649,
+    "name": "Donaldson, DP (Devon)",
+    "gender": "M",
+    "class": "11LU",
+    "subject": "Geography",
+    "line": 11,
+    "teacher": "P Ramsern"
+  },
+  {
+    "student_number": 14039,
+    "name": "Goba, S (S'Nalo)",
     "gender": "M",
     "class": "11LZ",
     "subject": "Geography",
@@ -6084,24 +6219,6 @@
     "teacher": "P Ramsern"
   },
   {
-    "student_number": 15230,
-    "name": "Majola, NAN (Noli)",
-    "gender": "F",
-    "class": "11JC",
-    "subject": "Geography",
-    "line": 11,
-    "teacher": "P Ramsern"
-  },
-  {
-    "student_number": 14447,
-    "name": "Mapotse, SM (Sibusiso)",
-    "gender": "M",
-    "class": "11LZ",
-    "subject": "Geography",
-    "line": 11,
-    "teacher": "P Ramsern"
-  },
-  {
     "student_number": 15364,
     "name": "Mbothwe, LL (Langalibalele)",
     "gender": "M",
@@ -6115,24 +6232,6 @@
     "name": "Mkhize, L (Lindokuhle)",
     "gender": "M",
     "class": "11DH",
-    "subject": "Geography",
-    "line": 11,
-    "teacher": "P Ramsern"
-  },
-  {
-    "student_number": 14743,
-    "name": "Mndaweni, TS (Thato )",
-    "gender": "M",
-    "class": "11DH",
-    "subject": "Geography",
-    "line": 11,
-    "teacher": "P Ramsern"
-  },
-  {
-    "student_number": 14598,
-    "name": "Mnyali, IS (Ibanathi)",
-    "gender": "M",
-    "class": "11NJ",
     "subject": "Geography",
     "line": 11,
     "teacher": "P Ramsern"
@@ -6192,15 +6291,6 @@
     "teacher": "P Ramsern"
   },
   {
-    "student_number": 14515,
-    "name": "Scheepers, NB (Nathan)",
-    "gender": "M",
-    "class": "11JC",
-    "subject": "Geography",
-    "line": 11,
-    "teacher": "P Ramsern"
-  },
-  {
     "student_number": 14631,
     "name": "Shangase, M (Mvelo)",
     "gender": "M",
@@ -6255,28 +6345,10 @@
     "teacher": "S Silochan"
   },
   {
-    "student_number": 14039,
-    "name": "Goba, S (S'Nalo)",
-    "gender": "M",
-    "class": "11LZ",
-    "subject": "Geography",
-    "line": 11,
-    "teacher": "S Silochan"
-  },
-  {
     "student_number": 14561,
     "name": "Henning, GB (Gareth)",
     "gender": "M",
     "class": "11DH",
-    "subject": "Geography",
-    "line": 11,
-    "teacher": "S Silochan"
-  },
-  {
-    "student_number": 14628,
-    "name": "Hlongwa, UM (Uyanda)",
-    "gender": "M",
-    "class": "11MB",
     "subject": "Geography",
     "line": 11,
     "teacher": "S Silochan"
@@ -6507,71 +6579,44 @@
     "teacher": "IA Bothma"
   },
   {
-    "student_number": 15403,
-    "name": "Blose, ZA (Ziphezinhle)",
+    "student_number": 14570,
+    "name": "Grobbelaar, JL (Jamey)",
     "gender": "M",
+    "class": "11MB",
+    "subject": "Further Studies Mathematics",
+    "line": 11,
+    "teacher": "DE Reuben"
+  },
+  {
+    "student_number": 14420,
+    "name": "Loots, MT (Megan)",
+    "gender": "F",
+    "class": "11MB",
+    "subject": "Further Studies Mathematics",
+    "line": 11,
+    "teacher": "DE Reuben"
+  },
+  {
+    "student_number": 14672,
+    "name": "Mqadi, E (Ezinhle)",
+    "gender": "F",
     "class": "11SR",
     "subject": "Further Studies Mathematics",
     "line": 11,
     "teacher": "DE Reuben"
   },
   {
-    "student_number": 14661,
-    "name": "Dlamini, O (Owomusa)",
+    "student_number": 14498,
+    "name": "Ngcobo, BS (Brightness)",
     "gender": "F",
-    "class": "11GB",
+    "class": "11MB",
     "subject": "Further Studies Mathematics",
     "line": 11,
     "teacher": "DE Reuben"
   },
   {
-    "student_number": 14574,
-    "name": "Govender, J (Jeriah)",
-    "gender": "M",
-    "class": "11SR",
-    "subject": "Further Studies Mathematics",
-    "line": 11,
-    "teacher": "DE Reuben"
-  },
-  {
-    "student_number": 14583,
-    "name": "Kearley, MH (Maja)",
-    "gender": "F",
-    "class": "11GB",
-    "subject": "Further Studies Mathematics",
-    "line": 11,
-    "teacher": "DE Reuben"
-  },
-  {
-    "student_number": 14467,
-    "name": "Njokwe, T (Thubelihle)",
-    "gender": "F",
-    "class": "11GB",
-    "subject": "Further Studies Mathematics",
-    "line": 11,
-    "teacher": "DE Reuben"
-  },
-  {
-    "student_number": 14521,
-    "name": "Viraragavan, S (Saiusha)",
-    "gender": "F",
-    "class": "11GB",
-    "subject": "Further Studies Mathematics",
-    "line": 11,
-    "teacher": "DE Reuben"
-  },
-  {
-    "student_number": 15039,
-    "name": "Whittle, LD (Luke)",
-    "gender": "M",
-    "class": "11GB",
-    "subject": "Further Studies Mathematics",
-    "line": 11,
-    "teacher": "DE Reuben"
-  },
-  {
-    "student_number": 14507,
-    "name": "Zondi, YC (Yolanda)",
+    "student_number": 14550,
+    "name": "Ramakatsa, LS (Lesedi)",
     "gender": "F",
     "class": "11AS",
     "subject": "Further Studies Mathematics",
@@ -6579,19 +6624,46 @@
     "teacher": "DE Reuben"
   },
   {
-    "student_number": 14568,
-    "name": "Chetty, SM (Stefan)",
+    "student_number": 14475,
+    "name": "Singh, A (Ahreya)",
+    "gender": "F",
+    "class": "11SR",
+    "subject": "Further Studies Mathematics",
+    "line": 11,
+    "teacher": "DE Reuben"
+  },
+  {
+    "student_number": 14983,
+    "name": "van Ballegooyen, KH (Katelyn)",
+    "gender": "F",
+    "class": "11MB",
+    "subject": "Further Studies Mathematics",
+    "line": 11,
+    "teacher": "DE Reuben"
+  },
+  {
+    "student_number": 15333,
+    "name": "Whitaker, KS (Kaylee)",
+    "gender": "F",
+    "class": "11JC",
+    "subject": "Further Studies Mathematics",
+    "line": 11,
+    "teacher": "DE Reuben"
+  },
+  {
+    "student_number": 14453,
+    "name": "Beselaar, C (Chandon)",
     "gender": "M",
-    "class": "11GB",
+    "class": "11JC",
     "subject": "History",
     "line": 11,
     "teacher": "SL Cope"
   },
   {
-    "student_number": 14579,
-    "name": "Chiliza, AT (Aphelele)",
+    "student_number": 14568,
+    "name": "Chetty, SM (Stefan)",
     "gender": "M",
-    "class": "11SR",
+    "class": "11GB",
     "subject": "History",
     "line": 11,
     "teacher": "SL Cope"
@@ -6606,10 +6678,10 @@
     "teacher": "SL Cope"
   },
   {
-    "student_number": 15649,
-    "name": "Donaldson, DP (Devon)",
+    "student_number": 14628,
+    "name": "Hlongwa, UM (Uyanda)",
     "gender": "M",
-    "class": "11LU",
+    "class": "11MB",
     "subject": "History",
     "line": 11,
     "teacher": "SL Cope"
@@ -6687,15 +6759,6 @@
     "teacher": "SL Cope"
   },
   {
-    "student_number": 14418,
-    "name": "Mkhize, SK (Sethu)",
-    "gender": "M",
-    "class": "11NJ",
-    "subject": "History",
-    "line": 11,
-    "teacher": "SL Cope"
-  },
-  {
     "student_number": 14611,
     "name": "Ndlovu, LS (Lethokuhle)",
     "gender": "F",
@@ -6709,6 +6772,15 @@
     "name": "Peckham, BC (Brody)",
     "gender": "M",
     "class": "11MB",
+    "subject": "History",
+    "line": 11,
+    "teacher": "SL Cope"
+  },
+  {
+    "student_number": 14505,
+    "name": "Shange, NS (Nompilo)",
+    "gender": "F",
+    "class": "11LZ",
     "subject": "History",
     "line": 11,
     "teacher": "SL Cope"
@@ -6753,15 +6825,6 @@
     "student_number": 14560,
     "name": "Blose, SA (Sboniso)",
     "gender": "M",
-    "class": "11LU",
-    "subject": "History",
-    "line": 11,
-    "teacher": "SC Jones"
-  },
-  {
-    "student_number": 14491,
-    "name": "Cele, A (Amagaye)",
-    "gender": "F",
     "class": "11LU",
     "subject": "History",
     "line": 11,
@@ -6844,15 +6907,6 @@
     "name": "Mavundla, AEP (Amabutho )",
     "gender": "M",
     "class": "11NJ",
-    "subject": "History",
-    "line": 11,
-    "teacher": "SC Jones"
-  },
-  {
-    "student_number": 14673,
-    "name": "Mhlongo, OL (Osphile)",
-    "gender": "M",
-    "class": "11DH",
     "subject": "History",
     "line": 11,
     "teacher": "SC Jones"
@@ -6984,15 +7038,6 @@
     "teacher": "EI Moore"
   },
   {
-    "student_number": 14628,
-    "name": "Hlongwa, UM (Uyanda)",
-    "gender": "M",
-    "class": "11MB",
-    "subject": "History",
-    "line": 11,
-    "teacher": "EI Moore"
-  },
-  {
     "student_number": 14524,
     "name": "Hlophe, NL (Ndumiso)",
     "gender": "M",
@@ -7049,15 +7094,6 @@
   {
     "student_number": 14522,
     "name": "Moss, E (Ethan)",
-    "gender": "M",
-    "class": "11AS",
-    "subject": "History",
-    "line": 11,
-    "teacher": "EI Moore"
-  },
-  {
-    "student_number": 15688,
-    "name": "Ndokweni, BN (Bayanda)",
     "gender": "M",
     "class": "11AS",
     "subject": "History",
@@ -7785,6 +7821,15 @@
     "teacher": "SP Nene"
   },
   {
+    "student_number": 14979,
+    "name": "Mazibuko, S (Sphelele)",
+    "gender": "M",
+    "class": "11SR",
+    "subject": "IsiZulu First Additional Language",
+    "line": null,
+    "teacher": "SP Nene"
+  },
+  {
     "student_number": 14500,
     "name": "Mbonambi, S (Samukelisiwe)",
     "gender": "F",
@@ -8181,15 +8226,6 @@
     "teacher": "LS Zuma"
   },
   {
-    "student_number": 15342,
-    "name": "Clarkson, C (Chloe)",
-    "gender": "F",
-    "class": "11MB",
-    "subject": "Engineering Graphics and Design",
-    "line": 5,
-    "teacher": "AM Burger"
-  },
-  {
     "student_number": 14543,
     "name": "Dempers, B (Benjamin)",
     "gender": "M",
@@ -8442,6 +8478,15 @@
     "teacher": "AM Burger"
   },
   {
+    "student_number": 14432,
+    "name": "Daw, NR (Nathan)",
+    "gender": "M",
+    "class": "11JC",
+    "subject": "Engineering Graphics and Design",
+    "line": 5,
+    "teacher": "T Tonkin"
+  },
+  {
     "student_number": 14624,
     "name": "de Villiers, C (Clarissa)",
     "gender": "F",
@@ -8588,15 +8633,6 @@
   {
     "student_number": 14592,
     "name": "Reddy, JM (Joshua)",
-    "gender": "M",
-    "class": "11JC",
-    "subject": "Engineering Graphics and Design",
-    "line": 5,
-    "teacher": "T Tonkin"
-  },
-  {
-    "student_number": 14515,
-    "name": "Scheepers, NB (Nathan)",
     "gender": "M",
     "class": "11JC",
     "subject": "Engineering Graphics and Design",
@@ -8982,15 +9018,6 @@
     "teacher": "LK Huxham"
   },
   {
-    "student_number": 15689,
-    "name": "Dimba, CT (Crystal)",
-    "gender": "F",
-    "class": "11LU",
-    "subject": "Life Orientation",
-    "line": 11,
-    "teacher": "LK Huxham"
-  },
-  {
     "student_number": 15053,
     "name": "Faulkner, KA (Kayne)",
     "gender": "M",
@@ -9049,15 +9076,6 @@
     "name": "Motaung, PN (Philasande)",
     "gender": "F",
     "class": "11NJ",
-    "subject": "Life Orientation",
-    "line": 11,
-    "teacher": "LK Huxham"
-  },
-  {
-    "student_number": 15688,
-    "name": "Ndokweni, BN (Bayanda)",
-    "gender": "M",
-    "class": "11AS",
     "subject": "Life Orientation",
     "line": 11,
     "teacher": "LK Huxham"
@@ -9225,6 +9243,15 @@
     "teacher": "S Kowlesur"
   },
   {
+    "student_number": 14423,
+    "name": "Hadebe, PN (Phelisa)",
+    "gender": "F",
+    "class": "11GB",
+    "subject": "Life Orientation",
+    "line": 11,
+    "teacher": "S Kowlesur"
+  },
+  {
     "student_number": 14675,
     "name": "Khuboni, B (Banele)",
     "gender": "M",
@@ -9301,15 +9328,6 @@
     "name": "Ndlovu, SNT (Sanelisiwe)",
     "gender": "F",
     "class": "11LU",
-    "subject": "Life Orientation",
-    "line": 11,
-    "teacher": "S Kowlesur"
-  },
-  {
-    "student_number": 15232,
-    "name": "Ngcongo, A (Athandwe)",
-    "gender": "F",
-    "class": "11AS",
     "subject": "Life Orientation",
     "line": 11,
     "teacher": "S Kowlesur"
@@ -9702,15 +9720,6 @@
     "teacher": "M McLaughlin"
   },
   {
-    "student_number": 14423,
-    "name": "Hadebe, PN (Phelisa)",
-    "gender": "F",
-    "class": "11GB",
-    "subject": "Life Orientation",
-    "line": 11,
-    "teacher": "M McLaughlin"
-  },
-  {
     "student_number": 14486,
     "name": "Haynes, BR (Bethany)",
     "gender": "F",
@@ -9871,6 +9880,15 @@
     "subject": "Life Orientation",
     "line": 11,
     "teacher": "M McLaughlin"
+  },
+  {
+    "student_number": 14406,
+    "name": "Baynes, CA (Connah)",
+    "gender": "M",
+    "class": "11DH",
+    "subject": "Life Orientation",
+    "line": 11,
+    "teacher": "TA Mvumbu"
   },
   {
     "student_number": 14701,
@@ -10228,6 +10246,15 @@
     "name": "Nel, AR (Ayden)",
     "gender": "M",
     "class": "11LU",
+    "subject": "Life Orientation",
+    "line": 11,
+    "teacher": "TA Mvumbu"
+  },
+  {
+    "student_number": 15232,
+    "name": "Ngcongo, A (Athandwe)",
+    "gender": "F",
+    "class": "11AS",
     "subject": "Life Orientation",
     "line": 11,
     "teacher": "TA Mvumbu"
@@ -10512,15 +10539,6 @@
     "teacher": "E Naidoo"
   },
   {
-    "student_number": 14515,
-    "name": "Scheepers, NB (Nathan)",
-    "gender": "M",
-    "class": "11JC",
-    "subject": "Life Orientation",
-    "line": 11,
-    "teacher": "E Naidoo"
-  },
-  {
     "student_number": 14107,
     "name": "Sebitloane, KOM (Kagiso)",
     "gender": "M",
@@ -11178,6 +11196,15 @@
     "teacher": "ES Blom"
   },
   {
+    "student_number": 14555,
+    "name": "Fripp, SM (Sienna)",
+    "gender": "F",
+    "class": "11SR",
+    "subject": "Life Sciences",
+    "line": 5,
+    "teacher": "R Harmse"
+  },
+  {
     "student_number": 14586,
     "name": "Jacobson, D (Dylan)",
     "gender": "M",
@@ -11236,6 +11263,15 @@
     "name": "Meier, LLY (Lindy)",
     "gender": "F",
     "class": "11SR",
+    "subject": "Life Sciences",
+    "line": 5,
+    "teacher": "R Harmse"
+  },
+  {
+    "student_number": 14616,
+    "name": "Memela, A (Alibongwe)",
+    "gender": "M",
+    "class": "11MB",
     "subject": "Life Sciences",
     "line": 5,
     "teacher": "R Harmse"
@@ -11952,6 +11988,15 @@
     "teacher": "A Stols"
   },
   {
+    "student_number": 14659,
+    "name": "Zungu, SM (Sinabobonke)",
+    "gender": "M",
+    "class": "11NJ",
+    "subject": "Life Sciences",
+    "line": 7,
+    "teacher": "A Stols"
+  },
+  {
     "student_number": 14614,
     "name": "Campbell, LV (Luke)",
     "gender": "M",
@@ -11997,15 +12042,6 @@
     "teacher": "A Jugmohan-Chonnoolal"
   },
   {
-    "student_number": 14456,
-    "name": "Dlamini, MD (Mpilo)",
-    "gender": "M",
-    "class": "11LZ",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "A Jugmohan-Chonnoolal"
-  },
-  {
     "student_number": 14733,
     "name": "Gumbi, B (Bayanda)",
     "gender": "M",
@@ -12042,28 +12078,10 @@
     "teacher": "A Jugmohan-Chonnoolal"
   },
   {
-    "student_number": 14420,
-    "name": "Loots, MT (Megan)",
-    "gender": "F",
-    "class": "11MB",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "A Jugmohan-Chonnoolal"
-  },
-  {
     "student_number": 14244,
     "name": "Maduna, LS (Lethubuhle)",
     "gender": "M",
     "class": "11LU",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "A Jugmohan-Chonnoolal"
-  },
-  {
-    "student_number": 14700,
-    "name": "Maharaj, AA (Aurav)",
-    "gender": "M",
-    "class": "11LZ",
     "subject": "Mathematical Literacy",
     "line": 3,
     "teacher": "A Jugmohan-Chonnoolal"
@@ -12213,15 +12231,6 @@
     "teacher": "J Leuschke"
   },
   {
-    "student_number": 14436,
-    "name": "Easson, RA (Rebecca)",
-    "gender": "F",
-    "class": "11MB",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "J Leuschke"
-  },
-  {
     "student_number": 14478,
     "name": "Geldenhuys, SB (Shaelyn)",
     "gender": "F",
@@ -12330,15 +12339,6 @@
     "teacher": "J Leuschke"
   },
   {
-    "student_number": 14497,
-    "name": "Ndlovu, SNT (Sanelisiwe)",
-    "gender": "F",
-    "class": "11LU",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "J Leuschke"
-  },
-  {
     "student_number": 14707,
     "name": "Ngcobo, ANL (Andisiwe)",
     "gender": "F",
@@ -12378,15 +12378,6 @@
     "student_number": 14496,
     "name": "Sampson, MPS (Mikayla)",
     "gender": "F",
-    "class": "11JC",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "J Leuschke"
-  },
-  {
-    "student_number": 14107,
-    "name": "Sebitloane, KOM (Kagiso)",
-    "gender": "M",
     "class": "11JC",
     "subject": "Mathematical Literacy",
     "line": 3,
@@ -12436,15 +12427,6 @@
     "subject": "Mathematical Literacy",
     "line": 3,
     "teacher": "J Leuschke"
-  },
-  {
-    "student_number": 14568,
-    "name": "Chetty, SM (Stefan)",
-    "gender": "M",
-    "class": "11GB",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "C Naidoo"
   },
   {
     "student_number": 14581,
@@ -12501,10 +12483,10 @@
     "teacher": "C Naidoo"
   },
   {
-    "student_number": 14196,
-    "name": "Ngcobo, SU (Simtholile)",
-    "gender": "F",
-    "class": "11DH",
+    "student_number": 14660,
+    "name": "Ngongoma, SB (Sithenkosi)",
+    "gender": "M",
+    "class": "11LZ",
     "subject": "Mathematical Literacy",
     "line": 3,
     "teacher": "C Naidoo"
@@ -12636,6 +12618,15 @@
     "teacher": "C Naidoo"
   },
   {
+    "student_number": 14749,
+    "name": "Carter, JJ (Jason )",
+    "gender": "M",
+    "class": "11DH",
+    "subject": "Mathematical Literacy",
+    "line": 3,
+    "teacher": "SI O'Halloran"
+  },
+  {
     "student_number": 14579,
     "name": "Chiliza, AT (Aphelele)",
     "gender": "M",
@@ -12708,28 +12699,10 @@
     "teacher": "SI O'Halloran"
   },
   {
-    "student_number": 15688,
-    "name": "Ndokweni, BN (Bayanda)",
-    "gender": "M",
-    "class": "11AS",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "SI O'Halloran"
-  },
-  {
     "student_number": 14704,
     "name": "Nel, AR (Ayden)",
     "gender": "M",
     "class": "11LU",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "SI O'Halloran"
-  },
-  {
-    "student_number": 14596,
-    "name": "Ngcobo, AM (Ayabonga)",
-    "gender": "F",
-    "class": "11MB",
     "subject": "Mathematical Literacy",
     "line": 3,
     "teacher": "SI O'Halloran"
@@ -12784,15 +12757,6 @@
     "name": "Piyoos, T (Tyrique)",
     "gender": "M",
     "class": "11LU",
-    "subject": "Mathematical Literacy",
-    "line": 3,
-    "teacher": "SI O'Halloran"
-  },
-  {
-    "student_number": 14515,
-    "name": "Scheepers, NB (Nathan)",
-    "gender": "M",
-    "class": "11JC",
     "subject": "Mathematical Literacy",
     "line": 3,
     "teacher": "SI O'Halloran"
@@ -13320,6 +13284,33 @@
     "teacher": "LS Mbuyazi"
   },
   {
+    "student_number": 14456,
+    "name": "Dlamini, MD (Mpilo)",
+    "gender": "M",
+    "class": "11LZ",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "LS Mbuyazi"
+  },
+  {
+    "student_number": 14436,
+    "name": "Easson, RA (Rebecca)",
+    "gender": "F",
+    "class": "11MB",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "LS Mbuyazi"
+  },
+  {
+    "student_number": 14700,
+    "name": "Maharaj, AA (Aurav)",
+    "gender": "M",
+    "class": "11LZ",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "LS Mbuyazi"
+  },
+  {
     "student_number": 14447,
     "name": "Mapotse, SM (Sibusiso)",
     "gender": "M",
@@ -13383,6 +13374,15 @@
     "teacher": "LS Mbuyazi"
   },
   {
+    "student_number": 14596,
+    "name": "Ngcobo, AM (Ayabonga)",
+    "gender": "F",
+    "class": "11MB",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "LS Mbuyazi"
+  },
+  {
     "student_number": 14108,
     "name": "Ngcobo, N (Nokuzola)",
     "gender": "F",
@@ -13392,10 +13392,10 @@
     "teacher": "LS Mbuyazi"
   },
   {
-    "student_number": 14660,
-    "name": "Ngongoma, SB (Sithenkosi)",
-    "gender": "M",
-    "class": "11LZ",
+    "student_number": 14196,
+    "name": "Ngcobo, SU (Simtholile)",
+    "gender": "F",
+    "class": "11DH",
     "subject": "Mathematics",
     "line": 3,
     "teacher": "LS Mbuyazi"
@@ -13405,6 +13405,15 @@
     "name": "Ngxongo, A (Alwande)",
     "gender": "M",
     "class": "11NJ",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "LS Mbuyazi"
+  },
+  {
+    "student_number": 14083,
+    "name": "Nkwanyana, TL (Thato)",
+    "gender": "F",
+    "class": "11LU",
     "subject": "Mathematics",
     "line": 3,
     "teacher": "LS Mbuyazi"
@@ -13437,6 +13446,15 @@
     "teacher": "LS Mbuyazi"
   },
   {
+    "student_number": 14107,
+    "name": "Sebitloane, KOM (Kagiso)",
+    "gender": "M",
+    "class": "11JC",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "LS Mbuyazi"
+  },
+  {
     "student_number": 14482,
     "name": "Vukeka, LA (Lwandle)",
     "gender": "F",
@@ -13455,10 +13473,10 @@
     "teacher": "LS Mbuyazi"
   },
   {
-    "student_number": 14601,
-    "name": "Chabata, LN (Lefika)",
+    "student_number": 14548,
+    "name": "Cele, MU (Menelisi)",
     "gender": "M",
-    "class": "11LZ",
+    "class": "11LU",
     "subject": "Mathematics",
     "line": 3,
     "teacher": "ML Mthanti"
@@ -13536,6 +13554,15 @@
     "teacher": "ML Mthanti"
   },
   {
+    "student_number": 14420,
+    "name": "Loots, MT (Megan)",
+    "gender": "F",
+    "class": "11MB",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "ML Mthanti"
+  },
+  {
     "student_number": 15672,
     "name": "Matata, KL (Kgopotso)",
     "gender": "F",
@@ -13581,15 +13608,6 @@
     "teacher": "ML Mthanti"
   },
   {
-    "student_number": 14429,
-    "name": "Mvelase, SS (Senamile)",
-    "gender": "F",
-    "class": "11SR",
-    "subject": "Mathematics",
-    "line": 3,
-    "teacher": "ML Mthanti"
-  },
-  {
     "student_number": 14611,
     "name": "Ndlovu, LS (Lethokuhle)",
     "gender": "F",
@@ -13599,19 +13617,19 @@
     "teacher": "ML Mthanti"
   },
   {
-    "student_number": 14498,
-    "name": "Ngcobo, BS (Brightness)",
+    "student_number": 14497,
+    "name": "Ndlovu, SNT (Sanelisiwe)",
     "gender": "F",
-    "class": "11MB",
+    "class": "11LU",
     "subject": "Mathematics",
     "line": 3,
     "teacher": "ML Mthanti"
   },
   {
-    "student_number": 14083,
-    "name": "Nkwanyana, TL (Thato)",
+    "student_number": 14498,
+    "name": "Ngcobo, BS (Brightness)",
     "gender": "F",
-    "class": "11LU",
+    "class": "11MB",
     "subject": "Mathematics",
     "line": 3,
     "teacher": "ML Mthanti"
@@ -13687,6 +13705,15 @@
     "subject": "Mathematics",
     "line": 3,
     "teacher": "ML Mthanti"
+  },
+  {
+    "student_number": 14601,
+    "name": "Chabata, LN (Lefika)",
+    "gender": "M",
+    "class": "11LZ",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "DE Reuben"
   },
   {
     "student_number": 14490,
@@ -14132,6 +14159,15 @@
   {
     "student_number": 14672,
     "name": "Mqadi, E (Ezinhle)",
+    "gender": "F",
+    "class": "11SR",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "MOE Woodrow"
+  },
+  {
+    "student_number": 14429,
+    "name": "Mvelase, SS (Senamile)",
     "gender": "F",
     "class": "11SR",
     "subject": "Mathematics",
@@ -14661,10 +14697,28 @@
     "teacher": "JE Knox-Whitehead"
   },
   {
+    "student_number": 15672,
+    "name": "Matata, KL (Kgopotso)",
+    "gender": "F",
+    "class": "11LU",
+    "subject": "Physical Sciences",
+    "line": 6,
+    "teacher": "JE Knox-Whitehead"
+  },
+  {
     "student_number": 14968,
     "name": "Mbatha, SM (Siphesihle)",
     "gender": "M",
     "class": "11SR",
+    "subject": "Physical Sciences",
+    "line": 6,
+    "teacher": "JE Knox-Whitehead"
+  },
+  {
+    "student_number": 14673,
+    "name": "Mhlongo, OL (Osphile)",
+    "gender": "M",
+    "class": "11DH",
     "subject": "Physical Sciences",
     "line": 6,
     "teacher": "JE Knox-Whitehead"
@@ -14701,6 +14755,15 @@
     "name": "Tshabalala, S (Sibonelo)",
     "gender": "F",
     "class": "11AS",
+    "subject": "Physical Sciences",
+    "line": 6,
+    "teacher": "JE Knox-Whitehead"
+  },
+  {
+    "student_number": 14482,
+    "name": "Vukeka, LA (Lwandle)",
+    "gender": "F",
+    "class": "11DH",
     "subject": "Physical Sciences",
     "line": 6,
     "teacher": "JE Knox-Whitehead"
@@ -14769,15 +14832,6 @@
     "teacher": "TA Mvumbu"
   },
   {
-    "student_number": 14643,
-    "name": "Clark  , KW (Kingston )",
-    "gender": "M",
-    "class": "11LZ",
-    "subject": "Tourism",
-    "line": 5,
-    "teacher": "TA Mvumbu"
-  },
-  {
     "student_number": 15053,
     "name": "Faulkner, KA (Kayne)",
     "gender": "M",
@@ -14836,15 +14890,6 @@
     "name": "Mchunu, AM (Amahle)",
     "gender": "F",
     "class": "11AS",
-    "subject": "Tourism",
-    "line": 5,
-    "teacher": "TA Mvumbu"
-  },
-  {
-    "student_number": 14616,
-    "name": "Memela, A (Alibongwe)",
-    "gender": "M",
-    "class": "11MB",
     "subject": "Tourism",
     "line": 5,
     "teacher": "TA Mvumbu"
@@ -14913,6 +14958,15 @@
     "teacher": "TA Mvumbu"
   },
   {
+    "student_number": 14551,
+    "name": "Baxter, TJ (Teagan)",
+    "gender": "M",
+    "class": "11JC",
+    "subject": "Tourism",
+    "line": 5,
+    "teacher": "E Naidoo"
+  },
+  {
     "student_number": 14456,
     "name": "Dlamini, MD (Mpilo)",
     "gender": "M",
@@ -14925,24 +14979,6 @@
     "student_number": 15002,
     "name": "Dube, NA (Nsika)",
     "gender": "M",
-    "class": "11JC",
-    "subject": "Tourism",
-    "line": 5,
-    "teacher": "E Naidoo"
-  },
-  {
-    "student_number": 14555,
-    "name": "Fripp, SM (Sienna)",
-    "gender": "F",
-    "class": "11SR",
-    "subject": "Tourism",
-    "line": 5,
-    "teacher": "E Naidoo"
-  },
-  {
-    "student_number": 14478,
-    "name": "Geldenhuys, SB (Shaelyn)",
-    "gender": "F",
     "class": "11JC",
     "subject": "Tourism",
     "line": 5,
@@ -14998,15 +15034,6 @@
     "name": "Ndlovu, LS (Lethokuhle)",
     "gender": "F",
     "class": "11LZ",
-    "subject": "Tourism",
-    "line": 5,
-    "teacher": "E Naidoo"
-  },
-  {
-    "student_number": 14707,
-    "name": "Ngcobo, ANL (Andisiwe)",
-    "gender": "F",
-    "class": "11JC",
     "subject": "Tourism",
     "line": 5,
     "teacher": "E Naidoo"
@@ -15183,15 +15210,6 @@
     "teacher": "TA Mvumbu"
   },
   {
-    "student_number": 14658,
-    "name": "Luthuli, AS (Abongwe )",
-    "gender": "F",
-    "class": "11AS",
-    "subject": "Tourism",
-    "line": 7,
-    "teacher": "TA Mvumbu"
-  },
-  {
     "student_number": 14738,
     "name": "Macpherson, CM (Caitlin )",
     "gender": "F",
@@ -15309,15 +15327,6 @@
     "teacher": "TA Mvumbu"
   },
   {
-    "student_number": 14505,
-    "name": "Shange, NS (Nompilo)",
-    "gender": "F",
-    "class": "11LZ",
-    "subject": "Tourism",
-    "line": 7,
-    "teacher": "TA Mvumbu"
-  },
-  {
     "student_number": 14663,
     "name": "Shelembe, SI (Siyabonga)",
     "gender": "M",
@@ -15331,15 +15340,6 @@
     "name": "Tayero, DD (Deon)",
     "gender": "M",
     "class": "11NJ",
-    "subject": "Tourism",
-    "line": 7,
-    "teacher": "TA Mvumbu"
-  },
-  {
-    "student_number": 14603,
-    "name": "Vezi, A (Azamahle)",
-    "gender": "F",
-    "class": "11LU",
     "subject": "Tourism",
     "line": 7,
     "teacher": "TA Mvumbu"
@@ -15421,15 +15421,6 @@
     "name": "Khan, AS (Ahmed)",
     "gender": "M",
     "class": "11JC",
-    "subject": "Tourism",
-    "line": 7,
-    "teacher": "K Poovalingam"
-  },
-  {
-    "student_number": 15381,
-    "name": "Linda, AAA (Afezeka)",
-    "gender": "F",
-    "class": "11LZ",
     "subject": "Tourism",
     "line": 7,
     "teacher": "K Poovalingam"
@@ -15534,26 +15525,8 @@
     "teacher": "K Poovalingam"
   },
   {
-    "student_number": 15233,
-    "name": "Noble, JA (Jaylah)",
-    "gender": "F",
-    "class": "11GB",
-    "subject": "Tourism",
-    "line": 7,
-    "teacher": "K Poovalingam"
-  },
-  {
     "student_number": 14636,
     "name": "Radebe, NS (Siyanda)",
-    "gender": "M",
-    "class": "11JC",
-    "subject": "Tourism",
-    "line": 7,
-    "teacher": "K Poovalingam"
-  },
-  {
-    "student_number": 14515,
-    "name": "Scheepers, NB (Nathan)",
     "gender": "M",
     "class": "11JC",
     "subject": "Tourism",
@@ -15673,6 +15646,15 @@
     "name": "Meier, LLY (Lindy)",
     "gender": "F",
     "class": "11SR",
+    "subject": "Visual Arts",
+    "line": 6,
+    "teacher": "BE Nicholas"
+  },
+  {
+    "student_number": 14598,
+    "name": "Mnyali, IS (Ibanathi)",
+    "gender": "M",
+    "class": "11NJ",
     "subject": "Visual Arts",
     "line": 6,
     "teacher": "BE Nicholas"
