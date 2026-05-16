@@ -1,135 +1,2004 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Exam Marking Planner</title>
-  <style>
-    body { font-family: Arial; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Smart exam invigilation scheduler with offline support">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231e3a5f' width='100' height='100'/><text x='50' y='50' font-size='60' fill='white' text-anchor='middle' dominant-baseline='central' font-weight='bold'>E</text></svg>">
+    <title>Exam Invigilation Scheduler</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --secondary: #2d5a8c;
+            --accent: #0d9488;
+            --danger: #dc2626;
+            --light-bg: #f8fafc;
+            --border: #e2e8f0;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --success: #059669;
+            --warning: #d97706;
+        }
 
-    .teacher {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin: 10px;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    .day {
-      padding: 3px;
-      margin: 2px;
-      display: inline-block;
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+        }
 
-    .low { background: #c8f7c5; }      /* green */
-    .medium { background: #ffe4b3; }   /* orange */
-    .high { background: #ffb3b3; }     /* red */
+        /* Sidebar Navigation */
+        .sidebar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            padding: 2rem 0;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            overflow-y: auto;
+        }
 
-  </style>
+        .sidebar-header {
+            padding: 0 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-header h2 {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-header i {
+            font-size: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .nav-item {
+            padding: 0;
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.75);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .nav-link:hover {
+            color: white;
+            background-color: rgba(255,255,255,0.1);
+            border-left-color: var(--accent);
+        }
+
+        .nav-link.active {
+            color: white;
+            background-color: rgba(255,255,255,0.15);
+            border-left-color: var(--accent);
+        }
+
+        .nav-link i {
+            width: 20px;
+        }
+
+        /* Main Content */
+        .main-container {
+            margin-left: 280px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .top-bar h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .connection-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--light-bg);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .connection-indicator.online::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-indicator.offline::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* Cards & Sections */
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30,58,95,0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.95rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(13,148,136,0.1);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .schedule-table thead {
+            background: var(--light-bg);
+        }
+
+        .schedule-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .schedule-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .schedule-table tbody tr:hover {
+            background-color: rgba(13,148,136,0.02);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-assigned {
+            background: rgba(5,150,105,0.1);
+            color: var(--success);
+        }
+
+        .badge-unassigned {
+            background: rgba(220,38,38,0.1);
+            color: var(--danger);
+        }
+
+        .badge-pending {
+            background: rgba(217,119,6,0.1);
+            color: var(--warning);
+        }
+
+        /* Dashboard Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .label {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* Modals & Overlays */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h2 {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                min-height: auto;
+                padding: 1rem;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .main-container {
+                margin-left: 0;
+            }
+
+            .content {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .schedule-table {
+                font-size: 0.85rem;
+            }
+
+            .schedule-table th,
+            .schedule-table td {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .mt-4 {
+            margin-top: 2rem;
+        }
+
+        .mb-3 {
+            margin-bottom: 1rem;
+        }
+
+        .d-flex {
+            display: flex;
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+
+        .flex-wrap {
+            flex-wrap: wrap;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-muted {
+            color: var(--text-light);
+        }
+
+        .success {
+            color: var(--success);
+        }
+
+        .danger {
+            color: var(--danger);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: var(--accent);
+            background-color: rgba(13,148,136,0.05);
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-controls select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            font-size: 0.9rem;
+        }
+    </style>
 </head>
 <body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-clipboard-list"></i> Exam Scheduler</h2>
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link active" href="#" data-section="dashboard">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            <a class="nav-link" href="#" data-section="upload">
+                <i class="fas fa-upload"></i> Upload Data
+            </a>
+            <a class="nav-link" href="#" data-section="schedule">
+                <i class="fas fa-calendar-alt"></i> Schedule
+            </a>
+            <a class="nav-link" href="#" data-section="allocation">
+                <i class="fas fa-user-tie"></i> Teacher Allocation
+            </a>
+            <a class="nav-link" href="#" data-section="reports">
+                <i class="fas fa-file-pdf"></i> Reports
+            </a>
+        </nav>
+    </div>
 
-<h2>Teacher Examination Marking Planner</h2>
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <h1 id="section-title">Dashboard</h1>
+            <div class="connection-indicator online" id="connection-status">
+                <span>Online</span>
+            </div>
+        </div>
 
-<h3>Add Marking Entry</h3>
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <div class="stats-grid" id="stats-container">
+                    <div class="stat-card">
+                        <div class="value" id="stat-total-slots">0</div>
+                        <div class="label">Total Slots</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="stat-assigned">0</div>
+                        <div class="label">Assigned</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="stat-unassigned">0</div>
+                        <div class="label">Unassigned</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="stat-teachers">0</div>
+                        <div class="label">Teachers</div>
+                    </div>
+                </div>
 
-<input id="teacherName" placeholder="Teacher Name">
-<input id="subject" placeholder="Subject">
-<input id="grade" placeholder="Grade">
-<input id="session" placeholder="Session (1 or 2)">
-<input id="examDate" type="date">
-<input id="markingDays" type="number" value="2">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Recent Assignments</h3>
+                        <button class="btn btn-primary btn-small" onclick="app.refreshData()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-wrapper">
+                            <table class="schedule-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Exam</th>
+                                        <th>Venue</th>
+                                        <th>Teacher</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-assignments">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No data loaded</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-<button onclick="addMarking()">Add</button>
-<button onclick="exportJSON()">Export JSON</button>
+            <!-- Upload Section -->
+            <section id="upload" class="section hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Upload Excel Files</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Upload Invigilator Assignments</label>
+                            <div class="upload-area" id="upload-area-1">
+                                <input type="file" id="file-assignments" accept=".xlsx,.xls" />
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                                <p style="margin: 0;"><strong>Click to upload</strong> or drag and drop</p>
+                                <p style="color: var(--text-light); font-size: 0.9rem;">XLSX or XLS files (max 10MB)</p>
+                            </div>
+                        </div>
 
-<hr>
+                        <div class="form-group">
+                            <label class="form-label">Upload Teachers List</label>
+                            <div class="upload-area" id="upload-area-2">
+                                <input type="file" id="file-teachers" accept=".xlsx,.xls" />
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                                <p style="margin: 0;"><strong>Click to upload</strong> or drag and drop</p>
+                                <p style="color: var(--text-light); font-size: 0.9rem;">XLSX or XLS files (max 10MB)</p>
+                            </div>
+                        </div>
 
-<h3>Teacher Marking Schedules</h3>
-<div id="teachers"></div>
+                        <button class="btn btn-primary" onclick="app.processUpload()">
+                            <i class="fas fa-check"></i> Process Files
+                        </button>
+                    </div>
+                </div>
 
-<script>
+                <div class="card" id="upload-status" style="display: none;">
+                    <div class="card-header">
+                        <h3>Upload Status</h3>
+                    </div>
+                    <div class="card-body" id="upload-messages">
+                    </div>
+                </div>
+            </section>
 
-let teachers = [];
+            <!-- Schedule Section -->
+            <section id="schedule" class="section hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Exam Schedule</h3>
+                        <div class="filter-controls">
+                            <select id="filter-date" onchange="app.filterSchedule()">
+                                <option value="">All Dates</option>
+                            </select>
+                            <select id="filter-grade" onchange="app.filterSchedule()">
+                                <option value="">All Grades</option>
+                                <option value="8">Grade 8</option>
+                                <option value="9">Grade 9</option>
+                                <option value="10">Grade 10</option>
+                                <option value="11">Grade 11</option>
+                                <option value="12">Grade 12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-wrapper">
+                            <table class="schedule-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Session</th>
+                                        <th>Grade</th>
+                                        <th>Exam</th>
+                                        <th>Venue</th>
+                                        <th>Duration (hrs)</th>
+                                        <th>Teacher</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="schedule-body">
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted">No schedule data</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-// ✅ Generate LAST RESORT days (after exam only)
-function generateDates(examDate, days) {
-  let dates = [];
-  let start = new Date(examDate);
+            <!-- Allocation Section -->
+            <section id="allocation" class="section hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Teacher Allocation</h3>
+                        <button class="btn btn-primary btn-small" onclick="app.autoAllocate()">
+                            <i class="fas fa-magic"></i> Auto Allocate
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Auto-allocation uses available teachers and balances workload across venues.</p>
+                        <div id="allocation-results" style="margin-top: 1.5rem;">
+                            <p class="text-center text-muted">No allocations made yet</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-  for (let i = 1; i <= days; i++) {
-    let d = new Date(start);
-    d.setDate(d.getDate() + i);
-    dates.push(d.toISOString().split("T")[0]);
-  }
+            <!-- Reports Section -->
+            <section id="reports" class="section hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Generate Reports</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <button class="btn btn-primary" onclick="app.exportSchedule()">
+                                <i class="fas fa-file-download"></i> Export Schedule
+                            </button>
+                            <button class="btn btn-primary" onclick="app.exportAllocation()">
+                                <i class="fas fa-file-download"></i> Export Allocations
+                            </button>
+                            <button class="btn btn-primary" onclick="app.exportTeacherList()">
+                                <i class="fas fa-file-download"></i> Teacher List
+                            </button>
+                            <button class="btn btn-primary" onclick="app.printSchedule()">
+                                <i class="fas fa-print"></i> Print Schedule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 
-  return dates;
-}
+    <!-- Modal for Editing -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Assign Teacher</h2>
+                <button class="close-btn" onclick="app.closeModal()">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
 
-// ✅ Add marking entry
-function addMarking() {
-  let name = document.getElementById("teacherName").value;
-  let subject = document.getElementById("subject").value;
-  let grade = document.getElementById("grade").value;
-  let session = document.getElementById("session").value;
-  let examDate = document.getElementById("examDate").value;
-  let markingDays = parseInt(document.getElementById("markingDays").value);
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebaseapp/11.0.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebaseapp/11.0.1/firebase-firestore.js"></script>
 
-  let teacher = teachers.find(t => t.name === name);
+    <!-- Scheduling Engine Scripts -->
+    <script src="scheduling-engine-part1.js"></script>
+    <script src="scheduling-engine-part2.js"></script>
 
-  if (!teacher) {
-    teacher = { name: name, entries: [] };
-    teachers.push(teacher);
-  }
+    <script>
+        /**
+         * FIREBASE STORAGE MODULE
+         * Manages persistent storage to Firestore with offline fallback
+         */
+        const firebaseStorage = {
+            db: null,
+            isInitialized: false,
+            isOnline: navigator.onLine,
+            syncQueue: [],
+            syncInProgress: false,
 
-  let markingDates = generateDates(examDate, markingDays);
+            async init(config) {
+                try {
+                    if (!config) {
+                        console.log('Firebase config not provided - using localStorage only');
+                        return false;
+                    }
 
-  teacher.entries.push({
-    subject,
-    grade,
-    session,
-    examDate,
-    markingDays,
-    markingDates
-  });
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(config);
+                    }
 
-  render();
-}
+                    this.db = firebase.firestore();
+                    this.isInitialized = true;
 
-// ✅ Compute heat levels for a teacher
-function computeHeatMap(entries) {
-  let count = {};
+                    await this.db.enablePersistence().catch(err => {
+                        if (err.code === 'failed-precondition') {
+                            console.warn('Multiple tabs - persistence disabled');
+                        } else if (err.code === 'unimplemented') {
+                            console.warn('Persistence not supported');
+                        }
+                    });
 
-  entries.forEach(e => {
-    e.markingDates.forEach(d => {
-      if (!count[d]) count[d] = 0;
-      count[d]++;
-    });
-  });
+                    this.setupConnectionMonitoring();
+                    console.log('Firebase initialized');
+                    return true;
 
-  return count;
-}
+                } catch (error) {
+                    console.error('Firebase init error:', error);
+                    return false;
+                }
+            },
 
-// ✅ Get CSS class
-function getHeatClass(n) {
-  if (n >= 3) return "high";
-  if (n === 2) return "medium";
-  return "low";
-}
+            setupConnectionMonitoring() {
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    this.syncOfflineQueue();
+                });
 
-// ✅ Render teachers
-function render() {
-  let container = document.getElementById("teachers");
-  container.innerHTML = "";
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                });
 
-  teachers.forEach(t => {
+                if (this.db) {
+                    this.db.collection('_metadata').doc('connection').onSnapshot(
+                        () => {
+                            if (!this.isOnline) {
+                                this.isOnline = true;
+                                this.syncOfflineQueue();
+                            }
+                        },
+                        () => {
+                            this.isOnline = false;
+                        }
+                    );
+                }
+            },
 
-    let heat = computeHeatMap(t.entries);
+            async saveAssignments(assignments, batchId) {
+                if (!this.isInitialized) {
+                    return this.saveToLocalStorage(assignments, batchId);
+                }
 
-    let div = document.createElement("div");
-    div.className = "teacher";
+                try {
+                    const batch = this.db.batch();
+                    let count = 0;
 
-    let html = `<h4>${t.name}</h4>`;
+                    assignments.forEach((assignment, idx) => {
+                        const docId = `${batchId}_${idx}`;
+                        const docRef = this.db.collection('assignments').doc(docId);
+                        
+                        batch.set(docRef, {
+                            ...assignment,
+                            batchId: batchId,
+                            index: idx,
+                            uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        count++;
+                    });
 
-    t.entries.forEach(e => {
-      html += `
-        <b>${e.subject} (Grade ${e.grade}, Session ${e.session})</b><br>
-        Exam: ${e.examDate}<br>
-        Marking Days: ${e.markingDays}<br>
+                    await batch.commit();
+                    return { success: true, count, source: 'firestore' };
 
+                } catch (error) {
+                    console.error('Firestore save error:', error);
+                    if (this.isOnline) {
+                        this.queueForSync({ type: 'save_assignments', data: assignments, batchId });
+                    }
+                    return this.saveToLocalStorage(assignments, batchId);
+                }
+            },
+
+            async loadAssignments(batchId) {
+                if (!this.isInitialized) {
+                    return this.loadFromLocalStorage(batchId);
+                }
+
+                try {
+                    const snapshot = await this.db.collection('assignments')
+                        .where('batchId', '==', batchId)
+                        .get();
+                    
+                    const assignments = [];
+                    snapshot.forEach(doc => {
+                        assignments.push(doc.data());
+                    });
+
+                    return assignments;
+
+                } catch (error) {
+                    console.error('Firestore load error:', error);
+                    return this.loadFromLocalStorage(batchId);
+                }
+            },
+
+            saveToLocalStorage(assignments, batchId) {
+                try {
+                    localStorage.setItem(`assignments_${batchId}`, JSON.stringify(assignments));
+                    localStorage.setItem(`batch_${batchId}_timestamp`, new Date().toISOString());
+                    return { success: true, count: assignments.length, source: 'localStorage' };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+
+            loadFromLocalStorage(batchId) {
+                try {
+                    const data = localStorage.getItem(`assignments_${batchId}`);
+                    return data ? JSON.parse(data) : [];
+                } catch (error) {
+                    return [];
+                }
+            },
+
+            queueForSync(operation) {
+                this.syncQueue.push({
+                    ...operation,
+                    timestamp: Date.now()
+                });
+                this.saveSyncQueue();
+            },
+
+            async syncOfflineQueue() {
+                if (this.syncInProgress || this.syncQueue.length === 0) return;
+
+                this.syncInProgress = true;
+                const queue = [...this.syncQueue];
+
+                for (const operation of queue) {
+                    try {
+                        if (operation.type === 'save_assignments') {
+                            await this.saveAssignments(operation.data, operation.batchId);
+                            this.syncQueue = this.syncQueue.filter(op => op.timestamp !== operation.timestamp);
+                        }
+                    } catch (error) {
+                        console.error('Sync error:', error);
+                    }
+                }
+
+                this.saveSyncQueue();
+                this.syncInProgress = false;
+            },
+
+            saveSyncQueue() {
+                try {
+                    localStorage.setItem('syncQueue', JSON.stringify(this.syncQueue));
+                } catch (error) {
+                    console.error('Error saving sync queue:', error);
+                }
+            },
+
+            loadSyncQueue() {
+                try {
+                    const data = localStorage.getItem('syncQueue');
+                    this.syncQueue = data ? JSON.parse(data) : [];
+                } catch (error) {
+                    console.error('Error loading sync queue:', error);
+                }
+            },
+
+            async deleteBatch(batchId) {
+                if (this.isInitialized) {
+                    try {
+                        const snapshot = await this.db.collection('assignments')
+                            .where('batchId', '==', batchId)
+                            .get();
+                        
+                        const batch = this.db.batch();
+                        snapshot.forEach(doc => {
+                            batch.delete(doc.ref);
+                        });
+                        
+                        await batch.commit();
+                    } catch (error) {
+                        console.error('Delete error:', error);
+                    }
+                }
+
+                localStorage.removeItem(`assignments_${batchId}`);
+                localStorage.removeItem(`batch_${batchId}_timestamp`);
+            },
+
+            getStatus() {
+                return {
+                    initialized: this.isInitialized,
+                    online: this.isOnline,
+                    queueSize: this.syncQueue.length,
+                    syncing: this.syncInProgress
+                };
+            }
+        };
+
+        firebaseStorage.loadSyncQueue();
+
+        window.addEventListener('online', () => {
+            firebaseStorage.isOnline = true;
+            firebaseStorage.syncOfflineQueue();
+        });
+
+        window.addEventListener('offline', () => {
+            firebaseStorage.isOnline = false;
+        });
+
+        // ============================================================================
+        // MAIN APPLICATION CLASS
+        // ============================================================================
+        class ExamSchedulerApp {
+            constructor() {
+                this.scheduleData = [];
+                this.teachersData = [];
+                this.allocationMap = new Map();
+                this.currentFilteredData = [];
+                this.currentBatchId = null;
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadFromStorage();
+                this.setupConnectionMonitor();
+                this.showSection('dashboard');
+                this.updateDashboard();
+            }
+
+            setupEventListeners() {
+                // Navigation
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const section = link.dataset.section;
+                        this.showSection(section);
+                    });
+                });
+
+                // File uploads with drag-drop
+                ['upload-area-1', 'upload-area-2'].forEach(id => {
+                    const area = document.getElementById(id);
+                    const input = area.querySelector('input[type="file"]');
+                    
+                    area.addEventListener('click', () => input.click());
+                    
+                    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+                        area.addEventListener(event, (e) => e.preventDefault());
+                    });
+                    
+                    area.addEventListener('dragover', () => area.classList.add('drag-over'));
+                    area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+                    area.addEventListener('drop', (e) => {
+                        area.classList.remove('drag-over');
+                        input.files = e.dataTransfer.files;
+                    });
+                });
+
+                // Modal close on background click
+                const modal = document.getElementById('edit-modal');
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        this.closeModal();
+                    }
+                });
+            }
+
+            showSection(sectionId) {
+                document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+                document.getElementById(sectionId).classList.remove('hidden');
+                
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+                
+                const titles = {
+                    dashboard: 'Dashboard',
+                    upload: 'Upload Data',
+                    schedule: 'Exam Schedule',
+                    allocation: 'Teacher Allocation',
+                    reports: 'Reports'
+                };
+                document.getElementById('section-title').textContent = titles[sectionId] || 'Dashboard';
+                
+                if (sectionId === 'schedule') {
+                    setTimeout(() => {
+                        this.populateDateFilter();
+                        this.populateScheduleTable();
+                    }, 100);
+                } else if (sectionId === 'dashboard') {
+                    this.updateDashboard();
+                }
+            }
+
+            setupConnectionMonitor() {
+                const updateStatus = () => {
+                    const indicator = document.getElementById('connection-status');
+                    if (navigator.onLine) {
+                        indicator.className = 'connection-indicator online';
+                        indicator.innerHTML = '<span>Online</span>';
+                    } else {
+                        indicator.className = 'connection-indicator offline';
+                        indicator.innerHTML = '<span>Offline</span>';
+                    }
+                };
+                
+                window.addEventListener('online', updateStatus);
+                window.addEventListener('offline', updateStatus);
+                updateStatus();
+            }
+
+            /**
+             * Process uploaded Excel files
+             */
+            processUpload() {
+                const fileAssignments = document.getElementById('file-assignments').files[0];
+                const fileTeachers = document.getElementById('file-teachers').files[0];
+                const statusDiv = document.getElementById('upload-status');
+                const messagesDiv = document.getElementById('upload-messages');
+                
+                if (!fileAssignments || !fileTeachers) {
+                    alert('Please select both files');
+                    return;
+                }
+
+                let messages = '<div style="padding: 1rem; background: var(--light-bg); border-radius: 0.375rem;">';
+                let filesProcessed = 0;
+
+                // Generate batch ID for this upload
+                this.currentBatchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+                const checkComplete = () => {
+                    filesProcessed++;
+                    if (filesProcessed === 2) {
+                        messages += '</div>';
+                        messagesDiv.innerHTML = messages;
+                        statusDiv.style.display = 'block';
+                        this.saveToStorage();
+                        this.updateDashboard();
+                    }
+                };
+                
+                // Process assignments file
+                const readerAssign = new FileReader();
+                readerAssign.onload = (e) => {
+                    try {
+                        const workbook = XLSX.read(e.target.result, { type: 'array' });
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const data = XLSX.utils.sheet_to_json(sheet);
+                        
+                        this.scheduleData = data.map(row => ({
+                            date: row.Date || row.date || '',
+                            session: row.Session || row.session || 1,
+                            grade: row.Grade || row.grade || '',
+                            exam: row.Exam || row.exam || '',
+                            venue: row['Venue Number'] || row['Venue'] || row.venue || '',
+                            timeshift: parseFloat(row.TimeShift || row['Time Shift'] || row.timeshift || 0),
+                            educator: row.Educator || row.educator || null,
+                            is_zulu: (row['Is Zulu'] || row.is_zulu || 'false').toString().toLowerCase() === 'true'
+                        }));
+                        
+                        messages += `<p class="success"><i class="fas fa-check"></i> Loaded ${data.length} schedule entries</p>`;
+                        checkComplete();
+                    } catch (error) {
+                        messages += `<p class="danger"><i class="fas fa-times"></i> Error reading assignments: ${error.message}</p>`;
+                        checkComplete();
+                    }
+                };
+                readerAssign.onerror = () => {
+                    messages += `<p class="danger"><i class="fas fa-times"></i> Error reading assignments file</p>`;
+                    checkComplete();
+                };
+                readerAssign.readAsArrayBuffer(fileAssignments);
+                
+                // Process teachers file
+                const readerTeach = new FileReader();
+                readerTeach.onload = (e) => {
+                    try {
+                        const workbook = XLSX.read(e.target.result, { type: 'array' });
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const data = XLSX.utils.sheet_to_json(sheet);
+                        
+                        this.teachersData = data.map(row => ({
+                            name: row.Educator || row.Name || row.name || '',
+                            registerClass: row['Register class'] || row['Register Class'] || row.registerClass || '',
+                            learners: parseInt(row.Learners || row.learners || 0),
+                            is_zulu: (row.Zulu || row['Is Zulu'] || row.is_zulu || 'false').toString().toLowerCase() === 'true'
+                        })).filter(t => t.name);
+                        
+                        messages += `<p class="success"><i class="fas fa-check"></i> Loaded ${data.length} teachers</p>`;
+                        checkComplete();
+                    } catch (error) {
+                        messages += `<p class="danger"><i class="fas fa-times"></i> Error reading teachers: ${error.message}</p>`;
+                        checkComplete();
+                    }
+                };
+                readerTeach.onerror = () => {
+                    messages += `<p class="danger"><i class="fas fa-times"></i> Error reading teachers file</p>`;
+                    checkComplete();
+                };
+                readerTeach.readAsArrayBuffer(fileTeachers);
+            }
+
+            /**
+             * Filter and re-display schedule
+             */
+            filterSchedule() {
+                this.populateScheduleTable();
+            }
+
+            /**
+             * Populate date filter dropdown
+             */
+            populateDateFilter() {
+                const select = document.getElementById('filter-date');
+                // Clear existing options except the first
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+
+                const dates = [...new Set(this.scheduleData.map(d => d.date).filter(Boolean))].sort();
+                
+                dates.forEach(date => {
+                    const opt = document.createElement('option');
+                    opt.value = date;
+                    opt.textContent = new Date(date + 'T00:00').toLocaleDateString();
+                    select.appendChild(opt);
+                });
+            }
+
+            /**
+             * Populate schedule table with optional filters
+             */
+            populateScheduleTable() {
+                const dateVal = document.getElementById('filter-date')?.value || '';
+                const gradeVal = document.getElementById('filter-grade')?.value || '';
+                
+                let filtered = this.scheduleData;
+                if (dateVal) {
+                    filtered = filtered.filter(d => d.date === dateVal);
+                }
+                if (gradeVal) {
+                    filtered = filtered.filter(d => String(d.grade) === String(gradeVal));
+                }
+
+                this.currentFilteredData = filtered;
+                
+                const tbody = document.getElementById('schedule-body');
+                if (!filtered || filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No schedule data loaded</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = filtered.map((row, dispIdx) => {
+                    const actualIdx = this.scheduleData.indexOf(row);
+                    const assigned = row.educator || this.allocationMap.get(actualIdx);
+                    const status = assigned ? '<span class="badge badge-assigned">✓ Assigned</span>' : '<span class="badge badge-unassigned">✗ Unassigned</span>';
+                    
+                    const dateObj = new Date(row.date + 'T00:00');
+                    const dateStr = isNaN(dateObj.getTime()) ? row.date : dateObj.toLocaleDateString();
+                    
+                    return `
+                        <tr>
+                            <td>${dateStr}</td>
+                            <td>${row.session || '-'}</td>
+                            <td>${row.grade || '-'}</td>
+                            <td>${row.exam || '-'}</td>
+                            <td>${row.venue || '-'}</td>
+                            <td>${row.timeshift || '-'}</td>
+                            <td><strong>${assigned || '<em class="text-muted">Unassigned</em>'}</strong></td>
+                            <td>${status}</td>
+                            <td><button class="btn btn-primary btn-small" onclick="app.openAllocationModal(${actualIdx})" title="Assign teacher"><i class="fas fa-edit"></i></button></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            /**
+             * Open modal for assigning teacher to slot
+             */
+            openAllocationModal(idx) {
+                if (!this.scheduleData[idx]) {
+                    alert('Invalid assignment index');
+                    return;
+                }
+
+                const row = this.scheduleData[idx];
+                const currentAssigned = row.educator || this.allocationMap.get(idx) || '';
+                const availableTeachers = [...new Set(this.teachersData.map(t => t.name).filter(Boolean))];
+                
+                const dateObj = new Date(row.date + 'T00:00');
+                const dateStr = isNaN(dateObj.getTime()) ? row.date : dateObj.toLocaleDateString();
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label"><strong>Exam Details</strong></label>
+                        <p style="margin: 0.5rem 0;"><strong>Date:</strong> ${dateStr}</p>
+                        <p style="margin: 0.5rem 0;"><strong>Session:</strong> ${row.session}</p>
+                        <p style="margin: 0.5rem 0;"><strong>Grade:</strong> ${row.grade}</p>
+                        <p style="margin: 0.5rem 0;"><strong>Exam:</strong> ${row.exam}</p>
+                        <p style="margin: 0.5rem 0;"><strong>Venue:</strong> ${row.venue}</p>
+                        <p style="margin: 0.5rem 0;"><strong>Duration:</strong> ${row.timeshift} hours</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="teacher-select">Assign Teacher</label>
+                        <select id="teacher-select" class="form-input">
+                            <option value="">-- Unassigned --</option>
+                            ${availableTeachers.map(t => {
+                                const selected = currentAssigned === t ? 'selected' : '';
+                                return `<option value="${t}" ${selected}>${t}</option>`;
+                            }).join('')}
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="app.saveAllocation(${idx}, document.getElementById('teacher-select').value)">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button class="btn btn-outline" onclick="app.closeModal()">Cancel</button>
+                    </div>
+                `;
+                
+                document.getElementById('modal-body').innerHTML = html;
+                document.getElementById('edit-modal').classList.add('show');
+                
+                // Focus on dropdown
+                setTimeout(() => {
+                    document.getElementById('teacher-select').focus();
+                }, 100);
+            }
+
+            /**
+             * Initialize Firebase connection
+             */
+            async initializeFirebase(config) {
+                const result = await firebaseStorage.init(config);
+                if (result) {
+                    notifications.success('Firebase initialized successfully');
+                    // Sync any offline changes
+                    await firebaseStorage.syncOfflineQueue();
+                } else {
+                    console.log('Firebase not available - using localStorage');
+                }
+            }
+
+            /**
+             * Save allocation for a slot
+             */
+            saveAllocation(idx, teacher) {
+                if (teacher) {
+                    this.allocationMap.set(idx, teacher);
+                    this.scheduleData[idx].educator = teacher;
+                }
+                this.saveToStorage();
+                this.updateDashboard();
+                this.populateScheduleTable();
+                this.closeModal();
+            }
+
+            /**
+             * Close allocation modal
+             */
+            closeModal() {
+                document.getElementById('edit-modal').classList.remove('show');
+            }
+
+            /**
+             * Auto-allocate teachers to unassigned slots using advanced or basic algorithm
+             */
+            autoAllocate() {
+                if (this.scheduleData.length === 0) {
+                    notifications.error('No schedule data loaded');
+                    return;
+                }
+
+                if (this.teachersData.length === 0) {
+                    notifications.error('No teachers available');
+                    return;
+                }
+
+                const unassignedCount = this.scheduleData.filter((row, idx) => 
+                    !row.educator && !this.allocationMap.get(idx)
+                ).length;
+
+                if (unassignedCount === 0) {
+                    notifications.warning('All slots are already assigned');
+                    return;
+                }
+
+                const resultsDiv = document.getElementById('allocation-results');
+                resultsDiv.innerHTML = `
+                    <div style="padding: 1rem; background: rgba(13,148,136,0.1); border-radius: 0.375rem; border-left: 4px solid var(--accent); color: var(--primary);">
+                        <p><i class="fas fa-spinner fa-spin"></i> Running allocation algorithm...</p>
+                        <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 0.5rem;">Processing ${unassignedCount} unassigned slots...</p>
+                    </div>
+                `;
+
+                // Try advanced scheduling if available
+                setTimeout(() => {
+                    const useAdvanced = typeof window.scheduleAssignments === 'function';
+                    
+                    if (useAdvanced) {
+                        this.autoAllocateAdvanced();
+                    } else {
+                        this.autoAllocateBasic();
+                    }
+                }, 100);
+            }
+
+            /**
+             * Advanced allocation using scheduling engine
+             */
+            autoAllocateAdvanced() {
+                try {
+                    // Prepare data for scheduling engine
+                    const assignmentsCopy = utilities.deepClone(this.scheduleData);
+                    const teachersCopy = utilities.deepClone(this.teachersData);
+
+                    // Ensure proper field naming for engine
+                    assignmentsCopy.forEach((a, idx) => {
+                        a.date = a.date || '';
+                        a.session = parseInt(a.session || 1);
+                        a.grade = a.grade || '';
+                        a.exam = a.exam || '';
+                        a.venue = a.venue || '';
+                        a.timeshift = parseFloat(a.timeshift || 0);
+                        a.educator = a.educator || null;
+                        a.is_zulu = a.is_zulu || false;
+                    });
+
+                    teachersCopy.forEach(t => {
+                        t.registerClass = t.registerClass || '';
+                        t.is_zulu = t.is_zulu || false;
+                    });
+
+                    // Run scheduling algorithm
+                    const result = window.scheduleAssignments(assignmentsCopy, teachersCopy, {
+                        enableLoadBalancing: true,
+                        maxConflictIterations: 5
+                    });
+
+                    if (result && result.status !== 'failed') {
+                        // Apply results
+                        let allocated = 0;
+                        result.assignments.forEach((assignment, idx) => {
+                            if (assignment.educator && !this.scheduleData[idx].educator) {
+                                this.allocationMap.set(idx, assignment.educator);
+                                this.scheduleData[idx].educator = assignment.educator;
+                                allocated++;
+                            }
+                        });
+
+                        const resultsDiv = document.getElementById('allocation-results');
+                        const stats = result.statistics || {};
+                        const successRate = stats.assignmentPercentage || 0;
+
+                        resultsDiv.innerHTML = `
+                            <div style="padding: 1rem; background: rgba(5,150,105,0.1); border-radius: 0.375rem; border-left: 4px solid var(--success);">
+                                <p class="success"><i class="fas fa-check-circle"></i> <strong>Advanced Allocation Completed!</strong></p>
+                                <p><strong>${allocated}</strong> teachers allocated to unassigned slots</p>
+                                <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 0.5rem;">
+                                    Success Rate: <strong>${successRate}%</strong> | 
+                                    Total Assigned: <strong>${stats.assignedSlots || 0}/${stats.totalSlots || 0}</strong>
+                                </p>
+                                ${result.warnings && result.warnings.length > 0 ? `
+                                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(5,150,105,0.2);">
+                                    <p style="font-size: 0.85rem; color: #d97706;"><i class="fas fa-exclamation-triangle"></i> ${result.warnings.length} warning(s)</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                        `;
+
+                        notifications.success(`Allocated ${allocated} slots using advanced algorithm`);
+                    } else {
+                        throw new Error(result?.report || 'Scheduling algorithm failed');
+                    }
+
+                } catch (error) {
+                    console.error('Advanced allocation failed:', error);
+                    notifications.warning('Advanced algorithm failed, using basic allocation...');
+                    this.autoAllocateBasic();
+                    return;
+                }
+
+                this.saveToStorage();
+                this.updateDashboard();
+            }
+
+            /**
+             * Basic allocation using workload balancing
+             */
+            autoAllocateBasic() {
+                const unassignedIndices = [];
+                this.scheduleData.forEach((row, idx) => {
+                    if (!row.educator && !this.allocationMap.get(idx)) {
+                        unassignedIndices.push(idx);
+                    }
+                });
+
+                const availableTeachers = [...new Set(this.teachersData.map(t => t.name).filter(Boolean))];
+                
+                if (availableTeachers.length === 0) {
+                    notifications.error('No teachers available');
+                    return;
+                }
+
+                let allocated = 0;
+                const workloadMap = {};
+
+                // Initialize workload map
+                availableTeachers.forEach(t => {
+                    workloadMap[t] = 0;
+                });
+
+                // Count existing assignments
+                this.scheduleData.forEach((row, idx) => {
+                    const assigned = row.educator || this.allocationMap.get(idx);
+                    if (assigned && workloadMap.hasOwnProperty(assigned)) {
+                        workloadMap[assigned] += row.timeshift || 0;
+                    }
+                });
+
+                // Assign unassigned slots to least loaded teachers
+                unassignedIndices.forEach(idx => {
+                    const row = this.scheduleData[idx];
+                    
+                    // Find least loaded teacher with matching grade if possible
+                    const matchingTeachers = this.teachersData.filter(t => 
+                        t.registerClass === 'ROTATE' || 
+                        t.registerClass === row.grade ||
+                        availableTeachers.includes(t.name)
+                    ).map(t => t.name);
+
+                    let bestTeacher = null;
+                    let minLoad = Infinity;
+
+                    (matchingTeachers.length > 0 ? matchingTeachers : availableTeachers).forEach(teacher => {
+                        const load = workloadMap[teacher] || 0;
+                        if (load < minLoad) {
+                            minLoad = load;
+                            bestTeacher = teacher;
+                        }
+                    });
+
+                    if (bestTeacher) {
+                        this.allocationMap.set(idx, bestTeacher);
+                        this.scheduleData[idx].educator = bestTeacher;
+                        workloadMap[bestTeacher] = (workloadMap[bestTeacher] || 0) + (row.timeshift || 0);
+                        allocated++;
+                    }
+                });
+
+                const resultsDiv = document.getElementById('allocation-results');
+                resultsDiv.innerHTML = `
+                    <div style="padding: 1rem; background: rgba(5,150,105,0.1); border-radius: 0.375rem; border-left: 4px solid var(--success);">
+                        <p class="success"><i class="fas fa-check-circle"></i> <strong>Auto-allocation completed!</strong></p>
+                        <p>Allocated <strong>${allocated}</strong> teachers to unassigned slots</p>
+                        <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 0.5rem;">Allocation is based on workload balancing (least-loaded first).</p>
+                    </div>
+                `;
+
+                notifications.success(`Allocated ${allocated} slots`);
+                this.saveToStorage();
+                this.updateDashboard();
+            }
+
+            /**
+             * Update dashboard statistics
+             */
+            updateDashboard() {
+                const total = this.scheduleData.length;
+                const assigned = this.scheduleData.filter((d, idx) => 
+                    d.educator || this.allocationMap.get(idx)
+                ).length;
+                const teachers = new Set(this.teachersData.map(t => t.name).filter(Boolean)).size;
+                
+                document.getElementById('stat-total-slots').textContent = total;
+                document.getElementById('stat-assigned').textContent = assigned;
+                document.getElementById('stat-unassigned').textContent = total - assigned;
+                document.getElementById('stat-teachers').textContent = teachers;
+                
+                this.populateRecentAssignments();
+            }
+
+            /**
+             * Populate recent assignments in dashboard
+             */
+            populateRecentAssignments() {
+                const tbody = document.getElementById('recent-assignments');
+                const recent = this.scheduleData.slice(0, 5);
+                
+                if (recent.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data loaded</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = recent.map((row, idx) => {
+                    const assigned = row.educator || this.allocationMap.get(idx);
+                    const status = assigned ? '<span class="badge badge-assigned">✓ Assigned</span>' : '<span class="badge badge-unassigned">✗ Unassigned</span>';
+                    
+                    const dateObj = new Date(row.date + 'T00:00');
+                    const dateStr = isNaN(dateObj.getTime()) ? row.date : dateObj.toLocaleDateString();
+                    
+                    return `
+                        <tr>
+                            <td>${dateStr}</td>
+                            <td>${row.exam || '-'}</td>
+                            <td>${row.venue || '-'}</td>
+                            <td><strong>${assigned || '-'}</strong></td>
+                            <td>${status}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            /**
+             * Export schedule to Excel
+             */
+            exportSchedule() {
+                if (this.scheduleData.length === 0) {
+                    alert('No data to export');
+                    return;
+                }
+
+                const data = this.scheduleData.map((row, idx) => ({
+                    'Date': row.date,
+                    'Session': row.session,
+                    'Grade': row.grade,
+                    'Exam': row.exam,
+                    'Venue': row.venue,
+                    'Duration (hrs)': row.timeshift,
+                    'Educator': row.educator || this.allocationMap.get(idx) || 'Unassigned'
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Schedule');
+                XLSX.writeFile(wb, `exam-schedule-${new Date().toISOString().split('T')[0]}.xlsx`);
+            }
+
+            /**
+             * Export allocations with teacher details
+             */
+            exportAllocation() {
+                if (this.scheduleData.length === 0) {
+                    alert('No data to export');
+                    return;
+                }
+
+                const data = this.scheduleData.map((row, idx) => {
+                    const educator = row.educator || this.allocationMap.get(idx) || 'Unassigned';
+                    const teacher = this.teachersData.find(t => t.name === educator);
+                    
+                    return {
+                        'Date': row.date,
+                        'Session': row.session,
+                        'Grade': row.grade,
+                        'Exam': row.exam,
+                        'Venue': row.venue,
+                        'Duration (hrs)': row.timeshift,
+                        'Teacher': educator,
+                        'Teacher Grade': teacher?.registerClass || '-',
+                        'Status': educator !== 'Unassigned' ? 'Assigned' : 'Unassigned'
+                    };
+                });
+
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Allocations');
+                XLSX.writeFile(wb, `allocations-${new Date().toISOString().split('T')[0]}.xlsx`);
+            }
+
+            /**
+             * Export teacher list with assignments
+             */
+            exportTeacherList() {
+                if (this.teachersData.length === 0) {
+                    alert('No teachers to export');
+                    return;
+                }
+
+                const data = this.teachersData.map(teacher => {
+                    const assignments = this.scheduleData.filter((row, idx) => {
+                        const assigned = row.educator || this.allocationMap.get(idx);
+                        return assigned === teacher.name;
+                    });
+
+                    const totalHours = assignments.reduce((sum, a) => sum + (a.timeshift || 0), 0);
+
+                    return {
+                        'Teacher Name': teacher.name,
+                        'Register Class': teacher.registerClass,
+                        'Assignments': assignments.length,
+                        'Total Hours': totalHours,
+                        'Is Zulu': teacher.is_zulu ? 'Yes' : 'No'
+                    };
+                });
+
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Teachers');
+                XLSX.writeFile(wb, `teachers-${new Date().toISOString().split('T')[0]}.xlsx`);
+            }
+
+            /**
+             * Print schedule to PDF
+             */
+            printSchedule() {
+                if (this.scheduleData.length === 0) {
+                    alert('No data to print');
+                    return;
+                }
+
+                const win = window.open('', '', 'width=1200,height=800');
+                const style = `
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        h1 { text-align: center; color: #1e3a5f; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th { background: #1e3a5f; color: white; padding: 10px; text-align: left; }
+                        td { border: 1px solid #ddd; padding: 8px; }
+                        tr:nth-child(even) { background: #f8f9fa; }
+                    </style>
+                `;
+
+                let html = `<h1>Exam Schedule</h1><p>Generated: ${new Date().toLocaleString()}</p>`;
+                html += '<table><thead><tr><th>Date</th><th>Session</th><th>Grade</th><th>Exam</th><th>Venue</th><th>Duration</th><th>Teacher</th></tr></thead><tbody>';
+
+                this.scheduleData.forEach((row, idx) => {
+                    const teacher = row.educator || this.allocationMap.get(idx) || 'Unassigned';
+                    html += `<tr><td>${row.date}</td><td>${row.session}</td><td>${row.grade}</td><td>${row.exam}</td><td>${row.venue}</td><td>${row.timeshift}h</td><td>${teacher}</td></tr>`;
+                });
+
+                html += '</tbody></table>';
+                win.document.write(style + html);
+                win.document.close();
+                win.print();
+            }
+
+            /**
+             * Refresh data from storage
+             */
+            refreshData() {
+                this.loadFromStorage();
+                this.updateDashboard();
+            }
+
+            /**
+             * Save data to Firebase and localStorage
+             */
+            async saveToStorage() {
+                try {
+                    if (!this.currentBatchId) {
+                        this.currentBatchId = `batch_${Date.now()}`;
+                    }
+
+                    // Save to local storage
+                    localStorage.setItem('scheduleData', JSON.stringify(this.scheduleData));
+                    localStorage.setItem('teachersData', JSON.stringify(this.teachersData));
+                    localStorage.setItem('allocationMap', JSON.stringify(Array.from(this.allocationMap.entries())));
+                    localStorage.setItem('currentBatchId', this.currentBatchId);
+
+                    // Save to Firebase
+                    if (firebaseStorage.isInitialized) {
+                        const assignments = this.scheduleData.map((row, idx) => ({
+                            ...row,
+                            allocatedTeacher: row.educator || this.allocationMap.get(idx) || null
+                        }));
+
+                        const result = await firebaseStorage.saveAssignments(assignments, this.currentBatchId);
+                        console.log(`Storage result: ${result.source} - ${result.count} assignments`);
+                    }
+
+                } catch (error) {
+                    console.error('Error saving to storage:', error);
+                }
+            }
+
+            /**
+             * Load data from Firebase or localStorage
+             */
+            loadFromStorage() {
+                try {
+                    const schedule = localStorage.getItem('scheduleData');
+                    const teachers = localStorage.getItem('teachersData');
+                    const allocations = localStorage.getItem('allocationMap');
+                    const batchId = localStorage.getItem('currentBatchId');
+
+                    if (schedule) this.scheduleData = JSON.parse(schedule);
+                    if (teachers) this.teachersData = JSON.parse(teachers);
+                    if (allocations) this.allocationMap = new Map(JSON.parse(allocations));
+                    if (batchId) this.currentBatchId = batchId;
+
+                } catch (error) {
+                    console.error('Error loading from storage:', error);
+                }
+            }
+        }
+
+        // Initialize app
+        const app = new ExamSchedulerApp();
+    </script>
+
+    <script>
+        /**
+         * SCHEDULING INTEGRATION MODULE
+         * Integrates with scheduling-engine-part1.js and scheduling-engine-part2.js
+         */
+        const schedulingIntegration = {
+            /**
+             * Run the advanced scheduling algorithm
+             * Uses functions from scheduling-engine-part1.js and scheduling-engine-part2.js
+             */
+            runAdvancedScheduling(assignments, teachers) {
+                try {
+                    // Check if scheduling engine is loaded
+                    if (typeof window.scheduleAssignments !== 'function') {
+                        console.warn('Scheduling engine not loaded. Using basic allocation.');
+                        return null;
+                    }
+
+                    // Run the scheduling algorithm
+                    const result = window.scheduleAssignments(assignments, teachers);
+                    
+                    return result;
+                } catch (error) {
+                    console.error('Error running advanced scheduling:', error);
+                    return null;
+                }
+            },
+
+            /**
+             * Apply advanced scheduling results to app
+             */
+            applySchedulingResults(app, result) {
+                if (!result || !result.assignments) {
+                    console.warn('Invalid scheduling result');
+                    return false;
+                }
+
+                // Update schedule data with educator assignments
+                result.assignments.forEach((assignment, idx) => {
+                    if (assignment.educator) {
+                        app.allocationMap.set(idx, assignment.educator);
+                        app.scheduleData[idx].educator = assignment.educator;
+                    }
+                });
+
+                // Log statistics
+                console.log('Scheduling Results:', {
+                    totalSlots: result.statistics?.totalSlots,
+                    assignedSlots: result.statistics?.assignedSlots,
+                    unassignedSlots: result.statistics?.unassignedSlots,
+                    assignmentPercentage: result.statistics?.assignmentPercentage + '%'
+                });
+
+                // Log warnings if any
+                if (result.warnings && result.warnings.length > 0) {
+                    console.warn('Scheduling Warnings:', result.warnings);
+                }
+
+                return true;
+            }
+        };
+
+        /**
+         * UTILITIES & HELPERS MODULE
+         */
+        const utilities = {
+            formatDate(date, format = 'short') {
+                if (!date) return '-';
+                const dateObj = typeof date === 'string' ? new Date(date) : date;
+                if (isNaN(dateObj.getTime())) return '-';
+                const options = {
+                    short: { year: '2-digit', month: '2-digit', day: '2-digit' },
+                    long: { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' }
+                };
+                return dateObj.toLocaleDateString('en-US', options[format] || options.short);
+            },
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+            },
+            deepClone(obj) {
+                return JSON.parse(JSON.stringify(obj));
+            },
+            generateId() {
+                return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+        };
+
+        /**
+         * NOTIFICATION SYSTEM
+         */
+        const notifications = {
+            container: null,
+            init() {
+                if (!this.container) {
+                    this.container = document.createElement('div');
+                    this.container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+                    document.body.appendChild(this.container);
+                }
+            },
+            toast(message, type = 'info', duration = 4000) {
+                this.init();
+                const toast = document.createElement('div');
+                const colors = {
+                    success: { bg: '#dcfce7', border: '#22c55e', text: '#166534' },
+                    error: { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' },
+                    warning: { bg: '#fef3c7', border: '#eab308', text: '#78350f' },
+                    info: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' }
+                };
+                const color = colors[type] || colors.info;
+                const icons = {
+                    success: 'fa-check-circle',
+                    error: 'fa-exclamation-circle',
+                    warning: 'fa-exclamation-triangle',
+                    info: 'fa-info-circle'
+                };
+                toast.style.cssText = `background: ${color.bg}; border-left: 4px solid ${color.border}; color: ${color.text}; padding: 12px 16px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); animation: slideIn 0.3s ease; font-size: 14px; display: flex; align-items: center; gap: 10px;`;
+                toast.innerHTML = `<i class="fas ${icons[type]}"></i><span>${message}</span><button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 18px; margin-left: auto;">×</button>`;
+                this.container.appendChild(toast);
+                if (duration > 0) {
+                    setTimeout(() => {
+                        toast.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => toast.remove(), 300);
+                    }, duration);
+                }
+            },
+            success(message, duration = 4000) { this.toast(message, 'success', duration); },
+            error(message, duration = 5000) { this.toast(message, 'error', duration); },
+            warning(message, duration = 4000) { this.toast(message, 'warning', duration); },
+            info(message, duration = 3000) { this.toast(message, 'info', duration); }
+        };
+
+        const style = document.createElement('style');
+        style.textContent = `@keyframes slideIn { from { opacity: 0; transform: translateX(400px); } to { opacity: 1; transform: translateX(0); } } @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(400px); } }`;
+        document.head.appendChild(style);
+
+        // Expose globally
+        window.utilities = utilities;
+        window.notifications = notifications;
+        window.schedulingIntegration = schedulingIntegration;
+
+        // Initialize
+        notifications.init();
+        console.log('%cExam Scheduler v1.0', 'color: #1e3a5f; font-size: 16px; font-weight: bold;');
+        console.log('Scheduling engines available:', {
+            'Part 1 Loaded': typeof window.scheduleAssignments === 'function',
+            'Part 2 Loaded': typeof window.validateSchedule === 'function'
+        });
+        console.log('Firebase Storage Status:', firebaseStorage.getStatus());
+    </script>
+
+    <!-- Storage initialization -->
+    <script src="init-storage.js"></script>
+    
+    <!-- Offline data manager -->
+    <script src="offline-manager.js"></script>
+
+    <!-- Data synchronization and backup API -->
+    <script src="data-sync-api.js"></script>
+
+    <!-- Database migrations and batch processing -->
+    <script src="database-migrations.js"></script>
+
+    <!-- Analytics and reporting -->
+    <script src="analytics-reporting.js"></script>
+
+    <!-- Environment configuration -->
+    <script src="environment-config.js"></script>
+
+    <!-- Performance monitoring -->
+    <script src="performance-monitoring.js"></script>
+
+    <!-- Error handling and recovery -->
+    <script src="error-handling.js"></script>
+
+    <!-- System health monitoring -->
+    <script src="system-health.js"></script>
+
+    <!-- Firebase setup and monitoring -->
+    <script src="firebase-setup.js"></script>
+
+    <!-- Core integration (must be last) -->
+    <script src="core-integration.js"></script>
+
+    <!-- Implementation testing -->
+    <script src="test-implementation.js"></script>
+    
+    <!-- Optional: Firebase configuration (uncomment to enable Firebase) -->
+    <!-- <script src="firebase-config.js"></script> -->
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed'));
+            });
+        }
+    </script>
+
+</body>
+</html>
