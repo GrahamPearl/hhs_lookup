@@ -507,6 +507,10 @@
 
     return `
       <h6>Cover Teacher Report: <strong>${escapeHtml(selectedTeacher)}</strong></h6>
+      <div class="text-muted small mb-2">
+        <strong>Report Date:</strong> ${escapeHtml(reportDate)}
+      </div>
+
       <div class="row g-2 mb-3">
         ${[["Total Covers",total],["% of Team Load",pctLoad+"%"],["Unique Teachers",uniqueAbs],
            ["Avg per Week",(total/10).toFixed(1)]].map(([l,v])=>`

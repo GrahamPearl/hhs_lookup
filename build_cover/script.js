@@ -1676,6 +1676,8 @@ function buildCoverGridTableHtml(day, includeActions = false) {
       <table class="table table-borderless mb-1">
         <tr><td colspan="2" class="fw-bold">${teacher}</td></tr>
         <tr><td colspan="2" class="text-muted"><strong>Reason:</strong> ${reason}</td></tr>
+        <tr><td colspan="2" class="text-muted"><strong>Date:</strong> ${fmtDate}</td></tr>
+
       </table>
       <table class="table table-sm table-bordered">
         <thead class="table-light">
