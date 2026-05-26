@@ -90,6 +90,15 @@
     "buttonClass": "btn-hhs"
   },
   {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Exam Viewer (Admin)",
+    "description": "Exam Viewer - June 2026.",
+    "buttonText": "Exam Viewer - June 2026",
+    "link": "./exam_viewer/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
     "badge": "Support Staff",
       "badgeClass": "bg-success",
     "title": "Print Queue",
