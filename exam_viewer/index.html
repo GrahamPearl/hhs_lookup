@@ -186,7 +186,7 @@
         // Async Data Controller Fetch Endpoint
         async function fetchAssignmentsEngine() {
             try {
-                const queryPayload = await fetch('data.json');
+                const queryPayload = await fetch('data.json').then( processDataPipeline() );
                 if (!queryPayload.ok) throw new Error(`HTTP network fault code: ${queryPayload.status}`);
                 
                 runtimeDataset = await queryPayload.json();
