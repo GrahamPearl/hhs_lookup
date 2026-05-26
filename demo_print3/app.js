@@ -3133,7 +3133,9 @@ function openConfirmSubmitModal(jobData, notesText) {
   const fresh = old.cloneNode(true);
   old.parentNode.replaceChild(fresh, old);
   fresh.addEventListener("click", () => {
-    addJob(jobData, notesText);
+    const newJob = addJob(jobData, notesText);
+    alert(`✅ Job successfully loaded.\nReference: ${newJob.reference}`);
+
     $("#confirmSubmitModal").modal("hide");
     elements.jobNotes.value = "";
     elements.submitBtn.disabled = false;
