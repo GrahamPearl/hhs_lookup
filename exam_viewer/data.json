@@ -715,33 +715,6 @@
     "Session": 1,
     "Grade": "Study Venue",
     "Exam": "Study Venue",
-    "Venue Number": "Study venue - 8",
-    "Exam Time": "0",
-    "Educator": "BOTHMA"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "Study Venue",
-    "Exam": "Study Venue",
-    "Venue Number": "Study venue - 9",
-    "Exam Time": "0",
-    "Educator": "GABISA"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "Study Venue",
-    "Exam": "Study Venue",
-    "Venue Number": "Study venue - 10",
-    "Exam Time": "0",
-    "Educator": "BOYCE"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "Study Venue",
-    "Exam": "Study Venue",
     "Venue Number": "Study venue - 11",
     "Exam Time": "0",
     "Educator": "RAMSERN"
@@ -754,15 +727,6 @@
     "Venue Number": "Study venue - 12",
     "Exam Time": "0",
     "Educator": "ATKINSON"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "Study Venue",
-    "Exam": "Study Venue",
-    "Venue Number": "Overflow - Junior",
-    "Exam Time": "0",
-    "Educator": "HODGSKIN"
   },
   {
     "Date": "28-05-2026",
@@ -841,33 +805,6 @@
     "Session": 1,
     "Grade": "Study Venue",
     "Exam": "Study Venue",
-    "Venue Number": "Study venue - 8",
-    "Exam Time": "0",
-    "Educator": "BURGER"
-  },
-  {
-    "Date": "29-05-2026",
-    "Session": 1,
-    "Grade": "Study Venue",
-    "Exam": "Study Venue",
-    "Venue Number": "Study venue - 9",
-    "Exam Time": "0",
-    "Educator": "STRYDOM"
-  },
-  {
-    "Date": "29-05-2026",
-    "Session": 1,
-    "Grade": "Study Venue",
-    "Exam": "Study Venue",
-    "Venue Number": "Study venue - 10",
-    "Exam Time": "0",
-    "Educator": "NO NEED"
-  },
-  {
-    "Date": "29-05-2026",
-    "Session": 1,
-    "Grade": "Study Venue",
-    "Exam": "Study Venue",
     "Venue Number": "Study venue - 11",
     "Exam Time": "0",
     "Educator": "WESSELS"
@@ -880,15 +817,6 @@
     "Venue Number": "Study venue - 12",
     "Exam Time": "0",
     "Educator": "WHITE [MRS]"
-  },
-  {
-    "Date": "29-05-2026",
-    "Session": 1,
-    "Grade": "Study Venue",
-    "Exam": "Study Venue",
-    "Venue Number": "Overflow - Junior",
-    "Exam Time": "0",
-    "Educator": "REUBEN"
   },
   {
     "Date": "29-05-2026",
