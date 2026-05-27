@@ -1,5 +1,437 @@
 [
   {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Period 1",
+    "Educator": "Ramsern"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Period 1",
+    "Educator": "Silochan"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Period 1",
+    "Educator": "Cope"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Period 2",
+    "Educator": "Leppan"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Period 2",
+    "Educator": "Moffatt"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Period 2",
+    "Educator": "Poovalingan"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Period 3",
+    "Educator": "Bourreau"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Period 3",
+    "Educator": "van Heerden"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Period 3",
+    "Educator": "Jugmohan"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Break",
+    "Educator": "Tonkin"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Break",
+    "Educator": "Mthanti"
+  },
+  {
+    "Date": "27-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "History P1",
+    "Venue Number": "MPC",
+    "Exam Time": "Break",
+    "Educator": "Bastion"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 8",
+    "Exam": "English P1",
+    "Venue Number": "A15",
+    "Exam Time": "2",
+    "Educator": "Smith"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 8",
+    "Exam": "English P1",
+    "Venue Number": "A21",
+    "Exam Time": "2",
+    "Educator": "Stow"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 8",
+    "Exam": "English P1",
+    "Venue Number": "A20",
+    "Exam Time": "2",
+    "Educator": "Jugmohan"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 8",
+    "Exam": "English P1",
+    "Venue Number": "A23",
+    "Exam Time": "2",
+    "Educator": "Mbuyazi"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 8",
+    "Exam": "English P1",
+    "Venue Number": "A22",
+    "Exam Time": "2",
+    "Educator": "Mthanthi"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 8",
+    "Exam": "English P1",
+    "Venue Number": "A24",
+    "Exam Time": "2",
+    "Educator": "Nkosi"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 8",
+    "Exam": "English P1",
+    "Venue Number": "A14",
+    "Exam Time": "2",
+    "Educator": "Nene"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 8",
+    "Exam": "English P1",
+    "Venue Number": "A13",
+    "Exam Time": "2",
+    "Educator": "Silochan"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 9",
+    "Exam": "Art",
+    "Venue Number": "B18",
+    "Exam Time": "1",
+    "Educator": "Bartholomew"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 9",
+    "Exam": "Art",
+    "Venue Number": "B17",
+    "Exam Time": "1",
+    "Educator": "Blom"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 9",
+    "Exam": "Art",
+    "Venue Number": "B16",
+    "Exam Time": "1",
+    "Educator": "Naidoo C"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 9",
+    "Exam": "Art",
+    "Venue Number": "B15",
+    "Exam Time": "1",
+    "Educator": "Prior"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 9",
+    "Exam": "Art",
+    "Venue Number": "B14",
+    "Exam Time": "1",
+    "Educator": "Magubane"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 9",
+    "Exam": "Art",
+    "Venue Number": "B27",
+    "Exam Time": "1",
+    "Educator": "Jones"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 9",
+    "Exam": "Art",
+    "Venue Number": "B26",
+    "Exam Time": "1",
+    "Educator": "Thrash"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 9",
+    "Exam": "Art",
+    "Venue Number": "B25",
+    "Exam Time": "1",
+    "Educator": "Ngubane"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Eng P2",
+    "Venue Number": "C1",
+    "Exam Time": "2.5",
+    "Educator": "Harmse"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Eng P2",
+    "Venue Number": "C2",
+    "Exam Time": "2.5",
+    "Educator": "Hiscock"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Eng P2",
+    "Venue Number": "C3",
+    "Exam Time": "2.5",
+    "Educator": "Mvumbu"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Eng P2",
+    "Venue Number": "C13",
+    "Exam Time": "2.5",
+    "Educator": "Zulu"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Eng P2",
+    "Venue Number": "E1",
+    "Exam Time": "2.5",
+    "Educator": "Madeley"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Eng P2",
+    "Venue Number": "E2",
+    "Exam Time": "2.5",
+    "Educator": "Leppan"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Eng P2",
+    "Venue Number": "E13",
+    "Exam Time": "2.5",
+    "Educator": "Mathe"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Eng P2",
+    "Venue Number": "Relief",
+    "Exam Time": "2.5",
+    "Educator": "Moore"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Eng P2",
+    "Venue Number": "Relief",
+    "Exam Time": "2.5",
+    "Educator": "Unknown"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Life Sci Prac",
+    "Venue Number": "C11",
+    "Exam Time": "2",
+    "Educator": "Harmse"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Life Sci Prac",
+    "Venue Number": "C12",
+    "Exam Time": "2",
+    "Educator": "Prior"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Life Sci Prac",
+    "Venue Number": "C13",
+    "Exam Time": "2",
+    "Educator": "Stols"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Life Sci Prac",
+    "Venue Number": "E9",
+    "Exam Time": "2",
+    "Educator": "Dlamini"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 10",
+    "Exam": "Life Sci Prac",
+    "Venue Number": "E10",
+    "Exam Time": "3",
+    "Educator": "Blom"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 11",
+    "Exam": "Consumer Studies",
+    "Venue Number": "D18",
+    "Exam Time": "3",
+    "Educator": "Bastion"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 11",
+    "Exam": "Consumer Studies",
+    "Venue Number": "E12",
+    "Exam Time": "3",
+    "Educator": "Bourreau"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 11",
+    "Exam": "Consumer Studies",
+    "Venue Number": "Relief",
+    "Exam Time": "3",
+    "Educator": "Piccione"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 11",
+    "Exam": "Further Maths",
+    "Venue Number": "HALL",
+    "Exam Time": "2",
+    "Educator": "Jali"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "Physical Sci P1",
+    "Venue Number": "MPC",
+    "Exam Time": "2",
+    "Educator": "Wessels"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "GRADE 12",
+    "Exam": "Physical Sci P1",
+    "Venue Number": "MPC",
+    "Exam Time": "2",
+    "Educator": "Woodrow"
+  },
+  {
     "Date": "29-05-2026",
     "Session": 1,
     "Grade": "GRADE 8",
@@ -254,7 +686,7 @@
   {
     "Date": "29-05-2026",
     "Session": 1,
-    "Grade": "GRADE 12 ",
+    "Grade": "GRADE 12",
     "Exam": "Drama",
     "Venue Number": "MPC",
     "Exam Time": "3",
@@ -263,7 +695,7 @@
   {
     "Date": "29-05-2026",
     "Session": 2,
-    "Grade": "GRADE 12 ",
+    "Grade": "GRADE 12",
     "Exam": "German",
     "Venue Number": "MPC",
     "Exam Time": "2",
@@ -272,433 +704,253 @@
   {
     "Date": "28-05-2026",
     "Session": 1,
-    "Grade": "GRADE 8",
-    "Exam": "English P1",
-    "Venue Number": "A15",
-    "Exam Time": "2",
-    "Educator": "Smith"
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 8",
+    "Exam Time": "0",
+    "Educator": "Bothma"
   },
   {
     "Date": "28-05-2026",
     "Session": 1,
-    "Grade": "GRADE 8",
-    "Exam": "English P1",
-    "Venue Number": "A21",
-    "Exam Time": "2",
-    "Educator": "Stow"
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 9",
+    "Exam Time": "0",
+    "Educator": "Gabisa"
   },
   {
     "Date": "28-05-2026",
     "Session": 1,
-    "Grade": "GRADE 8",
-    "Exam": "English P1",
-    "Venue Number": "A20",
-    "Exam Time": "2",
-    "Educator": "Jugmohan"
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 10",
+    "Exam Time": "0",
+    "Educator": "Boyce"
   },
   {
     "Date": "28-05-2026",
     "Session": 1,
-    "Grade": "GRADE 8",
-    "Exam": "English P1",
-    "Venue Number": "A23",
-    "Exam Time": "2",
-    "Educator": "Mbuyazi"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 8",
-    "Exam": "English P1",
-    "Venue Number": "A22",
-    "Exam Time": "2",
-    "Educator": "Mthanthi"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 8",
-    "Exam": "English P1",
-    "Venue Number": "A24",
-    "Exam Time": "2",
-    "Educator": "Nkosi"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 8",
-    "Exam": "English P1",
-    "Venue Number": "A14",
-    "Exam Time": "2",
-    "Educator": "Nene"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 8",
-    "Exam": "English P1",
-    "Venue Number": "A13",
-    "Exam Time": "2",
-    "Educator": "Silochan"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 9",
-    "Exam": "Art",
-    "Venue Number": "B18",
-    "Exam Time": "1",
-    "Educator": "Bartholomew"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 9",
-    "Exam": "Art",
-    "Venue Number": "B17",
-    "Exam Time": "1",
-    "Educator": "Blom"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 9",
-    "Exam": "Art",
-    "Venue Number": "B16",
-    "Exam Time": "1",
-    "Educator": "Naidoo C"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 9",
-    "Exam": "Art",
-    "Venue Number": "B15",
-    "Exam Time": "1",
-    "Educator": "Prior"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 9",
-    "Exam": "Art",
-    "Venue Number": "B14",
-    "Exam Time": "1",
-    "Educator": "Magubane"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 9",
-    "Exam": "Art",
-    "Venue Number": "B27",
-    "Exam Time": "1",
-    "Educator": "Jones"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 9",
-    "Exam": "Art",
-    "Venue Number": "B26",
-    "Exam Time": "1",
-    "Educator": "Thrash"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 9",
-    "Exam": "Art",
-    "Venue Number": "B25",
-    "Exam Time": "1",
-    "Educator": "Ngubane"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Eng P2",
-    "Venue Number": "C1",
-    "Exam Time": "2.5",
-    "Educator": "Harmse"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Eng P2",
-    "Venue Number": "C2",
-    "Exam Time": "2.5",
-    "Educator": "Hiscock"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Eng P2",
-    "Venue Number": "C3",
-    "Exam Time": "2.5",
-    "Educator": "Mvumbu"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Eng P2",
-    "Venue Number": "C13",
-    "Exam Time": "2.5",
-    "Educator": "Zulu"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Eng P2",
-    "Venue Number": "E1",
-    "Exam Time": "2.5",
-    "Educator": "Madeley"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Eng P2",
-    "Venue Number": "E2",
-    "Exam Time": "2.5",
-    "Educator": "Leppan"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Eng P2",
-    "Venue Number": "E13",
-    "Exam Time": "2.5",
-    "Educator": "Mathe"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Eng P2",
-    "Venue Number": "Relief",
-    "Exam Time": "2.5",
-    "Educator": "Moore"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Eng P2",
-    "Venue Number": "Relief",
-    "Exam Time": "2.5",
-    "Educator": "Unknown"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Life Sci Prac",
-    "Venue Number": "C11",
-    "Exam Time": "2",
-    "Educator": null
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Life Sci Prac",
-    "Venue Number": "C12",
-    "Exam Time": "2",
-    "Educator": null
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Life Sci Prac",
-    "Venue Number": "C13",
-    "Exam Time": "2",
-    "Educator": null
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Life Sci Prac",
-    "Venue Number": "E9",
-    "Exam Time": "2",
-    "Educator": null
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 10",
-    "Exam": "Life Sci Prac",
-    "Venue Number": "E10",
-    "Exam Time": "3",
-    "Educator": null
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 11",
-    "Exam": "Consumer Studies",
-    "Venue Number": "D18",
-    "Exam Time": "3",
-    "Educator": "Bastion"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 11",
-    "Exam": "Consumer Studies",
-    "Venue Number": "E12",
-    "Exam Time": "3",
-    "Educator": "Bourreau"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 11",
-    "Exam": "Consumer Studies",
-    "Venue Number": "Relief",
-    "Exam Time": "3",
-    "Educator": "Piccione"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 11",
-    "Exam": "Further Maths",
-    "Venue Number": "HALL",
-    "Exam Time": "2",
-    "Educator": "Jali"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12 ",
-    "Exam": "Physical Sci P1",
-    "Venue Number": "MPC",
-    "Exam Time": "2",
-    "Educator": "Wessels"
-  },
-  {
-    "Date": "28-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12 ",
-    "Exam": "Physical Sci P1",
-    "Venue Number": "MPC",
-    "Exam Time": "2",
-    "Educator": "Woodrow"
-  },
-  {
-    "Date": "27-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12 ",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Period 1",
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 11",
+    "Exam Time": "0",
     "Educator": "Ramsern"
   },
   {
-    "Date": "27-05-2026",
+    "Date": "28-05-2026",
     "Session": 1,
-    "Grade": "GRADE 12 ",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Period 1",
-    "Educator": "Silochan"
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 12",
+    "Exam Time": "0",
+    "Educator": "Atkinson"
   },
   {
-    "Date": "27-05-2026",
+    "Date": "28-05-2026",
     "Session": 1,
-    "Grade": "GRADE 12 ",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Period 1",
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Overflow - Junior",
+    "Exam Time": "0",
+    "Educator": "Hodgskin"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 1,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Overflow - Senior",
+    "Exam Time": "0",
     "Educator": "Cope"
   },
   {
-    "Date": "27-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Period 2",
-    "Educator": "Leppan"
+    "Date": "28-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 8",
+    "Exam Time": "0",
+    "Educator": "Joseph"
   },
   {
-    "Date": "27-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Period 2",
-    "Educator": "Moffatt"
+    "Date": "28-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 9",
+    "Exam Time": "0",
+    "Educator": "Nicholas"
   },
   {
-    "Date": "27-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Period 2",
-    "Educator": "Poovalingan"
+    "Date": "28-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 10",
+    "Exam Time": "0",
+    "Educator": "Kowlesur"
   },
   {
-    "Date": "27-05-2026",
+    "Date": "28-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 11",
+    "Exam Time": "0",
+    "Educator": "O'Halloran"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 12",
+    "Exam Time": "0",
+    "Educator": "Middleton"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Overflow - Junior",
+    "Exam Time": "0",
+    "Educator": "Knox-Whitehead"
+  },
+  {
+    "Date": "28-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Overflow - Senior",
+    "Exam Time": "0",
+    "Educator": "Pape"
+  },
+  {
+    "Date": "29-05-2026",
     "Session": 1,
-    "Grade": "GRADE 12",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Period 3",
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 8",
+    "Exam Time": "0",
+    "Educator": "Burger"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 1,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 9",
+    "Exam Time": "0",
+    "Educator": "Strydom"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 1,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 10",
+    "Exam Time": "0",
+    "Educator": "Stow"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 1,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 11",
+    "Exam Time": "0",
+    "Educator": "Wessels"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 1,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 12",
+    "Exam Time": "0",
+    "Educator": "White [Mrs]"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 1,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Overflow - Junior",
+    "Exam Time": "0",
+    "Educator": "Reuben"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 1,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Overflow - Senior",
+    "Exam Time": "0",
+    "Educator": "Ramsout"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 8",
+    "Exam Time": "0",
+    "Educator": "Pearl"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 9",
+    "Exam Time": "0",
+    "Educator": "Jali"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 10",
+    "Exam Time": "0",
+    "Educator": "McLaughlin"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 11",
+    "Exam Time": "0",
     "Educator": "Bourreau"
   },
   {
-    "Date": "27-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Period 3",
-    "Educator": "van Heerden"
-  },
-  {
-    "Date": "27-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Period 3",
-    "Educator": "Jugmohan"
-  },
-  {
-    "Date": "27-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Break",
-    "Educator": "Tonkin"
-  },
-  {
-    "Date": "27-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Break",
-    "Educator": "Mthanti"
-  },
-  {
-    "Date": "27-05-2026",
-    "Session": 1,
-    "Grade": "GRADE 12",
-    "Exam": "History P1",
-    "Venue Number": "MPC",
-    "Exam Time": "Break",
+    "Date": "29-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Study venue - 12",
+    "Exam Time": "0",
     "Educator": "Bastion"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Overflow - Junior",
+    "Exam Time": "0",
+    "Educator": "Hudson-P"
+  },
+  {
+    "Date": "29-05-2026",
+    "Session": 2,
+    "Grade": "Study Venue",
+    "Exam": "Study Venue",
+    "Venue Number": "Overflow - Senior",
+    "Exam Time": "0",
+    "Educator": "MacDonald"
   }
 ]
