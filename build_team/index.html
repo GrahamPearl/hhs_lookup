@@ -11,10 +11,22 @@
     <!-- XLSX + JSZip (already used by the project) -->
     <script src="xlsx.full.min.js"></script>
     <script src="jszip.min.js"></script>
+
+    <!--
+      Firebase v9 compat build (loaded from CDN).
+      "compat" keeps the familiar firebase.firestore() namespace
+      so no bundler is required — works directly in the browser.
+      Pin to a specific minor version (9.23.0) for stability.
+    -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   </head>
   <body>
     <h1>School Activity Team Manager</h1>
-    <h4>This builder is browser based. <br>Export and Import to move to other devices</h4> <!-- fixed closing tag -->
+    <h4>
+      This builder is browser based.<br />
+      Export and Import to move to other devices
+    </h4>
 
     <div class="controls">
       <label for="activitySelect">Activity</label>
@@ -33,6 +45,13 @@
       <button onclick="importTeam()">Import</button>
       <button onclick="printTeam()">Print Team Sheet</button>
     </div>
+
+    <!--
+      #syncToolbar is injected by sports-listing.js automatically,
+      right after .controls. It contains:
+        • "Save to Cloud" button  (explicit save — fires fsSaveTeam)
+        • Sync indicator pill     (shows idle / syncing / synced / error / offline)
+    -->
 
     <h2 id="teamTitle"></h2>
     <div id="team"></div>

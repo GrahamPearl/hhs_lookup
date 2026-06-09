@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educator Exam Workload Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight">Exam Duty Analytics Dashboard</h1>
+                <p class="text-xs text-slate-500 mt-0.5">Dynamic Source: <span class="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-700">data.json</span></p>
+            </div>
+            <nav class="flex space-x-1 bg-slate-100 p-1 rounded-lg text-sm font-medium">
+                <button onclick="switchTab('tally-tab')" id="btn-tally-tab" class="tab-btn px-4 py-2 rounded-md transition bg-white text-slate-900 shadow-sm">Workload Tally</button>
+                <button onclick="switchTab('heatmap-tab')" id="btn-heatmap-tab" class="tab-btn px-4 py-2 rounded-md transition text-slate-600 hover:text-slate-900">Duty Heatmap</button>
+                <button onclick="switchTab('diagnostics-tab')" id="btn-diagnostics-tab" class="tab-btn px-4 py-2 rounded-md transition text-slate-600 hover:text-slate-900 relative">
+                    System Diagnostics
+                    <span id="clash-badge" class="absolute -top-1 -right-1 hidden flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <div id="error-banner" class="hidden bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-sm font-medium shadow-xs">
+            ⚠️ <span id="error-message">Failed to fetch data source.</span>
+        </div>
+
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Active Staff</span>
+                <span id="kpi-staff" class="text-3xl font-bold text-slate-900 mt-2">--</span>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Allocated Hours</span>
+                <span id="kpi-hours" class="text-3xl font-bold text-slate-900 mt-2">-- hrs</span>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Average Workload</span>
+                <span id="kpi-avg" class="text-3xl font-bold text-slate-900 mt-2">-- hrs</span>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Clash Incidents</span>
+                <span id="kpi-clashes" class="text-3xl font-bold mt-2">--</span>
+            </div>
+        </section>
+
+        <section id="tally-tab" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                    <h2 class="text-base font-bold text-slate-900 mb-4">Staff Hour Distribution (Top 15 Sorted)</h2>
+                    <div class="h-80 w-full relative">
+                        <canvas id="workloadChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 mb-2">Controls & Sorting</h2>
+                        <p class="text-xs text-slate-500 mb-4">Filter or toggle sorting directions dynamically.</p>
+                        <input type="text" id="search-input" oninput="renderTallyTable()" placeholder="Search educator..." class="w-full text-sm px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 placeholder:text-slate-400 mb-4">
+                    </div>
+                    <div class="space-y-2">
+                        <button onclick="setSorting('desc')" id="sort-desc" class="w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border bg-slate-900 border-slate-900 text-white flex justify-between items-center cursor-pointer">
+                            <span>Sort Highest to Lowest</span>
+                            <span>↓</span>
+                        </button>
+                        <button onclick="setSorting('asc')" id="sort-asc" class="w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 flex justify-between items-center cursor-pointer">
+                            <span>Sort Lowest to Highest</span>
+                            <span>↑</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200">
+                    <h2 class="text-base font-bold text-slate-900">Educator Metrics Table</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
+                                <th class="px-6 py-3">Educator Name</th>
+                                <th class="px-6 py-3 text-right">Total Hours Allocated</th>
+                                <th class="px-6 py-3 text-right">Duty Count (Sessions)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tally-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="heatmap-tab" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                <div class="mb-4">
+                    <h2 class="text-base font-bold text-slate-900">Duty Load Heatmap Matrix</h2>
+                    <p class="text-xs text-slate-500 mt-1">Grid cells track total hours assigned per day across standard Sessions 1 &amp; 2. Darker green colors denote higher time density assignments. Orange cells signify Study Venue supervision assignments.</p>
+                </div>
+                
+                <!-- Quick Edit Modal Controls -->
+                <div class="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-900 mb-3">Quick Cell Edit Interface</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input type="text" id="edit-educator" placeholder="Educator name..." class="px-3 py-2 text-xs border border-slate-200 rounded focus:outline-none focus:border-slate-400">
+                        <input type="date" id="edit-date" class="px-3 py-2 text-xs border border-slate-200 rounded focus:outline-none focus:border-slate-400">
+                        <select id="edit-session" class="px-3 py-2 text-xs border border-slate-200 rounded focus:outline-none focus:border-slate-400">
+                            <option value="">Select Session</option>
+                            <option value="1">Session 1</option>
+                            <option value="2">Session 2</option>
+                        </select>
+                        <input type="number" id="edit-hours" placeholder="Hours" step="0.5" min="0" class="px-3 py-2 text-xs border border-slate-200 rounded focus:outline-none focus:border-slate-400">
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="insertOrUpdateCell()" class="text-xs px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 font-medium">Insert/Update</button>
+                        <button onclick="deleteCell()" class="text-xs px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-medium">Delete Cell</button>
+                        <button onclick="clearEditForm()" class="text-xs px-3 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 font-medium">Clear Form</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto mt-6">
+                    <div class="min-w-[900px] p-2">
+                        <div id="heatmap-grid" class="grid gap-x-1 gap-y-1.5 items-center">
+                            </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-xs font-medium text-slate-500 border-t border-slate-100 pt-4">
+                    <span>Legend indicators:</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-slate-100 border border-slate-200 rounded-xs"></span> 0 hrs (Free)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-emerald-100 border border-emerald-200 rounded-xs"></span> Light Load (&le; 1hr)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-emerald-300 border border-emerald-400 rounded-xs"></span> Medium Load (&le; 2.5hrs)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-emerald-600 rounded-xs"></span> Heavy Load (&gt; 2.5hrs)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-amber-500 rounded-xs"></span> Study Venue Flag</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="diagnostics-tab" class="tab-content hidden space-y-6">
+            <!-- Diagnostic C: Workload Balance Detail -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                <div>
+                    <span class="bg-purple-50 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Diagnostic C</span>
+                    <h2 class="text-lg font-bold text-slate-900 mt-1">Individual Workload Balance Report</h2>
+                    <p class="text-xs text-slate-500">Deviation from mean; identifies overloaded and underloaded educators for fairness re-balancing.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 uppercase tracking-wider">
+                                <th class="px-4 py-3">Educator</th>
+                                <th class="px-4 py-3 text-right">Hours Assigned</th>
+                                <th class="px-4 py-3 text-right">Deviation from Mean</th>
+                                <th class="px-4 py-3 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workload-balance-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                <div>
+                    <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Diagnostic B</span>
+                    <h2 class="text-lg font-bold text-slate-900 mt-1">Workload Equity &amp; Dispersion Analysis</h2>
+                    <p class="text-xs text-slate-500">Statistical spread of hourly task dispersion across available personnel pools.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl text-center">
+                    <div class="p-2 border-r border-slate-200/60 last:border-0">
+                        <span class="text-xs font-semibold text-slate-400 block">Spread Range Max-Min</span>
+                        <span id="diag-range" class="text-2xl font-bold text-slate-900 block mt-1">--</span>
+                    </div>
+                    <div class="p-2 border-r border-slate-200/60 last:border-0">
+                        <span class="text-xs font-semibold text-slate-400 block">Standard Deviation (&sigma;)</span>
+                        <span id="diag-stddev" class="text-2xl font-bold text-slate-900 block mt-1">--</span>
+                    </div>
+                    <div class="p-2">
+                        <span class="text-xs font-semibold text-slate-400 block">Equity Balance Rating</span>
+                        <span id="diag-rating" class="text-xl font-bold block mt-1.5">--</span>
+                    </div>
+                </div>
+                <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                    <strong>Interpretation:</strong> Standard deviation shows how spread out the workload is. A value ≤1.5 indicates fair distribution; 1.5-3.0 shows moderate imbalance; &gt;3.0 suggests significant unfairness in duty allocation.
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                <div class="flex justify-between items-start border-b border-slate-100 pb-4">
+                    <div>
+                        <span class="bg-red-50 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Diagnostic A</span>
+                        <h2 class="text-lg font-bold text-slate-900 mt-1">Double-Booking / Conflict Matrix Detection</h2>
+                        <p class="text-xs text-slate-500">Identifies timeline overlaps where an educator is simultaneously scheduled in multiple venues during the exact same session.</p>
+                    </div>
+                    <span id="clash-count-pill" class="text-xs font-bold px-2.5 py-1 rounded-full">-- Clashes Found</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
+                                <th class="px-4 py-3">Educator</th>
+                                <th class="px-4 py-3">Date</th>
+                                <th class="px-4 py-3">Session</th>
+                                <th class="px-4 py-3">Time/Period Slot</th>
+                                <th class="px-4 py-3">Conflicting Venues &amp; Sessions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clash-table-body" class="divide-y divide-slate-100 font-medium text-slate-700 text-xs">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Global State Structures
+        let rawDataset = [];
+        let staffWorkloadData = [];
+        let clashReport = [];
+        let dateUniverse = [];
+        let sortDirection = 'desc';
+        let mainChartRef = null;
+
+        // Data Utility Functions
+        function parseDuration(examTimeStr) {
+            const normalized = examTimeStr.trim().toLowerCase();
+            if (normalized.includes('period') || normalized === 'break') {
+                return 1.0;
+            }
+            const numericValue = parseFloat(normalized);
+            return isNaN(numericValue) ? 0.0 : numericValue;
+        }
+
+        function standardizeName(name) {
+            return name.trim().toUpperCase().replace(/\s+/g, ' ');
+        }
+
+        // Remote Dynamic Fetch Call
+        async function fetchLocalDatabase() {
+            try {
+                const response = await fetch('data_dashboard.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP network error! status code checked: ${response.status}`);
+                }
+                rawDataset = await response.json();
+                document.getElementById('error-banner').classList.add('hidden');
+                runDataAnalysisEngine();
+            } catch (error) {
+                console.error("Local data ingestion breakdown pipeline failed:", error);
+                document.getElementById('error-banner').classList.remove('hidden');
+                document.getElementById('error-message').innerText = `Error loading file "data.json". Ensure the application is being accessed from a local server environment or that data.json is in the same directory. Detail: ${error.message}`;
+            }
+        }
+
+        // Processing Analytics Pipeline
+        function runDataAnalysisEngine() {
+            const rawMap = {};
+            const uniqueDates = new Set();
+            clashReport = [];
+            const scheduleMap = {};
+
+            rawDataset.forEach(row => {
+                const educator = standardizeName(row.Educator);
+                const date = row.Date;
+                const timeSlot = row["Exam Time"];
+                const sessionNum = parseInt(row.Session) || 1;
+                const hours = parseDuration(timeSlot);
+                
+                const isStudyVenue = row.Grade && row.Grade.trim().toLowerCase() === "study venue" || 
+                                     row.Exam && row.Exam.trim().toLowerCase() === "study venue";
+
+                uniqueDates.add(date);
+
+                if (!rawMap[educator]) {
+                    rawMap[educator] = { educator, totalHours: 0, dutyCount: 0, matrixGrid: {} };
+                }
+                rawMap[educator].totalHours += hours;
+                rawMap[educator].dutyCount += 1;
+
+                const gridCellKey = `${date}||Session_${sessionNum}`;
+                if (!rawMap[educator].matrixGrid[gridCellKey]) {
+                    rawMap[educator].matrixGrid[gridCellKey] = { hours: 0, hasStudyVenue: false };
+                }
+                rawMap[educator].matrixGrid[gridCellKey].hours += hours;
+                if (isStudyVenue) {
+                    rawMap[educator].matrixGrid[gridCellKey].hasStudyVenue = true;
+                }
+
+                const fingerprint = `${educator}||${date}||${sessionNum}||${timeSlot}`;
+                if (!scheduleMap[fingerprint]) {
+                    scheduleMap[fingerprint] = [];
+                }
+                scheduleMap[fingerprint].push(row);
+            });
+
+            staffWorkloadData = Object.values(rawMap);
+            
+            dateUniverse = Array.from(uniqueDates).sort((a, b) => {
+                const d1 = a.split('-').reverse().join('');
+                const d2 = b.split('-').reverse().join('');
+                return d1.localeCompare(d2);
+            });
+
+            Object.keys(scheduleMap).forEach(key => {
+                if (scheduleMap[key].length > 1) {
+                    const sample = scheduleMap[key][0];
+                    clashReport.push({
+                        educator: standardizeName(sample.Educator),
+                        date: sample.Date,
+                        timeSlot: sample["Exam Time"],
+                        session: sample.Session,
+                        venues: scheduleMap[key].map(item => `${item.Exam || 'Duty'} (${item["Venue Number"] || 'Unk Venue'})`)
+                    });
+                }
+            });
+
+            updateKPIDashboard();
+            executeDiagnosticB();
+            executeDiagnosticC();
+            renderTallyTable();
+            renderHeatmapMatrix();
+            renderClashTable();
+        }
+
+        // Tab engine UI controller transitions
+        function switchTab(targetId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+                btn.classList.add('text-slate-600', 'hover:text-slate-900');
+            });
+
+            document.getElementById(targetId).classList.remove('hidden');
+            const targetBtn = document.getElementById(`btn-${targetId}`);
+            targetBtn.classList.remove('text-slate-600', 'hover:text-slate-900');
+            targetBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+
+            if (targetId === 'tally-tab' && mainChartRef) {
+                mainChartRef.resize();
+            }
+        }
+
+        function updateKPIDashboard() {
+            const totalStaff = staffWorkloadData.length;
+            const absoluteHours = staffWorkloadData.reduce((acc, curr) => acc + curr.totalHours, 0);
+            const genericMean = totalStaff > 0 ? (absoluteHours / totalStaff).toFixed(1) : 0;
+            const totalClashes = clashReport.length;
+
+            document.getElementById('kpi-staff').innerText = totalStaff;
+            document.getElementById('kpi-hours').innerText = `${absoluteHours.toFixed(1)} h`;
+            document.getElementById('kpi-avg').innerText = `${genericMean} h`;
+            
+            const clashCard = document.getElementById('kpi-clashes');
+            clashCard.innerText = totalClashes;
+            
+            const badge = document.getElementById('clash-badge');
+            const pill = document.getElementById('clash-count-pill');
+
+            if (totalClashes > 0) {
+                clashCard.className = "text-3xl font-bold mt-2 text-red-600";
+                badge.classList.remove('hidden');
+                pill.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-700";
+                pill.innerText = `${totalClashes} Clashes Found`;
+            } else {
+                clashCard.className = "text-3xl font-bold mt-2 text-emerald-600";
+                badge.classList.add('hidden');
+                pill.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700";
+                pill.innerText = "No Conflicts Detected";
+            }
+        }
+
+        function setSorting(dir) {
+            sortDirection = dir;
+            document.getElementById('sort-desc').className = dir === 'desc' 
+                ? "w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border bg-slate-900 border-slate-900 text-white flex justify-between items-center cursor-pointer"
+                : "w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 flex justify-between items-center cursor-pointer";
+            
+            document.getElementById('sort-asc').className = dir === 'asc' 
+                ? "w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border bg-slate-900 border-slate-900 text-white flex justify-between items-center cursor-pointer"
+                : "w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 flex justify-between items-center cursor-pointer";
+            
+            renderTallyTable();
+        }
+
+        function renderTallyTable() {
+            const searchKeyword = document.getElementById('search-input').value.toUpperCase().trim();
+            let filtered = staffWorkloadData.filter(item => item.educator.includes(searchKeyword));
+            
+            filtered.sort((a, b) => {
+                return sortDirection === 'desc' ? b.totalHours - a.totalHours : a.totalHours - b.totalHours;
+            });
+
+            const tbody = document.getElementById('tally-table-body');
+            tbody.innerHTML = '';
+
+            if(filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-slate-400 text-xs">No educators matching search criteria.</td></tr>`;
+            } else {
+                filtered.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/80 transition-colors";
+                    tr.innerHTML = `
+                        <td class="px-6 py-3.5 font-semibold text-slate-900">${row.educator}</td>
+                        <td class="px-6 py-3.5 text-right font-bold tabular-nums text-slate-800">${row.totalHours.toFixed(1)} hrs</td>
+                        <td class="px-6 py-3.5 text-right text-slate-500 tabular-nums">${row.dutyCount}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            generateWorkloadChart(filtered.slice(0, 15));
+        }
+
+        function generateWorkloadChart(dataSlice) {
+            const canvasCtx = document.getElementById('workloadChart').getContext('2d');
+            if (mainChartRef) { mainChartRef.destroy(); }
+
+            mainChartRef = new Chart(canvasCtx, {
+                type: 'bar',
+                data: {
+                    labels: dataSlice.map(i => i.educator),
+                    datasets: [{
+                        label: 'Assigned Combined Target Hours',
+                        data: dataSlice.map(i => i.totalHours),
+                        backgroundColor: '#0f172a',
+                        borderRadius: 6,
+                        barThickness: 16
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: '500' } } },
+                        y: { border: { dash: [4, 4] }, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // TAB 2 Matrix Engine: Multi-Session Structure Generator
+        function renderHeatmapMatrix() {
+            const container = document.getElementById('heatmap-grid');
+            container.innerHTML = '';
+
+            const columnCount = 1 + (dateUniverse.length * 2);
+            container.style.gridTemplateColumns = `minmax(160px, max-content) repeat(${dateUniverse.length * 2}, minmax(55px, 1fr))`;
+
+            const cornerCell = document.createElement('div');
+            cornerCell.className = "text-xs font-bold text-slate-400 uppercase tracking-wider p-2 bg-slate-100/80 border border-slate-200 flex items-center justify-center sticky left-0 z-10 font-mono";
+            cornerCell.innerText = "Timeline Matrix";
+            cornerCell.style.gridRow = "1 / span 2";
+            container.appendChild(cornerCell);
+
+            dateUniverse.forEach(date => {
+                const dateHeader = document.createElement('div');
+                dateHeader.className = "text-center text-[11px] font-bold text-slate-700 p-1.5 bg-slate-100 border border-slate-200 rounded-xs shadow-3xs truncate";
+                dateHeader.style.gridColumn = `span 2`;
+                dateHeader.innerText = date;
+                container.appendChild(dateHeader);
+            });
+
+            dateUniverse.forEach(() => {
+                for (let sessionIndex = 1; sessionIndex <= 2; sessionIndex++) {
+                    const sessionSubHeader = document.createElement('div');
+                    sessionSubHeader.className = "text-center text-[9px] font-bold text-slate-400 bg-slate-50 border-x border-b border-slate-200/60 py-0.5";
+                    sessionSubHeader.innerText = `S${sessionIndex}`;
+                    container.appendChild(sessionSubHeader);
+                }
+            });
+
+            const alphabeticStaff = [...staffWorkloadData].sort((a, b) => a.educator.localeCompare(b.educator));
+
+            alphabeticStaff.forEach(staff => {
+                const rowLabel = document.createElement('div');
+                rowLabel.className = "text-xs font-bold text-slate-800 p-2 border-b border-slate-200/60 flex items-center bg-white sticky left-0 z-10 shadow-sm truncate";
+                rowLabel.innerText = staff.educator;
+                container.appendChild(rowLabel);
+
+                dateUniverse.forEach(date => {
+                    for (let sNum = 1; sNum <= 2; sNum++) {
+                        const cellLookupKey = `${date}||Session_${sNum}`;
+                        const cellData = staff.matrixGrid[cellLookupKey];
+                        
+                        const currentHours = cellData ? cellData.hours : 0;
+                        const studyVenueFlag = cellData ? cellData.hasStudyVenue : false;
+
+                        const blockCell = document.createElement('div');
+                        let cellStylingClasses = "bg-slate-50 border border-slate-100 text-slate-300";
+
+                        if (studyVenueFlag) {
+                            cellStylingClasses = "bg-amber-500 text-white font-bold shadow-2xs cursor-pointer hover:bg-amber-600";
+                        } else if (currentHours > 0) {
+                            if (currentHours <= 1.0) cellStylingClasses = "bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold cursor-pointer hover:bg-emerald-200";
+                            else if (currentHours <= 2.5) cellStylingClasses = "bg-emerald-300 border border-emerald-400 text-emerald-900 font-bold cursor-pointer hover:bg-emerald-400";
+                            else cellStylingClasses = "bg-emerald-600 text-white font-bold cursor-pointer hover:bg-emerald-700";
+                        }
+
+                        blockCell.className = `text-center text-[11px] p-2 rounded-xs transition-all tracking-tight ${cellStylingClasses}`;
+                        blockCell.innerText = currentHours > 0 || studyVenueFlag ? `${currentHours.toFixed(1)}` : '0';
+                        
+                        const tooltipDetails = studyVenueFlag ? "Study Venue Supervision Duty Assigned" : `${currentHours.toFixed(1)} active hours assigned`;
+                        blockCell.title = `${staff.educator} (${date} - Session ${sNum}): ${tooltipDetails}. Click to edit.`;
+                        
+                        blockCell.onclick = () => {
+                            document.getElementById('edit-educator').value = staff.educator;
+                            document.getElementById('edit-date').value = convertDateFormat(date);
+                            document.getElementById('edit-session').value = sNum;
+                            document.getElementById('edit-hours').value = currentHours > 0 ? currentHours : '';
+                            document.getElementById('edit-educator').focus();
+                            document.getElementById('edit-educator').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        };
+                        
+                        container.appendChild(blockCell);
+                    }
+                });
+            });
+        }
+
+        // CRUD Operations for Heatmap Matrix
+        function convertDateFormat(dateStr) {
+            const [d, m, y] = dateStr.split('-');
+            return `${y}-${m}-${d}`;
+        }
+
+        function unconvertDateFormat(dateStr) {
+            const [y, m, d] = dateStr.split('-');
+            return `${d}-${m}-${y}`;
+        }
+
+        function insertOrUpdateCell() {
+            const educator = standardizeName(document.getElementById('edit-educator').value);
+            const dateInput = document.getElementById('edit-date').value;
+            const session = document.getElementById('edit-session').value;
+            const hours = parseFloat(document.getElementById('edit-hours').value) || 0;
+
+            if (!educator || !dateInput || !session) {
+                alert('Please fill in Educator, Date, and Session fields.');
+                return;
+            }
+
+            const date = unconvertDateFormat(dateInput);
+
+            const existing = rawDataset.find(r => 
+                standardizeName(r.Educator) === educator && 
+                r.Date === date && 
+                r.Session == session
+            );
+
+            if (existing) {
+                existing['Exam Time'] = hours;
+            } else {
+                rawDataset.push({
+                    Date: date,
+                    Session: parseInt(session),
+                    Grade: "Custom",
+                    Exam: "Manual Entry",
+                    "Venue Number": "Manual",
+                    "Exam Time": hours.toString(),
+                    Educator: educator
+                });
+            }
+
+            runDataAnalysisEngine();
+            clearEditForm();
+            switchTab('heatmap-tab');
+        }
+
+        function deleteCell() {
+            const educator = standardizeName(document.getElementById('edit-educator').value);
+            const dateInput = document.getElementById('edit-date').value;
+            const session = document.getElementById('edit-session').value;
+
+            if (!educator || !dateInput || !session) {
+                alert('Please fill in Educator, Date, and Session fields.');
+                return;
+            }
+
+            const date = unconvertDateFormat(dateInput);
+
+            rawDataset = rawDataset.filter(r => !(
+                standardizeName(r.Educator) === educator && 
+                r.Date === date && 
+                r.Session == session
+            ));
+
+            runDataAnalysisEngine();
+            clearEditForm();
+            switchTab('heatmap-tab');
+        }
+
+        function clearEditForm() {
+            document.getElementById('edit-educator').value = '';
+            document.getElementById('edit-date').value = '';
+            document.getElementById('edit-session').value = '';
+            document.getElementById('edit-hours').value = '';
+        }
+
+        // TAB 3 Analytical Methods Engine
+        function executeDiagnosticB() {
+            if (staffWorkloadData.length === 0) return;
+
+            const hourArray = staffWorkloadData.map(item => item.totalHours);
+            const absoluteMax = Math.max(...hourArray);
+            const absoluteMin = Math.min(...hourArray);
+            const calculatedSpreadRange = absoluteMax - absoluteMin;
+
+            const dynamicSum = hourArray.reduce((acc, v) => acc + v, 0);
+            const computedMean = dynamicSum / hourArray.length;
+            const varianceSum = hourArray.reduce((acc, v) => acc + Math.pow(v - computedMean, 2), 0);
+            const standardDeviationSigma = Math.sqrt(varianceSum / hourArray.length);
+
+            document.getElementById('diag-range').innerText = `${calculatedSpreadRange.toFixed(1)} hrs`;
+            document.getElementById('diag-stddev').innerText = `± ${standardDeviationSigma.toFixed(2)}`;
+
+            const balanceRatingNode = document.getElementById('diag-rating');
+            if (standardDeviationSigma <= 1.5) {
+                balanceRatingNode.innerText = "Highly Balanced";
+                balanceRatingNode.className = "text-xl font-bold block mt-1.5 text-emerald-600";
+            } else if (standardDeviationSigma > 1.5 && standardDeviationSigma <= 3.0) {
+                balanceRatingNode.innerText = "Moderate Dispersion";
+                balanceRatingNode.className = "text-xl font-bold block mt-1.5 text-amber-600";
+            } else {
+                balanceRatingNode.innerText = "High Workload Disparity";
+                balanceRatingNode.className = "text-xl font-bold block mt-1.5 text-red-600";
+            }
+        }
+
+        function executeDiagnosticC() {
+            if (staffWorkloadData.length === 0) return;
+
+            const hourArray = staffWorkloadData.map(item => item.totalHours);
+            const dynamicSum = hourArray.reduce((acc, v) => acc + v, 0);
+            const computedMean = dynamicSum / hourArray.length;
+
+            const sorted = [...staffWorkloadData].sort((a, b) => b.totalHours - a.totalHours);
+            const tbody = document.getElementById('workload-balance-body');
+            tbody.innerHTML = '';
+
+            sorted.forEach(staff => {
+                const deviation = staff.totalHours - computedMean;
+                const deviationPercent = ((deviation / computedMean) * 100).toFixed(1);
+                
+                let statusClass = 'text-slate-600';
+                let statusText = 'Balanced';
+                
+                if (deviation > computedMean * 0.25) {
+                    statusClass = 'text-red-700 font-bold';
+                    statusText = 'Overloaded';
+                } else if (deviation < -computedMean * 0.25) {
+                    statusClass = 'text-blue-700 font-bold';
+                    statusText = 'Underloaded';
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/60';
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-semibold text-slate-900">${staff.educator}</td>
+                    <td class="px-4 py-3 text-right tabular-nums">${staff.totalHours.toFixed(1)} hrs</td>
+                    <td class="px-4 py-3 text-right tabular-nums">${deviation > 0 ? '+' : ''}${deviation.toFixed(1)} hrs (${deviationPercent}%)</td>
+                    <td class="px-4 py-3"><span class="${statusClass}">${statusText}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderClashTable() {
+            const tableBody = document.getElementById('clash-table-body');
+            tableBody.innerHTML = '';
+
+            if (clashReport.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-emerald-600 font-semibold bg-emerald-50/40">No scheduling conflict issues or double-booking overlap profiles identified inside this scheduling roster array.</td></tr>`;
+                return;
+            }
+
+            clashReport.forEach(incident => {
+                const tr = document.createElement('tr');
+                tr.className = "bg-red-50/50 hover:bg-red-50 border-b border-red-100 transition-colors text-slate-900";
+                
+                const sessionsHTML = incident.venues.map(v => `<span class="inline-block bg-white border border-red-200 text-red-700 px-2 py-0.5 rounded-sm font-medium mr-1 my-0.5 shadow-3xs">${v}</span>`).join('');
+                
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-bold text-red-900">${incident.educator}</td>
+                    <td class="px-4 py-3 font-medium tabular-nums">${incident.date}</td>
+                    <td class="px-4 py-3 font-medium"><span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-[10px] font-bold">Session ${incident.session}</span></td>
+                    <td class="px-4 py-3 text-slate-500 font-medium">${incident.timeSlot}</td>
+                    <td class="px-4 py-3">${sessionsHTML}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Initialize App Engine Execution
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchLocalDatabase();
+        });
+    </script>
+</body>
+</html>

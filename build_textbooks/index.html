@@ -1,0 +1,2754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TextbookTrack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- Firebase SDK loaded dynamically by initFirebase() once user saves config -->
+
+<style>
+/* ════════════════════════════════════════════════════════
+   DESIGN DIRECTION: Industrial precision.
+   Dark slate surfaces, acid-green accent, DM Mono data,
+   Sora for UI chrome. Feels like a control room, not a
+   school portal. High information density, zero clutter.
+   ════════════════════════════════════════════════════════ */
+
+:root {
+  --bg0:      #0d0f10;
+  --bg1:      #141618;
+  --bg2:      #1c1f21;
+  --bg3:      #242729;
+  --bg4:      #2d3033;
+  --line:     rgba(255,255,255,.07);
+  --line2:    rgba(255,255,255,.13);
+  --text0:    #f0f2f4;
+  --text1:    #b8bec5;
+  --text2:    #737b84;
+  --text3:    #4a5159;
+  --accent:   #7cfc6e;       /* acid green */
+  --accent2:  #3ddc97;       /* teal secondary */
+  --warn:     #f5c842;
+  --danger:   #f0534a;
+  --info:     #58a6ff;
+  --mono:     'DM Mono', monospace;
+  --sans:     'Sora', sans-serif;
+  --r:        6px;
+  --r2:       10px;
+  --shadow:   0 4px 24px rgba(0,0,0,.5);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--sans);
+  font-size: 13px;
+  background: var(--bg0);
+  color: var(--text0);
+  line-height: 1.5;
+}
+
+/* ── Scrollbars ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 4px; }
+
+/* ── App shell ──────────────────────────────────────── */
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── Topbar ─────────────────────────────────────────── */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 52px;
+  background: var(--bg1);
+  border-bottom: 1px solid var(--line);
+  padding: 0 20px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+.tb-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text0);
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  margin-right: 28px;
+}
+.tb-logo svg { flex-shrink: 0; }
+.tb-logo span { color: var(--accent); }
+
+.tb-nav { display: flex; gap: 2px; }
+.tb-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  height: 36px;
+  border-radius: var(--r);
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.tb-nav-btn:hover { background: var(--bg3); color: var(--text0); }
+.tb-nav-btn.active { background: var(--bg3); color: var(--text0); }
+.tb-nav-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+.tb-nav-btn { position: relative; }
+
+.tb-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.conn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--mono);
+  border: 1px solid;
+  transition: all .3s;
+}
+.conn-badge.online  { background: rgba(124,252,110,.08); color: var(--accent);  border-color: rgba(124,252,110,.25); }
+.conn-badge.offline { background: rgba(240,83,74,.08);   color: var(--danger);  border-color: rgba(240,83,74,.25); }
+.conn-badge.syncing { background: rgba(245,200,66,.08);  color: var(--warn);    border-color: rgba(245,200,66,.25); }
+.conn-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.conn-dot.pulse { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.tb-year {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  padding: 4px 10px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+/* ── Main layout ────────────────────────────────────── */
+#main { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ────────────────────────────────────────── */
+#sidebar {
+  width: 220px;
+  background: var(--bg1);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 14px 10px;
+  gap: 2px;
+}
+.sb-section {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 14px 10px 6px;
+}
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: var(--r);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all .12s;
+  border: 1px solid transparent;
+}
+.sb-item svg { flex-shrink: 0; opacity: .7; }
+.sb-item:hover { background: var(--bg2); color: var(--text0); }
+.sb-item:hover svg { opacity: 1; }
+.sb-item.active { background: var(--bg3); color: var(--text0); border-color: var(--line); }
+.sb-item.active svg { opacity: 1; color: var(--accent); }
+.sb-item.active .sb-accent { color: var(--accent); }
+.sb-badge {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--bg4);
+  color: var(--text1);
+  padding: 1px 7px;
+  border-radius: 20px;
+}
+.sb-badge.warn { background: rgba(245,200,66,.15); color: var(--warn); }
+.sb-badge.danger { background: rgba(240,83,74,.15); color: var(--danger); }
+.sb-sep { height: 1px; background: var(--line); margin: 8px 0; }
+
+/* ── Content area ───────────────────────────────────── */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 24px;
+  background: var(--bg0);
+}
+
+/* ── View panels ─────────────────────────────────────── */
+.view { display: none; animation: fadeIn .2s ease; }
+.view.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+
+/* ── Page header ─────────────────────────────────────── */
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+.page-head-left h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text0);
+  letter-spacing: -.02em;
+}
+.page-head-left p {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 3px;
+}
+
+/* ── Cards ───────────────────────────────────────────── */
+.card {
+  background: var(--bg1);
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.card-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text1);
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-head svg { opacity: .6; }
+
+/* ── Stat strip ─────────────────────────────────────── */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.stat-card {
+  background: var(--bg1);
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.stat-card.green::before { background: var(--accent); }
+.stat-card.teal::before  { background: var(--accent2); }
+.stat-card.amber::before { background: var(--warn); }
+.stat-card.red::before   { background: var(--danger); }
+.stat-card .val {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.stat-card.green .val { color: var(--accent); }
+.stat-card.teal  .val { color: var(--accent2); }
+.stat-card.amber .val { color: var(--warn); }
+.stat-card.red   .val { color: var(--danger); }
+.stat-card .lbl { font-size: 11px; color: var(--text2); }
+
+/* ── Progress bar ────────────────────────────────────── */
+.prog-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.prog-track {
+  flex: 1;
+  height: 3px;
+  background: var(--bg4);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.prog-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width .5s ease;
+}
+.prog-label { font-family: var(--mono); font-size: 11px; color: var(--text2); white-space: nowrap; }
+
+/* ── Toolbar row ─────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.tt-select, .tt-input {
+  height: 34px;
+  padding: 0 12px;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  color: var(--text0);
+  font-family: var(--sans);
+  font-size: 12px;
+  outline: none;
+  transition: border-color .15s;
+}
+.tt-select:focus, .tt-input:focus { border-color: var(--accent); }
+.tt-select option { background: var(--bg2); }
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: var(--r);
+  border: 1px solid var(--line2);
+  background: var(--bg2);
+  color: var(--text1);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--bg3); color: var(--text0); border-color: var(--line2); }
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--accent); color: var(--bg0); border-color: var(--accent); font-weight: 600; }
+.btn.primary:hover { background: #8fff82; }
+.btn.danger  { background: rgba(240,83,74,.12); color: var(--danger); border-color: rgba(240,83,74,.3); }
+.btn.danger:hover  { background: rgba(240,83,74,.22); }
+.btn.warn    { background: rgba(245,200,66,.10); color: var(--warn);   border-color: rgba(245,200,66,.3); }
+.btn.sm { height: 28px; padding: 0 10px; font-size: 11px; }
+.btn-kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--bg4);
+  border: 1px solid var(--line2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: var(--text2);
+}
+
+/* ── Filter pills ────────────────────────────────────── */
+.filter-pills { display: flex; gap: 6px; }
+.fpill {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 20px;
+  border: 1px solid var(--line2);
+  background: transparent;
+  color: var(--text2);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .12s;
+}
+.fpill:hover { color: var(--text0); border-color: var(--line2); }
+.fpill.active { background: var(--bg3); color: var(--text0); border-color: rgba(124,252,110,.4); }
+
+/* ── Table ───────────────────────────────────────────── */
+.tbl-wrap {
+  background: var(--bg1);
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  overflow: hidden;
+}
+.tbl-wrap-scroll { overflow-x: auto; }
+table.tt {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+table.tt th {
+  background: var(--bg2);
+  color: var(--text2);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 9px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+table.tt td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--text1);
+}
+table.tt tr:last-child td { border-bottom: none; }
+table.tt tr.tr-checked td { background: rgba(124,252,110,.03); }
+table.tt tr.tr-lost   td { background: rgba(240,83,74,.04); }
+table.tt tr:hover td { background: var(--bg2); }
+table.tt tr.selected td { background: rgba(124,252,110,.06); outline: 1px solid rgba(124,252,110,.2); outline-offset: -1px; }
+.td-mono { font-family: var(--mono); font-size: 11px; color: var(--text0); }
+.td-name { font-weight: 500; color: var(--text0); }
+
+/* ── Status badges ───────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  border: 1px solid;
+}
+.b-issued   { background: rgba(88,166,255,.1);  color: #58a6ff; border-color: rgba(88,166,255,.25); }
+.b-checked  { background: rgba(124,252,110,.1); color: var(--accent); border-color: rgba(124,252,110,.25); }
+.b-returned { background: rgba(61,220,151,.1);  color: var(--accent2); border-color: rgba(61,220,151,.25); }
+.b-lost     { background: rgba(240,83,74,.12);  color: var(--danger); border-color: rgba(240,83,74,.3); }
+
+/* ── Book chips ──────────────────────────────────────── */
+.chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--line2);
+  background: var(--bg3);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text1);
+  cursor: pointer;
+  transition: all .12s;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.chip-checked { border-color: rgba(124,252,110,.3); color: var(--accent); background: rgba(124,252,110,.06); }
+.chip.chip-lost    { border-color: rgba(240,83,74,.3);   color: var(--danger); background: rgba(240,83,74,.06); }
+.chip.chip-returned{ border-color: rgba(61,220,151,.3);  color: var(--accent2); background: rgba(61,220,151,.06); }
+
+/* ── Scan input ──────────────────────────────────────── */
+.scan-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.scan-input {
+  flex: 1;
+  height: 48px;
+  padding: 0 16px 0 46px;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  color: var(--text0);
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: .04em;
+  outline: none;
+  transition: all .15s;
+}
+.scan-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,252,110,.08); }
+.scan-input::placeholder { color: var(--text3); font-size: 12px; letter-spacing: 0; font-family: var(--sans); }
+.scan-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text3);
+  pointer-events: none;
+}
+.scan-mode {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--line2);
+  background: var(--bg2);
+  color: var(--text3);
+  transition: all .2s;
+  white-space: nowrap;
+}
+.scan-mode.mode-scanner { background: rgba(124,252,110,.08); color: var(--accent); border-color: rgba(124,252,110,.3); }
+.scan-mode.mode-manual  { background: rgba(88,166,255,.08);  color: var(--info);   border-color: rgba(88,166,255,.3); }
+
+.scan-hints {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text3);
+  flex-wrap: wrap;
+}
+.scan-hints span { display: flex; align-items: center; gap: 4px; }
+
+/* ── Result panel ────────────────────────────────────── */
+.result-panel { min-height: 60px; }
+.result-student {
+  background: var(--bg1);
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  overflow: hidden;
+}
+.result-student-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--line);
+}
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bg4);
+  border: 1px solid var(--line2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.result-name { font-weight: 600; font-size: 14px; color: var(--text0); }
+.result-meta { font-size: 11px; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
+.result-book-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  transition: background .12s;
+}
+.result-book-row:first-child { border-top: none; }
+.result-book-row:hover { background: var(--bg2); }
+.result-book-code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text0);
+  font-weight: 500;
+  flex: 1;
+}
+.result-book-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.result-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 0;
+  color: var(--text3);
+  font-size: 12px;
+  gap: 8px;
+}
+.result-empty svg { opacity: .2; }
+
+/* ── Modal ───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn .15s ease;
+}
+.modal {
+  background: var(--bg1);
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  padding: 24px;
+  max-width: 420px;
+  width: calc(100% - 32px);
+  box-shadow: var(--shadow);
+}
+.modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.modal-icon.warn   { background: rgba(245,200,66,.12); color: var(--warn); }
+.modal-icon.danger { background: rgba(240,83,74,.12);  color: var(--danger); }
+.modal-icon.info   { background: rgba(88,166,255,.1);  color: var(--info); }
+.modal h3 { font-size: 15px; font-weight: 600; color: var(--text0); margin-bottom: 8px; }
+.modal p  { font-size: 12px; color: var(--text2); line-height: 1.7; margin-bottom: 12px; }
+.modal-note {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+.modal-note.danger { border-left-color: var(--danger); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── Toast ───────────────────────────────────────────── */
+#toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2000;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  font-size: 12px;
+  color: var(--text0);
+  box-shadow: var(--shadow);
+  animation: slideIn .2s ease;
+  max-width: 340px;
+}
+.toast.success { border-left: 3px solid var(--accent); }
+.toast.error   { border-left: 3px solid var(--danger); }
+.toast.warning { border-left: 3px solid var(--warn); }
+@keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:none} }
+
+/* ── Export progress ─────────────────────────────────── */
+.exp-progress {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text1);
+}
+.exp-progress.active { display: flex; }
+.exp-prog-track {
+  width: 120px;
+  height: 3px;
+  background: var(--bg4);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.exp-prog-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s; }
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--bg4);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Audit table ─────────────────────────────────────── */
+.audit-sep {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 10px 14px 6px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--line);
+}
+
+/* ── Offline queue ───────────────────────────────────── */
+.q-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.q-item:last-child { border-bottom: none; }
+.q-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.q-dot.pending { background: var(--warn); }
+.q-dot.synced  { background: var(--accent); }
+.q-dot.failed  { background: var(--danger); }
+.q-code { font-family: var(--mono); font-size: 11px; color: var(--text0); flex: 1; }
+.q-ts   { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+
+/* ── Import drop zone ────────────────────────────────── */
+.dropzone {
+  border: 2px dashed var(--line2);
+  border-radius: var(--r2);
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  color: var(--text2);
+}
+.dropzone:hover, .dropzone.over { border-color: var(--accent); background: rgba(124,252,110,.03); color: var(--text0); }
+.dropzone svg { margin-bottom: 10px; opacity: .4; }
+.dropzone p { font-size: 12px; margin-top: 4px; }
+.dropzone .dz-accent { color: var(--accent); font-weight: 500; }
+
+/* ── Log ─────────────────────────────────────────────── */
+.log-entry {
+  display: flex;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.log-entry:last-child { border-bottom: none; }
+.log-ts  { color: var(--text3); min-width: 48px; }
+.log-msg { color: var(--text1); }
+.log-msg.ok   { color: var(--accent); }
+.log-msg.warn { color: var(--warn); }
+.log-msg.err  { color: var(--danger); }
+
+/* ── Kbd shortcut bar ────────────────────────────────── */
+.kbar {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--text3);
+  flex-wrap: wrap;
+}
+.kbar span { display: flex; align-items: center; gap: 5px; }
+kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--line2);
+  border-radius: 4px;
+  background: var(--bg3);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text2);
+}
+
+/* ── Settings view ───────────────────────────────────── */
+.cfg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cfg-field label {
+  display: block;
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+.cfg-field input {
+  width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  color: var(--text0);
+  font-family: var(--mono);
+  font-size: 12px;
+  outline: none;
+  transition: border-color .15s;
+}
+.cfg-field input:focus { border-color: var(--accent); }
+.cfg-field input.valid   { border-color: rgba(124,252,110,.5); }
+.cfg-field input.invalid { border-color: rgba(240,83,74,.5); }
+.cfg-field.full { grid-column: 1 / -1; }
+.conn-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: var(--bg2);
+  font-size: 12px;
+  margin-top: 14px;
+}
+.conn-status-bar.st-idle    { border-color: var(--line); color: var(--text2); }
+.conn-status-bar.st-testing { border-color: rgba(245,200,66,.3); color: var(--warn); }
+.conn-status-bar.st-ok      { border-color: rgba(124,252,110,.3); color: var(--accent); }
+.conn-status-bar.st-fail    { border-color: rgba(240,83,74,.3); color: var(--danger); }
+.conn-status-icon { font-size: 18px; }
+.seed-table { width:100%; border-collapse:collapse; font-size:11px; margin-top:10px; }
+.seed-table th { background:var(--bg3); color:var(--text2); padding:6px 10px; text-align:left; font-weight:500; border-bottom:1px solid var(--line); }
+.seed-table td { padding:6px 10px; border-bottom:1px solid var(--line); color:var(--text1); font-family:var(--mono); font-size:11px; }
+.seed-table tr:last-child td { border-bottom:none; }
+.step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.step-row:last-child { border-bottom: none; }
+.step-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--line2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: var(--text2); flex-shrink: 0; margin-top: 1px;
+}
+.step-num.done { background: rgba(124,252,110,.12); border-color: rgba(124,252,110,.3); color: var(--accent); }
+.step-content { flex: 1; }
+.step-title { font-weight: 500; color: var(--text0); font-size: 13px; }
+.step-desc  { font-size: 11px; color: var(--text2); margin-top: 3px; line-height: 1.6; }
+/* ── List manager (classes / subjects / teachers) ────── */
+.lm-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+.lm-panel {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.lm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text1);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.lm-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--bg4);
+  color: var(--text2);
+  padding: 1px 7px;
+  border-radius: 20px;
+}
+.lm-scroll {
+  max-height: 180px;
+  overflow-y: auto;
+}
+.lm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.lm-item:last-child { border-bottom: none; }
+.lm-item-code {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  min-width: 52px;
+}
+.lm-item-name { color: var(--text1); flex: 1; }
+.lm-item-sub  { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+.lm-empty {
+  padding: 20px 12px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text3);
+}
+.lm-dz {
+  border: 2px dashed var(--line2);
+  border-radius: var(--r);
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 10px;
+}
+.lm-dz:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,252,110,.03); }
+.lm-dz span { color: var(--accent); font-weight: 500; }
+.fmt-box {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text1);
+  line-height: 1.9;
+}
+.fmt-box .fmt-comment { color: var(--text3); }
+/* ── Responsive micro adjustments ────────────────────── */
+@media (max-width: 900px) {
+  #sidebar { width: 180px; }
+  .stat-strip { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 680px) {
+  #sidebar { display: none; }
+  .stat-strip { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ══════════════ TOP BAR ══════════════ -->
+  <div id="topbar">
+    <div class="tb-logo">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect x="1" y="1" width="20" height="20" rx="4" stroke="#7cfc6e" stroke-width="1.5"/>
+        <path d="M6 7h10M6 11h7M6 15h9" stroke="#7cfc6e" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Textbook<span>Track</span>
+    </div>
+
+    <div class="tb-nav">
+      <button class="tb-nav-btn active" onclick="setView('checkin',this)" id="nav-checkin">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Termly Check-in
+      </button>
+      <button class="tb-nav-btn" onclick="setView('offramp',this)" id="nav-offramp">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Off-Ramp Returns
+      </button>
+      <button class="tb-nav-btn" onclick="setView('import',this)" id="nav-import">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import
+      </button>
+      <button class="tb-nav-btn" onclick="setView('export',this)" id="nav-export">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+    </div>
+
+    <div class="tb-right">
+      <span class="tb-year" id="tb-year-label">2025 · T2</span>
+      <button class="tb-nav-btn" onclick="setView('settings',this)" id="nav-settings" title="Firestore settings" style="margin-left:4px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Settings
+      </button>
+      <span class="conn-badge online" id="conn-badge">
+        <span class="conn-dot" id="conn-dot"></span>
+        <span id="conn-label">Online</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <div id="main">
+
+    <!-- ── Sidebar ── -->
+    <div id="sidebar">
+      <div class="sb-section">Classes</div>
+      <div class="sb-item active" onclick="sidebarClass('10A',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        10A
+        <span class="sb-badge warn" id="sb-10A-badge">—</span>
+      </div>
+      <div class="sb-item" onclick="sidebarClass('10B',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        10B
+        <span class="sb-badge" id="sb-10B-badge">—</span>
+      </div>
+      <div class="sb-item" onclick="sidebarClass('11A',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        11A
+        <span class="sb-badge" id="sb-11A-badge">—</span>
+      </div>
+
+      <div class="sb-sep"></div>
+      <div class="sb-section">Subjects</div>
+      <div class="sb-item active-sub" onclick="sidebarSubject('LFSC',this)" id="sb-lfsc">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        LFSC
+      </div>
+      <div class="sb-item" onclick="sidebarSubject('MATH',this)" id="sb-math">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        MATH
+      </div>
+      <div class="sb-item" onclick="sidebarSubject('ENG',this)" id="sb-eng">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        ENG
+      </div>
+
+      <div class="sb-sep"></div>
+      <div class="sb-section">Tools</div>
+      <div class="sb-item" onclick="setView('export',document.getElementById('nav-export'))">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/></svg>
+        Export Reports
+      </div>
+      <div class="sb-item" onclick="setView('import',document.getElementById('nav-import'))">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/></svg>
+        Import Booklist
+      </div>
+      <div class="sb-item" id="sb-offline" onclick="setView('offline',null)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l22 22"/><path d="M16.72 11.06A11 11 0 0119 12.55"/><path d="M5 12.55a11 11 0 0110.17-7.93"/><path d="M10.71 5.05A16 16 0 0122.56 9"/><path d="M1.42 9a16 16 0 014.42-2.82"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+        Sync Queue
+        <span class="sb-badge" id="sb-queue-badge">0</span>
+      </div>
+    </div>
+
+    <!-- ══════════════ CONTENT AREA ══════════════ -->
+    <div id="content">
+
+      <!-- ════════════ VIEW: TERMLY CHECK-IN ════════════ -->
+      <div id="view-checkin" class="view active">
+        <div class="page-head">
+          <div class="page-head-left">
+            <h1>Termly Check-in</h1>
+            <p>Verify physical book presence. All changes sync to Firestore in real time.</p>
+          </div>
+          <button class="btn primary" onclick="checkAllPresent()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Check All Present
+            <span class="btn-kbd">Space</span>
+          </button>
+        </div>
+
+        <div class="stat-strip" id="ci-stats">
+          <div class="stat-card green"><div class="val" id="s-total">—</div><div class="lbl">Students in class</div></div>
+          <div class="stat-card teal"><div class="val" id="s-checked">—</div><div class="lbl">Verified today</div></div>
+          <div class="stat-card amber"><div class="val" id="s-issued">—</div><div class="lbl">Still issued</div></div>
+          <div class="stat-card red"><div class="val" id="s-lost">—</div><div class="lbl">Flagged lost</div></div>
+        </div>
+
+        <div class="prog-wrap">
+          <div class="prog-track"><div class="prog-fill" id="ci-prog" style="width:0%"></div></div>
+          <span class="prog-label" id="ci-prog-label">Loading…</span>
+        </div>
+
+        <div class="toolbar">
+          <select class="tt-select" id="ci-class" onchange="loadCheckinData()">
+            <option value="10A">Class 10A</option>
+            <option value="10B">Class 10B</option>
+            <option value="11A">Class 11A</option>
+          </select>
+          <select class="tt-select" id="ci-subject" onchange="loadCheckinData()">
+            <option value="LFSC">Life Sciences</option>
+            <option value="MATH">Mathematics</option>
+            <option value="ENG">English</option>
+          </select>
+          <div class="filter-pills">
+            <button class="fpill active" onclick="setFilter('all',this)">All</button>
+            <button class="fpill" onclick="setFilter('issued',this)">Issued</button>
+            <button class="fpill" onclick="setFilter('checked',this)">Checked</button>
+            <button class="fpill" onclick="setFilter('lost',this)">Lost</button>
+          </div>
+          <div class="kbar" style="margin-left:auto">
+            <span><kbd>↑↓</kbd> navigate</span>
+            <span><kbd>C</kbd> check</span>
+            <span><kbd>L</kbd> lost</span>
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <div class="tbl-wrap-scroll">
+            <table class="tt" id="ci-table">
+              <thead>
+                <tr>
+                  <th style="width:36px"><input type="checkbox" id="chk-all" title="Select all" onchange="toggleAll(this)"/></th>
+                  <th style="width:96px">ADMNR</th>
+                  <th style="width:140px">Student</th>
+                  <th style="width:52px">Class</th>
+                  <th>Allocated books</th>
+                  <th style="width:100px">Last verified</th>
+                  <th style="width:80px">Status</th>
+                  <th style="width:80px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ci-tbody">
+                <tr><td colspan="8" style="text-align:center;color:var(--text3);padding:28px">
+                  <div class="spinner" style="margin:0 auto 8px"></div>
+                  Loading from Firestore…
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ VIEW: OFF-RAMP RETURNS ════════════ -->
+      <div id="view-offramp" class="view">
+        <div class="page-head">
+          <div class="page-head-left">
+            <h1>Off-Ramp Returns</h1>
+            <p>Scan or type a student ADMNR or full book barcode to process returns.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="scan-wrap">
+            <svg class="scan-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+            <input
+              class="scan-input"
+              id="scan-field"
+              type="text"
+              placeholder="Scan barcode or type ADMNR / book code…"
+              autocomplete="off"
+              oninput="onScanInput(this.value)"
+              onkeydown="onScanKeydown(event)"
+            />
+            <span class="scan-mode" id="scan-mode-badge">waiting</span>
+            <button class="btn sm" onclick="clearScan()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="scan-hints">
+            <span>ADMNR (6–8 digits) → student liability</span>
+            <span>·</span>
+            <span>Full barcode e.g. <code style="font-family:var(--mono);font-size:10px;color:var(--accent)">LFSC-BIO1-TH-042</code> → single book</span>
+            <span>·</span>
+            <span><kbd>!</kbd> lost &nbsp;<kbd>R</kbd> return &nbsp;<kbd>?</kbd> check</span>
+          </div>
+        </div>
+
+        <div class="result-panel" id="offramp-result">
+          <div class="result-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+            Scan or type to begin
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ VIEW: IMPORT ════════════ -->
+      <div id="view-import" class="view">
+        <div class="page-head">
+          <div class="page-head-left">
+            <h1>Import Booklist</h1>
+            <p>Upload a teacher's XLSX / XLSM / CSV booklist. Data is validated then written to Firestore.</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Import context
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Teacher initials</label>
+              <input class="tt-input" id="imp-initials" placeholder="e.g. TH" style="width:90px"/>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Year</label>
+              <select class="tt-select" id="imp-year">
+                <option>2025</option><option>2024</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Term</label>
+              <select class="tt-select" id="imp-term">
+                <option value="1">Term 1</option>
+                <option value="2" selected>Term 2</option>
+                <option value="3">Term 3</option>
+                <option value="4">Term 4</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="dropzone"
+          id="dropzone"
+          onclick="document.getElementById('file-input').click()"
+          ondragover="dzOver(event)"
+          ondragleave="dzLeave(event)"
+          ondrop="dzDrop(event)"
+        >
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div style="font-size:13px;font-weight:500;color:var(--text1)">Drop booklist file here or <span class="dz-accent">click to browse</span></div>
+          <p>Accepts .xlsx · .xlsm · .csv — filename pattern {GRADE}_{SUBJECT}_{INITIALS}</p>
+        </div>
+        <input type="file" id="file-input" accept=".xlsx,.xlsm,.csv" style="display:none" onchange="handleFileSelect(this.files[0])"/>
+
+        <div class="card" id="import-log-card" style="display:none;margin-top:14px">
+          <div class="card-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Import log
+          </div>
+          <div id="import-log"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;align-items:center" id="import-actions" style="display:none">
+            <button class="btn primary" id="btn-commit" onclick="commitImport()" style="display:none">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Commit to Firestore
+            </button>
+            <div class="exp-progress" id="import-progress">
+              <div class="spinner"></div>
+              <span id="import-prog-text">Writing…</span>
+              <div class="exp-prog-track"><div class="exp-prog-fill" id="import-prog-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ VIEW: EXPORT ════════════ -->
+      <div id="view-export" class="view">
+        <div class="page-head">
+          <div class="page-head-left">
+            <h1>Export Reports</h1>
+            <p>Generate and download XLSX reports from live Firestore data.</p>
+          </div>
+        </div>
+
+        <!-- Class list export -->
+        <div class="card">
+          <div class="card-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+            Class-list export
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Class</label>
+              <select class="tt-select" id="exp-cl-class">
+                <option>10A</option><option>10B</option><option>11A</option><option value="ALL">All classes</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Subject</label>
+              <select class="tt-select" id="exp-cl-subject">
+                <option>LFSC</option><option>MATH</option><option>ENG</option><option value="ALL">All subjects</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Year</label>
+              <select class="tt-select" id="exp-cl-year"><option>2025</option><option>2024</option></select>
+            </div>
+            <button class="btn primary" onclick="exportClassList()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/></svg>
+              Download .xlsx
+            </button>
+          </div>
+          <div class="exp-progress" id="exp-cl-prog">
+            <div class="spinner"></div>
+            <span id="exp-cl-prog-text">Querying…</span>
+            <div class="exp-prog-track"><div class="exp-prog-fill" id="exp-cl-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <!-- Stock audit export -->
+        <div class="card">
+          <div class="card-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Stock audit export — exceptions log
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Year</label>
+              <select class="tt-select" id="exp-au-year"><option>2025</option><option>2024</option></select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Unverified since</label>
+              <input class="tt-input" id="exp-au-date" type="date" value="2025-05-01" style="width:150px"/>
+            </div>
+            <button class="btn primary" onclick="exportStockAudit()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/></svg>
+              Download .xlsx
+            </button>
+          </div>
+          <div class="exp-progress" id="exp-au-prog">
+            <div class="spinner"></div>
+            <span id="exp-au-prog-text">Aggregating…</span>
+            <div class="exp-prog-track"><div class="exp-prog-fill" id="exp-au-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ VIEW: OFFLINE QUEUE ════════════ -->
+      <div id="view-offline" class="view">
+        <div class="page-head">
+          <div class="page-head-left">
+            <h1>Sync Queue</h1>
+            <p>Writes buffered locally while offline. They sync automatically on reconnect.</p>
+          </div>
+          <button class="btn" id="sync-now-btn" onclick="simulateSync()" style="display:none">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            Sync now
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-head">Pending writes</div>
+          <div id="queue-list">
+            <div style="color:var(--text3);font-size:12px;padding:16px 0;text-align:center">Queue is empty — all writes committed.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">Implementation reference — offline config</div>
+          <pre style="font-family:var(--mono);font-size:11px;color:var(--text1);line-height:1.8;overflow-x:auto"><code><span style="color:var(--text3)">// 1. Enable IndexedDB persistence (call once at app init)</span>
+enableIndexedDbPersistence(db)
+  .catch(err => console.warn(err.code));
+
+<span style="color:var(--text3)">// 2. Monitor connectivity</span>
+window.addEventListener('online',  () => setConnStatus('online'));
+window.addEventListener('offline', () => setConnStatus('offline'));
+
+<span style="color:var(--text3)">// 3. Know when all pending writes flushed</span>
+onSnapshotsInSync(db, () => {
+  showToast('All writes synced', 'success');
+});
+
+<span style="color:var(--text3)">// 4. Writes during offline are auto-queued —</span>
+<span style="color:var(--text3)">// updateDoc() returns a resolved Promise immediately,</span>
+<span style="color:var(--text3)">// Firestore replays them in order on reconnect.</span></code></pre>
+        </div>
+      </div>
+
+      <!-- ════════════ VIEW: SETTINGS ════════════ -->
+      <div id="view-settings" class="view">
+        <div class="page-head">
+          <div class="page-head-left">
+            <h1>Firestore Settings</h1>
+            <p>Enter your Firebase project credentials, test the connection, then optionally seed test data.</p>
+          </div>
+          <span class="conn-badge" id="settings-conn-pill" style="font-size:11px">
+            <span class="conn-dot" id="settings-conn-dot"></span>
+            <span id="settings-conn-label">Not configured</span>
+          </span>
+        </div>
+
+        <!-- Step 1: Credentials -->
+        <div class="card">
+          <div class="card-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            Step 1 — Firebase project credentials
+          </div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">
+            Find these in the <strong style="color:var(--text1)">Firebase Console → Project Settings → General → Your apps → SDK setup</strong>.
+            Values are saved to <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">localStorage</code> and never leave your browser.
+          </p>
+          <div class="cfg-grid">
+            <div class="cfg-field">
+              <label>API Key</label>
+              <input id="cfg-apiKey" type="text" placeholder="AIzaSy…" autocomplete="off"/>
+            </div>
+            <div class="cfg-field">
+              <label>Project ID</label>
+              <input id="cfg-projectId" type="text" placeholder="my-project-id" autocomplete="off"/>
+            </div>
+            <div class="cfg-field">
+              <label>Auth Domain</label>
+              <input id="cfg-authDomain" type="text" placeholder="my-project.firebaseapp.com" autocomplete="off"/>
+            </div>
+            <div class="cfg-field">
+              <label>Storage Bucket</label>
+              <input id="cfg-storageBucket" type="text" placeholder="my-project.appspot.com" autocomplete="off"/>
+            </div>
+            <div class="cfg-field">
+              <label>Messaging Sender ID</label>
+              <input id="cfg-messagingSenderId" type="text" placeholder="123456789012" autocomplete="off"/>
+            </div>
+            <div class="cfg-field">
+              <label>App ID</label>
+              <input id="cfg-appId" type="text" placeholder="1:123…:web:abc…" autocomplete="off"/>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+            <button class="btn primary" onclick="saveAndConnect()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save &amp; Connect
+            </button>
+            <button class="btn" onclick="testConnection()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              Test connection
+            </button>
+            <button class="btn danger" onclick="clearConfig()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              Clear saved config
+            </button>
+          </div>
+
+          <div class="conn-status-bar st-idle" id="cfg-status-bar">
+            <span class="conn-status-icon" id="cfg-status-icon">○</span>
+            <div>
+              <div id="cfg-status-title" style="font-weight:500">Awaiting configuration</div>
+              <div id="cfg-status-detail" style="font-size:11px;opacity:.7;margin-top:2px">Enter your Firebase credentials above and click Save &amp; Connect.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Test data -->
+        <div class="card" id="seed-card">
+          <div class="card-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Step 2 — Seed test data (optional)
+          </div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">
+            Writes a small dataset (12 allocation documents across 2 classes) to your Firestore
+            <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">allocations</code> collection so you can explore the UI immediately.
+            Safe to run multiple times — uses <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">set(merge:false)</code> with deterministic document IDs.
+          </p>
+
+          <div style="overflow-x:auto">
+            <table class="seed-table">
+              <thead>
+                <tr><th>Doc ID (ADMNR_BookCode)</th><th>Student</th><th>Class</th><th>Subject</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1234567_LFSC-BIO1-TH-042</td><td>Nkosi S</td><td>10A</td><td>LFSC</td><td><span class="badge b-issued">issued</span></td></tr>
+                <tr><td>1234567_LFSC-ECO1-TH-018</td><td>Nkosi S</td><td>10A</td><td>LFSC</td><td><span class="badge b-checked">checked</span></td></tr>
+                <tr><td>2345678_LFSC-BIO1-TH-031</td><td>Dlamini T</td><td>10A</td><td>LFSC</td><td><span class="badge b-returned">returned</span></td></tr>
+                <tr><td>3456789_LFSC-BIO1-TH-005</td><td>Mbatha L</td><td>10A</td><td>LFSC</td><td><span class="badge b-lost">lost</span></td></tr>
+                <tr><td>4567890_LFSC-BIO1-TH-019</td><td>Zungu P</td><td>10A</td><td>LFSC</td><td><span class="badge b-issued">issued</span></td></tr>
+                <tr><td>5678901_LFSC-BIO1-TH-007</td><td>Khumalo R</td><td>10A</td><td>LFSC</td><td><span class="badge b-checked">checked</span></td></tr>
+                <tr><td>6001001_MATH-ALG1-KD-011</td><td>Dube A</td><td>10B</td><td>MATH</td><td><span class="badge b-issued">issued</span></td></tr>
+                <tr><td>6001002_MATH-ALG1-KD-022</td><td>Cele B</td><td>10B</td><td>MATH</td><td><span class="badge b-issued">issued</span></td></tr>
+                <tr><td>6001003_MATH-ALG1-KD-033</td><td>Mokoena C</td><td>10B</td><td>MATH</td><td><span class="badge b-checked">checked</span></td></tr>
+                <tr><td>6001004_MATH-ALG1-KD-044</td><td>Khumalo D</td><td>10B</td><td>MATH</td><td><span class="badge b-returned">returned</span></td></tr>
+                <tr><td>7890123_LFSC-BIO1-TH-033</td><td>Mthembu B</td><td>10A</td><td>LFSC</td><td><span class="badge b-lost">lost</span></td></tr>
+                <tr><td>8901234_LFSC-BIO1-TH-022</td><td>Zulu C</td><td>10A</td><td>LFSC</td><td><span class="badge b-checked">checked</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap">
+            <button class="btn primary" id="btn-seed" onclick="seedTestData()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Write test data to Firestore
+            </button>
+            <button class="btn danger" id="btn-wipe" onclick="wipeTestData()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+              Delete test data
+            </button>
+            <div class="exp-progress" id="seed-progress">
+              <div class="spinner"></div>
+              <span id="seed-prog-text">Writing…</span>
+              <div class="exp-prog-track"><div class="exp-prog-fill" id="seed-prog-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Firestore rules reference -->
+        <div class="card">
+          <div class="card-head">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Step 3 — Minimum Firestore security rules
+          </div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7">
+            Paste these into <strong style="color:var(--text1)">Firebase Console → Firestore → Rules</strong>.
+            They allow authenticated users to read/write the <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">allocations</code> and <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">students</code> collections.
+            Tighten before production.
+          </p>
+          <pre style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:14px;font-family:var(--mono);font-size:11px;color:var(--text1);line-height:1.8;overflow-x:auto"><code><span style="color:var(--text3)">rules_version = '2';</span>
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /allocations/{docId} {
+      allow read, write: <span style="color:var(--accent)">if request.auth != null;</span>
+    }
+    match /students/{admnr} {
+      allow read, write: <span style="color:var(--accent)">if request.auth != null;</span>
+    }
+  }
+}</code></pre>
+          <p style="font-size:11px;color:var(--text3);margin-top:8px">
+            ⚠ For this prototype without Auth, temporarily set <code style="font-family:var(--mono);font-size:10px">if true;</code> during initial testing, then re-add auth requirements.
+          </p>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ MODALS ══ -->
+<div id="modal-lost" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-icon warn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <h3>Flag book as lost?</h3>
+    <p id="modal-lost-body">This will mark the book as lost and add the student to the liability register.</p>
+    <div class="modal-note danger" id="modal-lost-note"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-lost')">Cancel</button>
+      <button class="btn danger" onclick="confirmLost()">Confirm — mark lost</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-mismatch" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-icon danger">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    </div>
+    <h3>Book–student mismatch</h3>
+    <p id="modal-mismatch-body">This book is recorded against a different student.</p>
+    <div class="modal-note">Physically verify the number on the book cover before proceeding. Returning here will close the <em>other</em> student's liability.</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-mismatch')">Cancel — re-check</button>
+      <button class="btn warn" onclick="confirmMismatch()">Return anyway</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-notfound" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-icon info">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <h3>Code not found</h3>
+    <p id="modal-nf-body">The scanned code does not match any allocation record for this year.</p>
+    <div class="modal-note">Check that the correct term/year data has been imported, or re-scan the barcode carefully.</div>
+    <div class="modal-actions">
+      <button class="btn primary" onclick="closeModal('modal-notfound')">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     APPLICATION JAVASCRIPT
+     ════════════════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════════════════════
+   SEED DATA — written to Firestore only when user clicks
+   "Write test data". Never pre-populated into STATE.
+   ═══════════════════════════════════════════════════════════ */
+const SEED_DOCS = [
+  {id:'1234567_LFSC-BIO1-TH-042', admnr:'1234567', student_name:'Nkosi S',    class_id:'10A', subject:'LFSC', full_book_code:'LFSC-BIO1-TH-042', status:'issued',   date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-05-10', year:2025, term:2},
+  {id:'1234567_LFSC-ECO1-TH-018', admnr:'1234567', student_name:'Nkosi S',    class_id:'10A', subject:'LFSC', full_book_code:'LFSC-ECO1-TH-018', status:'checked',  date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-06-01', year:2025, term:2},
+  {id:'2345678_LFSC-BIO1-TH-031', admnr:'2345678', student_name:'Dlamini T',  class_id:'10A', subject:'LFSC', full_book_code:'LFSC-BIO1-TH-031', status:'returned', date_issued:'2025-01-15', date_returned:'2025-06-01', last_verified_date:'2025-06-01', year:2025, term:2},
+  {id:'3456789_LFSC-BIO1-TH-005', admnr:'3456789', student_name:'Mbatha L',   class_id:'10A', subject:'LFSC', full_book_code:'LFSC-BIO1-TH-005', status:'lost',     date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-03-10', year:2025, term:2},
+  {id:'4567890_LFSC-BIO1-TH-019', admnr:'4567890', student_name:'Zungu P',    class_id:'10A', subject:'LFSC', full_book_code:'LFSC-BIO1-TH-019', status:'issued',   date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-05-20', year:2025, term:2},
+  {id:'5678901_LFSC-BIO1-TH-007', admnr:'5678901', student_name:'Khumalo R',  class_id:'10A', subject:'LFSC', full_book_code:'LFSC-BIO1-TH-007', status:'checked',  date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-06-01', year:2025, term:2},
+  {id:'6001001_MATH-ALG1-KD-011', admnr:'6001001', student_name:'Dube A',     class_id:'10B', subject:'MATH', full_book_code:'MATH-ALG1-KD-011',  status:'issued',   date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-05-15', year:2025, term:2},
+  {id:'6001002_MATH-ALG1-KD-022', admnr:'6001002', student_name:'Cele B',     class_id:'10B', subject:'MATH', full_book_code:'MATH-ALG1-KD-022',  status:'issued',   date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-05-15', year:2025, term:2},
+  {id:'6001003_MATH-ALG1-KD-033', admnr:'6001003', student_name:'Mokoena C',  class_id:'10B', subject:'MATH', full_book_code:'MATH-ALG1-KD-033',  status:'checked',  date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-06-01', year:2025, term:2},
+  {id:'6001004_MATH-ALG1-KD-044', admnr:'6001004', student_name:'Khumalo D',  class_id:'10B', subject:'MATH', full_book_code:'MATH-ALG1-KD-044',  status:'returned', date_issued:'2025-01-15', date_returned:'2025-06-01', last_verified_date:'2025-06-01', year:2025, term:2},
+  {id:'7890123_LFSC-BIO1-TH-033', admnr:'7890123', student_name:'Mthembu B',  class_id:'10A', subject:'LFSC', full_book_code:'LFSC-BIO1-TH-033',  status:'lost',     date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-02-28', year:2025, term:2},
+  {id:'8901234_LFSC-BIO1-TH-022', admnr:'8901234', student_name:'Zulu C',     class_id:'10A', subject:'LFSC', full_book_code:'LFSC-BIO1-TH-022',  status:'checked',  date_issued:'2025-01-15', date_returned:null,         last_verified_date:'2025-06-01', year:2025, term:2},
+];
+
+/* In-memory state — starts EMPTY. Populated only from Firestore. */
+let STATE = {
+  allocations:    [],   /* ← no demo data pre-loaded */
+  filter:         'all',
+  selectedIdx:    -1,
+  pendingQueue:   [],
+  queueSeq:       1,
+  isOffline:      false,
+  lostTarget:     null,
+  mismatchTarget: null,
+};
+
+/* ═══════════════════════════════════════════════════════════
+   SETTINGS — localStorage key
+   ═══════════════════════════════════════════════════════════ */
+const LS_KEY = 'tt_firebase_config';
+
+/* ── Load saved config into fields on page load ── */
+function loadSavedConfig() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (!saved) return;
+    ['apiKey','projectId','authDomain','storageBucket','messagingSenderId','appId'].forEach(k => {
+      const el = document.getElementById('cfg-' + k);
+      if (el && saved[k]) el.value = saved[k];
+    });
+  } catch(e) {}
+}
+
+/* ── Read fields into a config object ── */
+function readConfigFields() {
+  const fields = ['apiKey','projectId','authDomain','storageBucket','messagingSenderId','appId'];
+  const cfg = {};
+  let valid = true;
+  fields.forEach(k => {
+    const el = document.getElementById('cfg-' + k);
+    const v  = el ? el.value.trim() : '';
+    cfg[k]   = v;
+    if (el) {
+      if (!v) { el.classList.add('invalid'); el.classList.remove('valid'); valid = false; }
+      else    { el.classList.add('valid');   el.classList.remove('invalid'); }
+    }
+  });
+  return valid ? cfg : null;
+}
+
+/* ── Update the status bar in Settings ── */
+function setCfgStatus(state, title, detail) {
+  const bar = document.getElementById('cfg-status-bar');
+  const icon= document.getElementById('cfg-status-icon');
+  const t   = document.getElementById('cfg-status-title');
+  const d   = document.getElementById('cfg-status-detail');
+  bar.className = 'conn-status-bar ' + state;
+  icon.textContent = { 'st-idle':'○', 'st-testing':'↻', 'st-ok':'✓', 'st-fail':'✕' }[state] || '○';
+  t.textContent = title;
+  d.textContent = detail;
+}
+
+/* ── Update the Settings pill in the page header ── */
+function setSettingsPill(status, label) {
+  const pill = document.getElementById('settings-conn-pill');
+  const dot  = document.getElementById('settings-conn-dot');
+  const lbl  = document.getElementById('settings-conn-label');
+  pill.className = 'conn-badge ' + status;
+  dot.className  = 'conn-dot' + (status==='syncing'?' pulse':'');
+  lbl.textContent = label;
+}
+
+/* ── Save config to localStorage and (re)initialise Firebase ── */
+async function saveAndConnect() {
+  const cfg = readConfigFields();
+  if (!cfg) { setCfgStatus('st-fail','Validation failed','All six fields are required.'); return; }
+  localStorage.setItem(LS_KEY, JSON.stringify(cfg));
+  setCfgStatus('st-testing','Connecting…','Initialising Firebase SDK…');
+  setSettingsPill('syncing','Connecting…');
+  await initFirebase(cfg);
+}
+
+/* ── Test only — does not re-save ── */
+async function testConnection() {
+  if (!window._db) { setCfgStatus('st-fail','Not initialised','Save &amp; Connect first.'); return; }
+  setCfgStatus('st-testing','Testing…','Writing a probe document to Firestore…');
+  try {
+    const { doc, setDoc, deleteDoc } = window._fs;
+    const probe = doc(window._db, '_tt_probe', 'ping');
+    await setDoc(probe, { ts: new Date().toISOString() });
+    await deleteDoc(probe);
+    setCfgStatus('st-ok','Connection OK','Firestore read/write confirmed. Probe document cleaned up.');
+    showToast('Firestore connection verified ✓', 'success');
+  } catch(e) {
+    setCfgStatus('st-fail','Connection failed', e.message);
+    showToast('Connection failed: ' + e.message, 'error');
+  }
+}
+
+/* ── Clear saved credentials ── */
+function clearConfig() {
+  localStorage.removeItem(LS_KEY);
+  ['apiKey','projectId','authDomain','storageBucket','messagingSenderId','appId'].forEach(k => {
+    const el = document.getElementById('cfg-' + k);
+    if (el) { el.value = ''; el.classList.remove('valid','invalid'); }
+  });
+  setCfgStatus('st-idle','Config cleared','Enter your Firebase credentials and click Save &amp; Connect.');
+  setSettingsPill('offline','Not configured');
+  showToast('Config cleared from localStorage', 'warning');
+}
+
+/* ═══════════════════════════════════════════════
+   DYNAMIC FIREBASE INITIALISATION
+   Imports the SDK at runtime using the stored config.
+   Safe to call multiple times — guards against
+   duplicate app registration.
+   ═══════════════════════════════════════════════ */
+async function initFirebase(cfg) {
+  try {
+    const { initializeApp, getApps, getApp } =
+      await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const { getFirestore, enableIndexedDbPersistence,
+            collection, doc, getDoc, getDocs, setDoc, deleteDoc,
+            updateDoc, query, where, orderBy,
+            serverTimestamp, onSnapshot, writeBatch } =
+      await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+
+    /* Re-use existing app if already registered with same project */
+    const existingApps = getApps();
+    const app = existingApps.find(a => a.options.projectId === cfg.projectId)
+              || initializeApp(cfg, cfg.projectId);
+
+    const db = getFirestore(app);
+
+    enableIndexedDbPersistence(db).catch(err => {
+      if (err.code === 'failed-precondition') addLog('Persistence: multi-tab limit', 'warn');
+      if (err.code === 'unimplemented')       addLog('Persistence: not supported in this browser', 'warn');
+    });
+
+    window._db = db;
+    window._fs = { collection, doc, getDoc, getDocs, setDoc, deleteDoc,
+                   updateDoc, query, where, orderBy,
+                   serverTimestamp, onSnapshot, writeBatch };
+
+    /* Verify with a lightweight probe read */
+    const { getDocs: gd, collection: col, query: q, where: w, limit } =
+      await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+
+    setCfgStatus('st-ok', 'Connected to ' + cfg.projectId,
+      'Firestore initialised with IndexedDB offline persistence.');
+    setSettingsPill('online', cfg.projectId);
+    setConnStatus('online');
+
+    addLog('Firebase initialised: project=' + cfg.projectId, 'ok');
+    fsReady = true;
+    window.dispatchEvent(new Event('firestore-ready'));
+
+  } catch(e) {
+    setCfgStatus('st-fail', 'Initialisation failed', e.message);
+    setSettingsPill('offline', 'Error');
+    addLog('Firebase init error: ' + e.message, 'err');
+    showToast('Firebase error: ' + e.message, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   SEED / WIPE TEST DATA
+   ═══════════════════════════════════════════════ */
+async function seedTestData() {
+  if (!fsReady || !window._db) {
+    showToast('Connect to Firestore first (Settings → Save & Connect)', 'warning'); return;
+  }
+  const prog = document.getElementById('seed-progress');
+  prog.classList.add('active');
+  document.getElementById('btn-seed').disabled = true;
+
+  const { writeBatch, doc } = window._fs;
+  const total = SEED_DOCS.length;
+  let written = 0;
+
+  /* Write in one batch — 12 docs is well within the 500-op limit */
+  try {
+    const batch = writeBatch(window._db);
+    SEED_DOCS.forEach(({ id, ...data }) => {
+      batch.set(doc(window._db, 'allocations', id), data);
+    });
+    await batch.commit();
+    written = total;
+  } catch(e) {
+    showToast('Seed failed: ' + e.message, 'error');
+    prog.classList.remove('active');
+    document.getElementById('btn-seed').disabled = false;
+    return;
+  }
+
+  document.getElementById('seed-prog-bar').style.width = '100%';
+  document.getElementById('seed-prog-text').textContent = `${written}/${total} documents written`;
+
+  setTimeout(() => {
+    prog.classList.remove('active');
+    document.getElementById('btn-seed').disabled = false;
+  }, 1200);
+
+  showToast(`${written} seed documents written to Firestore`, 'success');
+  addLog(`Seed: ${written} allocation documents written`, 'ok');
+
+  /* Reload the check-in view with the freshly seeded data */
+  STATE.allocations = [];
+  await loadCheckinData();
+}
+
+async function wipeTestData() {
+  if (!fsReady || !window._db) {
+    showToast('Connect to Firestore first', 'warning'); return;
+  }
+  if (!confirm(`Delete all ${SEED_DOCS.length} test documents from Firestore?\nThis cannot be undone.`)) return;
+
+  const { writeBatch, doc } = window._fs;
+  try {
+    const batch = writeBatch(window._db);
+    SEED_DOCS.forEach(({ id }) => batch.delete(doc(window._db, 'allocations', id)));
+    await batch.commit();
+  } catch(e) {
+    showToast('Wipe failed: ' + e.message, 'error'); return;
+  }
+
+  STATE.allocations = [];
+  renderCheckin();
+  updateSidebarBadges();
+  showToast('Test data deleted from Firestore', 'warning');
+  addLog('Wipe: test data deleted', 'warn');
+}
+
+/* ═══════════════════════════════════════════════
+   FIRESTORE BRIDGE
+   ═══════════════════════════════════════════════ */
+let fsReady = false;
+window.addEventListener('firestore-ready', () => {
+  /* STATE.allocations already empty — load from live Firestore */
+  addLog('Firestore ready — loading live data', 'ok');
+  loadCheckinData();
+});
+
+/* Real Firestore query — class check-in */
+async function fsQueryClass(classId, subject, year) {
+  if (!fsReady || !window._db) return null;
+  const { collection, query, where, getDocs } = window._fs;
+  const q = query(
+    collection(window._db, 'allocations'),
+    where('class_id', '==', classId),
+    where('subject',  '==', subject),
+    where('year',     '==', year)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/* Real Firestore status update */
+async function fsUpdateStatus(docId, newStatus) {
+  if (!fsReady || !window._db) {
+    /* Not connected — caller's optimisticUpdate already updated local STATE.
+       Queue the write so it commits once connected. */
+    queueWrite(docId, newStatus);
+    return;
+  }
+  const { doc, updateDoc, serverTimestamp } = window._fs;
+  const update = {
+    status:             newStatus,
+    last_verified_date: serverTimestamp(),
+    ...(newStatus === 'returned' ? { date_returned: serverTimestamp() } : {})
+  };
+  await updateDoc(doc(window._db, 'allocations', docId), update);
+}
+
+/* Lookup by ADMNR or barcode */
+async function fsLookup(input) {
+  if (!fsReady || !window._db) return null;
+  const { collection, query, where, getDocs } = window._fs;
+  const isAdmnr = /^\d{6,8}$/.test(input);
+  const field   = isAdmnr ? 'admnr' : 'full_book_code';
+  const q = query(collection(window._db, 'allocations'), where(field, '==', input), where('year', '==', 2025));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/* ═══════════════════════════════════════════════
+   OPTIMISTIC UPDATE HELPER
+   Updates local state instantly, writes to
+   Firestore in the background, rolls back on error.
+   ═══════════════════════════════════════════════ */
+async function optimisticUpdate(docId, newStatus, onSuccess) {
+  /* 1. Find and update local record */
+  const rec = STATE.allocations.find(a => a.id === docId);
+  if (!rec) return;
+  const prevStatus = rec.status;
+  rec.status = newStatus;
+  rec.last_verified_date = new Date().toISOString().slice(0,10);
+  if (newStatus === 'returned') rec.date_returned = new Date().toISOString().slice(0,10);
+
+  /* 2. Re-render immediately */
+  renderCheckin();
+  if (onSuccess) onSuccess();
+
+  /* 3. Write to Firestore (or queue if offline) */
+  if (STATE.isOffline) {
+    queueWrite(docId, newStatus);
+    return;
+  }
+  try {
+    await fsUpdateStatus(docId, newStatus);
+    addLog(`Updated ${docId} → ${newStatus}`, 'ok');
+  } catch (err) {
+    /* Rollback */
+    rec.status = prevStatus;
+    if (newStatus === 'returned') rec.date_returned = null;
+    renderCheckin();
+    showToast(`Write failed — rolled back (${err.message})`, 'error');
+    addLog(`Write failed: ${docId} — ${err.message}`, 'err');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════ */
+function setView(id, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tb-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'offramp') setTimeout(() => document.getElementById('scan-field').focus(), 80);
+  if (id === 'offline') renderQueue();
+}
+
+function sidebarClass(cls, el) {
+  document.querySelectorAll('#sidebar .sb-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('ci-class').value = cls;
+  loadCheckinData();
+  setView('checkin', document.getElementById('nav-checkin'));
+}
+
+function sidebarSubject(sub, el) {
+  document.querySelectorAll('[id^="sb-lfsc"],[id^="sb-math"],[id^="sb-eng"]').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('ci-subject').value = sub;
+  loadCheckinData();
+}
+
+/* ═══════════════════════════════════════════════
+   CHECK-IN VIEW
+   ═══════════════════════════════════════════════ */
+async function loadCheckinData() {
+  const cls  = document.getElementById('ci-class').value;
+  const subj = document.getElementById('ci-subject').value;
+
+  showLoadingRow();
+
+  /* Try live Firestore first, fall back to demo */
+  const live = await fsQueryClass(cls, subj, 2025).catch(() => null);
+  if (live && live.length > 0) {
+    /* Merge live data into STATE (preserve any local-only pending status) */
+    live.forEach(r => {
+      const i = STATE.allocations.findIndex(a => a.id === r.id);
+      if (i >= 0) STATE.allocations[i] = r; else STATE.allocations.push(r);
+    });
+  }
+
+  renderCheckin();
+  updateSidebarBadges();
+}
+
+function showLoadingRow() {
+  document.getElementById('ci-tbody').innerHTML =
+    `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:28px">
+      <div class="spinner" style="margin:0 auto 8px"></div>Loading…
+    </td></tr>`;
+}
+
+function getFilteredRows() {
+  const cls  = document.getElementById('ci-class').value;
+  const subj = document.getElementById('ci-subject').value;
+  return STATE.allocations.filter(a => {
+    if (a.class_id !== cls || a.subject !== subj) return false;
+    if (STATE.filter === 'all') return true;
+    return a.status === STATE.filter;
+  });
+}
+
+function renderCheckin() {
+  const rows   = getFilteredRows();
+  const cls    = document.getElementById('ci-class').value;
+  const subj   = document.getElementById('ci-subject').value;
+  const all    = STATE.allocations.filter(a => a.class_id === cls && a.subject === subj);
+
+  /* Group by student */
+  const students = new Map();
+  all.forEach(r => {
+    if (!students.has(r.admnr)) students.set(r.admnr, { name: r.student_name, class_id: r.class_id, books: [] });
+    students.get(r.admnr).books.push(r);
+  });
+
+  const filteredAdmnrs = new Set(rows.map(r => r.admnr));
+
+  /* Stats */
+  const total   = students.size;
+  const checked = [...students.values()].filter(s => s.books.every(b => b.status === 'checked' || b.status === 'returned')).length;
+  const issued  = [...students.values()].filter(s => s.books.some(b => b.status === 'issued')).length;
+  const lost    = [...students.values()].filter(s => s.books.some(b => b.status === 'lost')).length;
+
+  document.getElementById('s-total').textContent   = total;
+  document.getElementById('s-checked').textContent = checked;
+  document.getElementById('s-issued').textContent  = issued;
+  document.getElementById('s-lost').textContent    = lost;
+
+  const pct = total > 0 ? Math.round(checked / total * 100) : 0;
+  document.getElementById('ci-prog').style.width    = pct + '%';
+  document.getElementById('ci-prog-label').textContent = `${checked}/${total} verified · ${pct}%`;
+
+  /* Sidebar badges */
+  document.getElementById('sb-10A-badge').textContent = STATE.allocations.filter(a=>a.class_id==='10A'&&(a.status==='issued'||a.status==='lost')).length;
+
+  const tbody = document.getElementById('ci-tbody');
+  if (students.size === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:36px 20px">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;margin:0 auto 10px;display:block"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      ${fsReady
+        ? 'No allocations found for this class and subject. Import a booklist or seed test data in Settings.'
+        : 'Not connected to Firestore. Go to <strong style="color:var(--accent);cursor:pointer" onclick="setView(\'settings\',document.getElementById(\'nav-settings\'))">Settings</strong> to enter your Firebase credentials.'}
+    </td></tr>`;
+    return;
+  }
+
+  const rows_html = [];
+  students.forEach((s, admnr) => {
+    if (!filteredAdmnrs.has(admnr) && STATE.filter !== 'all') return;
+    const trClass = s.books.every(b=>b.status==='checked'||b.status==='returned') ? 'tr-checked' : s.books.some(b=>b.status==='lost') ? 'tr-lost' : '';
+    const chips   = s.books.map(b => {
+      const cc = b.status === 'checked' ? 'chip-checked' : b.status === 'lost' ? 'chip-lost' : b.status === 'returned' ? 'chip-returned' : '';
+      const num = b.full_book_code.split('-').pop();
+      return `<span class="chip ${cc}" onclick="cycleChip('${b.id}')" title="${b.full_book_code}">${num}</span>`;
+    }).join('');
+    const verified = s.books.reduce((latest, b) => b.last_verified_date > latest ? b.last_verified_date : latest, '');
+    const worstStatus = s.books.some(b=>b.status==='lost') ? 'lost' : s.books.some(b=>b.status==='issued') ? 'issued' : s.books.some(b=>b.status==='checked') ? 'checked' : 'returned';
+
+    rows_html.push(`<tr class="${trClass}" data-admnr="${admnr}">
+      <td><input type="checkbox" data-admnr="${admnr}" onclick="event.stopPropagation()"/></td>
+      <td class="td-mono">${admnr}</td>
+      <td class="td-name">${s.name}</td>
+      <td style="font-family:var(--mono);font-size:11px">${s.class_id}</td>
+      <td><div class="chips">${chips}</div></td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${verified || '—'}</td>
+      <td><span class="badge b-${worstStatus}">${worstStatus}</span></td>
+      <td>
+        <button class="btn sm" onclick="checkStudent('${admnr}')" title="Mark all present">✓</button>
+        <button class="btn sm danger" onclick="promptLost('${admnr}')" title="Flag lost">!</button>
+      </td>
+    </tr>`);
+  });
+  tbody.innerHTML = rows_html.join('');
+}
+
+function setFilter(f, el) {
+  STATE.filter = f;
+  document.querySelectorAll('.fpill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderCheckin();
+}
+
+function cycleChip(id) {
+  const r = STATE.allocations.find(a => a.id === id);
+  if (!r || r.status === 'lost' || r.status === 'returned') return;
+  const next = r.status === 'issued' ? 'checked' : 'issued';
+  optimisticUpdate(id, next);
+}
+
+function checkStudent(admnr) {
+  const toUpdate = STATE.allocations.filter(a => a.admnr === admnr && a.status === 'issued');
+  toUpdate.forEach(a => optimisticUpdate(a.id, 'checked'));
+}
+
+function checkAllPresent() {
+  const cls  = document.getElementById('ci-class').value;
+  const subj = document.getElementById('ci-subject').value;
+  const checked = document.querySelectorAll('#ci-tbody input[type=checkbox]:checked');
+  let targets;
+  if (checked.length > 0) {
+    const admnrs = new Set([...checked].map(c => c.dataset.admnr));
+    targets = STATE.allocations.filter(a => admnrs.has(a.admnr) && a.status === 'issued');
+  } else {
+    targets = STATE.allocations.filter(a => a.class_id === cls && a.subject === subj && a.status === 'issued');
+  }
+  targets.forEach(a => optimisticUpdate(a.id, 'checked'));
+  showToast(`Marked ${targets.length} books as checked`, 'success');
+}
+
+function toggleAll(el) {
+  document.querySelectorAll('#ci-tbody input[type=checkbox]').forEach(c => c.checked = el.checked);
+}
+
+/* ═══════════════════════════════════════════════
+   OFF-RAMP SCAN INPUT
+   ═══════════════════════════════════════════════ */
+let _lastKey = 0, _isScanner = false, _scanTimer = null;
+const SCANNER_MS = 80, MANUAL_MS = 600;
+
+const COMMANDS = { '!':'lost', 'R':'returned', '?':'checked', 'L':'lost' };
+
+function onScanKeydown(e) {
+  const now = Date.now(), delta = now - _lastKey;
+  _lastKey = now;
+  _isScanner = delta > 0 && delta < SCANNER_MS;
+  const badge = document.getElementById('scan-mode-badge');
+  badge.textContent   = _isScanner ? '⬡ scanner' : '✎ manual';
+  badge.className     = 'scan-mode ' + (_isScanner ? 'mode-scanner' : 'mode-manual');
+  if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); commitScan(e.target.value.trim()); }
+}
+
+function onScanInput(val) {
+  clearTimeout(_scanTimer);
+  if (!val) { showScanEmpty(); return; }
+  if (!_isScanner) _scanTimer = setTimeout(() => commitScan(val.trim()), MANUAL_MS);
+}
+
+function clearScan() {
+  document.getElementById('scan-field').value = '';
+  const badge = document.getElementById('scan-mode-badge');
+  badge.textContent = 'waiting'; badge.className = 'scan-mode';
+  showScanEmpty();
+}
+
+async function commitScan(val) {
+  if (!val) return;
+  document.getElementById('scan-field').value = '';
+  const badge = document.getElementById('scan-mode-badge');
+  badge.textContent = 'waiting'; badge.className = 'scan-mode';
+
+  /* Command shortcut */
+  if (COMMANDS[val]) { showToast(`Command "${val}" — select a book row first`, 'warning'); return; }
+
+  const isAdmnr   = /^\d{6,8}$/.test(val);
+  const isBarcode = /^[A-Z]{2,6}-[A-Z0-9]{2,8}-[A-Z]{2,3}-\d{3}$/i.test(val);
+
+  if (isAdmnr) {
+    /* Try live Firestore, fall back to demo state */
+    let recs = await fsLookup(val).catch(() => null);
+    if (!recs) recs = STATE.allocations.filter(a => a.admnr === val && a.year === 2025);
+    renderStudentResult(val, recs);
+  } else if (isBarcode) {
+    let recs = await fsLookup(val.toUpperCase()).catch(() => null);
+    if (!recs) recs = STATE.allocations.filter(a => a.full_book_code === val.toUpperCase());
+    renderBookResult(val.toUpperCase(), recs);
+  } else {
+    document.getElementById('modal-nf-body').textContent = `"${val}" does not match any ADMNR or barcode format.`;
+    showModal('modal-notfound');
+  }
+}
+
+function renderStudentResult(admnr, recs) {
+  if (!recs || recs.length === 0) {
+    document.getElementById('modal-nf-body').textContent = `No allocations found for ADMNR ${admnr}.`;
+    showModal('modal-notfound'); return;
+  }
+  const name      = recs[0].student_name;
+  const initials  = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const outstanding = recs.filter(r => r.status !== 'returned');
+  const booksHtml = outstanding.length === 0
+    ? `<div class="result-book-row"><span style="color:var(--accent)">✓</span><span style="font-size:12px;color:var(--text2)">No outstanding liability — all books returned.</span></div>`
+    : outstanding.map(r => `
+      <div class="result-book-row">
+        <div style="flex:1">
+          <div class="result-book-code">${r.full_book_code}</div>
+          <div class="result-book-sub">${r.subject} · issued ${r.date_issued}</div>
+        </div>
+        <span class="badge b-${r.status}">${r.status}</span>
+        <button class="btn sm" style="background:rgba(61,220,151,.1);color:var(--accent2);border-color:rgba(61,220,151,.3)" onclick="returnBook('${r.id}','${admnr}')">↵ Return</button>
+        <button class="btn sm danger" onclick="promptLostOfframp('${r.id}')">!</button>
+      </div>`).join('');
+
+  document.getElementById('offramp-result').innerHTML = `
+    <div class="result-student">
+      <div class="result-student-head">
+        <div class="avatar">${initials}</div>
+        <div>
+          <div class="result-name">${name}</div>
+          <div class="result-meta">${admnr} · Class ${recs[0].class_id} · ${outstanding.length} outstanding</div>
+        </div>
+        <button class="btn sm" style="margin-left:auto" onclick="returnAllBooks('${admnr}')">Return all</button>
+      </div>
+      ${booksHtml}
+    </div>`;
+}
+
+function renderBookResult(code, recs) {
+  if (!recs || recs.length === 0) {
+    document.getElementById('modal-nf-body').textContent = `Book code "${code}" not found in this year's records.`;
+    showModal('modal-notfound'); return;
+  }
+  const r = recs[0];
+  document.getElementById('offramp-result').innerHTML = `
+    <div class="result-student">
+      <div class="result-student-head">
+        <div class="avatar" style="font-size:18px">📗</div>
+        <div>
+          <div class="result-name" style="font-family:var(--mono);font-size:13px">${code}</div>
+          <div class="result-meta">Allocated to ${r.student_name} · ${r.admnr}</div>
+        </div>
+        <span class="badge b-${r.status}" style="margin-left:auto">${r.status}</span>
+      </div>
+      <div class="result-book-row">
+        <div style="flex:1">
+          <div class="result-book-code">${r.student_name}</div>
+          <div class="result-book-sub">${r.class_id} · ${r.admnr}</div>
+        </div>
+        <button class="btn sm" style="background:rgba(61,220,151,.1);color:var(--accent2);border-color:rgba(61,220,151,.3)" onclick="returnBook('${r.id}','${r.admnr}')">↵ Mark returned</button>
+        <button class="btn sm danger" onclick="promptLostOfframp('${r.id}')">!</button>
+      </div>
+    </div>`;
+}
+
+function showScanEmpty() {
+  document.getElementById('offramp-result').innerHTML = `
+    <div class="result-empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+      Scan or type to begin
+    </div>`;
+}
+
+function returnBook(docId, admnr) {
+  optimisticUpdate(docId, 'returned', () => {
+    showToast('Book marked as returned', 'success');
+    setTimeout(() => commitScan(admnr), 200);
+  });
+}
+
+function returnAllBooks(admnr) {
+  const outstanding = STATE.allocations.filter(a => a.admnr === admnr && a.status !== 'returned' && a.status !== 'lost');
+  outstanding.forEach(a => optimisticUpdate(a.id, 'returned'));
+  showToast(`${outstanding.length} books marked as returned`, 'success');
+  setTimeout(() => renderStudentResult(admnr, STATE.allocations.filter(a => a.admnr === admnr && a.year === 2025)), 200);
+}
+
+/* ═══════════════════════════════════════════════
+   LOST BOOK MODAL
+   ═══════════════════════════════════════════════ */
+function promptLost(admnr) {
+  const books = STATE.allocations.filter(a => a.admnr === admnr && a.status !== 'returned' && a.status !== 'lost');
+  if (books.length === 0) { showToast('No issuable books to flag', 'warning'); return; }
+  STATE.lostTarget = { admnr, ids: books.map(b => b.id) };
+  document.getElementById('modal-lost-body').textContent = `Flag all outstanding books for ${books[0].student_name} (${admnr}) as lost?`;
+  document.getElementById('modal-lost-note').textContent = `${books.length} book(s) will be added to the liability register: ${books.map(b=>b.full_book_code).join(', ')}`;
+  showModal('modal-lost');
+}
+
+function promptLostOfframp(docId) {
+  const r = STATE.allocations.find(a => a.id === docId);
+  if (!r) return;
+  STATE.lostTarget = { admnr: r.admnr, ids: [docId] };
+  document.getElementById('modal-lost-body').textContent = `Mark ${r.full_book_code} as lost for ${r.student_name}?`;
+  document.getElementById('modal-lost-note').textContent = `This student (${r.admnr}) will be added to the end-of-year liability register.`;
+  showModal('modal-lost');
+}
+
+function confirmLost() {
+  if (!STATE.lostTarget) return;
+  STATE.lostTarget.ids.forEach(id => optimisticUpdate(id, 'lost'));
+  showToast('Book(s) flagged as lost', 'error');
+  closeModal('modal-lost');
+  STATE.lostTarget = null;
+}
+
+function confirmMismatch() {
+  if (STATE.mismatchTarget) {
+    optimisticUpdate(STATE.mismatchTarget.id, 'returned', () => showToast('Book returned (cross-student)', 'success'));
+    STATE.mismatchTarget = null;
+  }
+  closeModal('modal-mismatch');
+}
+
+/* ═══════════════════════════════════════════════
+   IMPORT ENGINE
+   ═══════════════════════════════════════════════ */
+let _importData = null;
+
+function dzOver(e)  { e.preventDefault(); document.getElementById('dropzone').classList.add('over'); }
+function dzLeave(e) { document.getElementById('dropzone').classList.remove('over'); }
+function dzDrop(e)  { e.preventDefault(); document.getElementById('dropzone').classList.remove('over'); handleFileSelect(e.dataTransfer.files[0]); }
+
+function handleFileSelect(file) {
+  if (!file) return;
+  const card = document.getElementById('import-log-card');
+  card.style.display = 'block';
+  const log = document.getElementById('import-log');
+  log.innerHTML = '';
+  _importData = null;
+
+  addImportLog(`Reading file: ${file.name}`, 'ok');
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb   = XLSX.read(e.target.result, { type: 'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const aoa  = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+      /* Parse filename for metadata */
+      const meta = parseImportFilename(file.name);
+      addImportLog(`Grade: ${meta.grade || '?'} · Subject: ${meta.subjectCode || '?'} · Initials: ${document.getElementById('imp-initials').value || meta.teacherInitials || '?'}`, meta.grade ? 'ok' : 'warn');
+
+      const initials = document.getElementById('imp-initials').value.trim().toUpperCase() || meta.teacherInitials || 'XX';
+
+      /* Structural validation */
+      const struct = validateStructure(aoa);
+      if (!struct.valid) { struct.errors.forEach(err => addImportLog(err, 'err')); return; }
+      addImportLog(`Structure OK — ${struct.bookColumns.length} book column(s) detected`, 'ok');
+
+      /* Row parsing */
+      const { validRows, rowErrors, allocationDocs, studentDocs } = parseRows(aoa, struct, meta, initials);
+      rowErrors.forEach(e => addImportLog(e, 'warn'));
+      addImportLog(`Parsed ${validRows.length} student rows → ${allocationDocs.length} allocation documents`, 'ok');
+
+      if (allocationDocs.length === 0) { addImportLog('No allocations found — nothing to import.', 'warn'); return; }
+
+      _importData = { allocationDocs, studentDocs };
+      document.getElementById('btn-commit').style.display = 'flex';
+      document.getElementById('import-actions').style.display = 'flex';
+    } catch (err) {
+      addImportLog(`Parse error: ${err.message}`, 'err');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseImportFilename(filename) {
+  const base = filename.replace(/\.[^.]+$/, '').replace(/[-_.\s]+/g,' ').replace(/\bBL\b/gi,' ').replace(/\bGR(?:ADE)?\s*(\d)/gi,'$1 ').replace(/\bT([1-4])\b/gi,'TERM$1 ').trim().toUpperCase();
+  const tokens = base.split(/\s+/).filter(Boolean);
+  const NOISE  = new Set(['BL','BOOKLIST','BOOK','LIST','TERM','GRADE','GR']);
+  const grade  = tokens.find(t => /^(\d{1,2})[A-F]?$/.test(t) && parseInt(t)>=1 && parseInt(t)<=12)?.replace(/[A-F]$/,'') || null;
+  const term   = (tokens.find(t => /^TERM([1-4])$/.test(t)) || '').replace('TERM','') || null;
+  const subjectCode = tokens.find(t => /^[A-Z]{3,6}$/.test(t) && !NOISE.has(t) && t !== grade) || null;
+  const initialCands = tokens.filter(t => /^[A-Z]{2,3}$/.test(t) && t !== subjectCode && !NOISE.has(t));
+  return { grade, subjectCode, teacherInitials: initialCands[0] || null, term: term ? parseInt(term) : null };
+}
+
+function validateStructure(aoa) {
+  if (!aoa || aoa.length < 2) return { valid:false, errors:['Sheet is empty'] };
+  const headers = aoa[0].map(h => h !== null && h !== undefined ? String(h).trim().toUpperCase() : '');
+  const required = ['ADMNR'];
+  const missing  = required.filter(c => !headers.includes(c));
+  if (missing.length) return { valid:false, errors:[`Missing required columns: ${missing.join(', ')}`] };
+  const BOOK_COL = /^[A-Z]{2,8}$|^\d{1,6}$/;
+  const SKIP     = new Set(['ADMNR','SURNAME','INITIAL','G','CLASS','GENDER','NAME','STUDENT']);
+  const bookColumns = headers.map((h,i) => ({h,i})).filter(({h}) => h && !SKIP.has(h) && BOOK_COL.test(h));
+  if (bookColumns.length === 0) return { valid:false, errors:['No book columns detected'] };
+  return {
+    valid: true, errors: [], headers, bookColumns,
+    colMap: { admnr: headers.indexOf('ADMNR'), surname: headers.indexOf('SURNAME') !== -1 ? headers.indexOf('SURNAME') : headers.indexOf('NAME'), initial: headers.indexOf('INITIAL'), gender: headers.indexOf('G'), regClass: headers.indexOf('CLASS') }
+  };
+}
+
+function parseRows(aoa, struct, meta, initials) {
+  const { bookColumns, colMap } = struct;
+  const year   = parseInt(document.getElementById('imp-year').value);
+  const term   = parseInt(document.getElementById('imp-term').value);
+  const validRows = [], rowErrors = [], allocationDocs = [], studentDocs = [];
+  const studentMap = new Map();
+
+  for (let i = 1; i < aoa.length; i++) {
+    const row  = aoa[i];
+    const cell = (idx) => (idx >= 0 && row[idx] !== null && row[idx] !== undefined) ? String(row[idx]).trim() : '';
+    const admnr = cell(colMap.admnr);
+    const surname = cell(colMap.surname);
+    if (!admnr && !surname) continue;
+    if (!/^\d{4,10}$/.test(admnr)) { rowErrors.push(`Row ${i+1}: invalid ADMNR "${admnr}"`); continue; }
+
+    const studentDoc = { admnr, surname, initial: cell(colMap.initial)||null, gender: cell(colMap.gender)||null, regClass: cell(colMap.regClass)||null, grade: meta.grade||null, updatedAt: new Date().toISOString() };
+    studentMap.set(admnr, studentDoc);
+
+    bookColumns.forEach(({h, i: colIdx}) => {
+      const num = cell(colIdx);
+      if (!num) return;
+      if (!/^\d{3}$/.test(num)) { rowErrors.push(`Row ${i+1}, col "${h}": "${num}" is not a valid 3-digit number`); return; }
+      const barcode = `${meta.subjectCode||'UNK'}-${h}-${initials}-${num.padStart(3,'0')}`;
+      const docId   = `${admnr}_${barcode}`;
+      allocationDocs.push({ id: docId, admnr, student_name: `${surname}${studentDoc.initial ? ' '+studentDoc.initial : ''}`, class_id: studentDoc.regClass||meta.grade||'?', subject: meta.subjectCode||'UNK', full_book_code: barcode, status:'issued', date_issued: new Date().toISOString().slice(0,10), date_returned: null, last_verified_date: new Date().toISOString().slice(0,10), year, term });
+    });
+    validRows.push(studentDoc);
+  }
+  studentMap.forEach(doc => studentDocs.push(doc));
+  return { validRows, rowErrors, allocationDocs, studentDocs };
+}
+
+async function commitImport() {
+  if (!_importData) return;
+  const { allocationDocs } = _importData;
+  document.getElementById('btn-commit').style.display = 'none';
+  const prog = document.getElementById('import-progress');
+  prog.classList.add('active');
+
+  const CHUNK = 490;
+  let written = 0;
+
+  if (fsReady && window._db) {
+    /* Real Firestore batched write */
+    const { writeBatch, doc, collection, setDoc } = window._fs;
+    for (let i = 0; i < allocationDocs.length; i += CHUNK) {
+      const chunk = allocationDocs.slice(i, i + CHUNK);
+      const batch = writeBatch(window._db);
+      chunk.forEach(d => {
+        const {id, ...data} = d;
+        batch.set(doc(window._db, 'allocations', id), data, { merge: false });
+      });
+      await batch.commit();
+      written += chunk.length;
+      const pct = Math.round(written / allocationDocs.length * 100);
+      document.getElementById('import-prog-bar').style.width = pct + '%';
+      document.getElementById('import-prog-text').textContent = `Writing… ${written}/${allocationDocs.length}`;
+    }
+  } else {
+    /* Demo: simulate write */
+    for (let i = 0; i < allocationDocs.length; i++) {
+      const existing = STATE.allocations.findIndex(a => a.id === allocationDocs[i].id);
+      if (existing >= 0) STATE.allocations[existing] = allocationDocs[i];
+      else STATE.allocations.push(allocationDocs[i]);
+      if (i % 10 === 0) {
+        const pct = Math.round((i+1) / allocationDocs.length * 100);
+        document.getElementById('import-prog-bar').style.width = pct + '%';
+        document.getElementById('import-prog-text').textContent = `Writing… ${i+1}/${allocationDocs.length}`;
+        await new Promise(r => setTimeout(r, 30));
+      }
+    }
+  }
+
+  prog.classList.remove('active');
+  addImportLog(`✓ Committed ${allocationDocs.length} allocation documents to Firestore`, 'ok');
+  showToast(`Imported ${allocationDocs.length} allocations`, 'success');
+  _importData = null;
+  renderCheckin();
+}
+
+function addImportLog(msg, type='ok') {
+  const now = new Date().toTimeString().slice(0,5);
+  document.getElementById('import-log').insertAdjacentHTML('beforeend',
+    `<div class="log-entry"><span class="log-ts">${now}</span><span class="log-msg ${type}">${msg}</span></div>`);
+}
+
+/* ═══════════════════════════════════════════════
+   EXPORT ENGINE
+   ═══════════════════════════════════════════════ */
+async function exportClassList() {
+  const cls  = document.getElementById('exp-cl-class').value;
+  const subj = document.getElementById('exp-cl-subject').value;
+  const year = parseInt(document.getElementById('exp-cl-year').value);
+  const prog = document.getElementById('exp-cl-prog');
+  prog.classList.add('active');
+
+  await animateProgress('exp-cl-bar', 'exp-cl-prog-text', [
+    [15,'Querying Firestore…'],
+    [40,'Fetching student records…'],
+    [65,'Pivoting book columns…'],
+    [85,'Styling workbook…'],
+    [100,'Building file…']
+  ]);
+
+  let recs = STATE.allocations.filter(a =>
+    (cls === 'ALL' || a.class_id === cls) &&
+    (subj === 'ALL' || a.subject === subj) &&
+    a.year === year
+  );
+
+  /* Attempt live Firestore query */
+  if (fsReady && window._db) {
+    const { collection, query, where, getDocs } = window._fs;
+    try {
+      const constraints = [where('year', '==', year)];
+      if (cls  !== 'ALL') constraints.push(where('class_id', '==', cls));
+      if (subj !== 'ALL') constraints.push(where('subject',  '==', subj));
+      const snap = await getDocs(query(collection(window._db, 'allocations'), ...constraints));
+      recs = snap.docs.map(d => d.data());
+    } catch(e) { addLog('Export fell back to local cache: ' + e.message, 'warn'); }
+  }
+
+  const students = new Map();
+  recs.forEach(r => {
+    if (!students.has(r.admnr)) students.set(r.admnr, { name:r.student_name, cls:r.class_id, books:[] });
+    students.get(r.admnr).books.push(r);
+  });
+  const books = [...new Set(recs.map(r => r.full_book_code))].sort();
+
+  const wb = XLSX.utils.book_new();
+
+  /* Sheet 1: pivot grid */
+  const hdr1 = ['ADMNR','Student Name','Class','Outstanding',...books];
+  const data1 = [];
+  students.forEach((s, admnr) => {
+    const owed = s.books.filter(b => b.status !== 'returned').length;
+    const bCols = books.map(b => { const a = s.books.find(x=>x.full_book_code===b); return a ? a.status : ''; });
+    data1.push([admnr, s.name, s.cls, owed, ...bCols]);
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet([hdr1,...data1]);
+  ws1['!cols'] = [{wch:12},{wch:22},{wch:8},{wch:12},...books.map(()=>({wch:16}))];
+  XLSX.utils.book_append_sheet(wb, ws1, `${cls}_${subj}`);
+
+  /* Sheet 2: liability list */
+  const hdr2 = ['ADMNR','Student','Class','Book Code','Status','Date Issued','Last Verified'];
+  const data2 = recs.filter(r=>r.status!=='returned').map(r=>[r.admnr,r.student_name,r.class_id,r.full_book_code,r.status,r.date_issued,r.last_verified_date]);
+  const ws2 = XLSX.utils.aoa_to_sheet([hdr2,...data2]);
+  ws2['!cols'] = [{wch:12},{wch:22},{wch:8},{wch:24},{wch:10},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Liability List');
+
+  XLSX.writeFile(wb, `ClassList_${cls}_${subj}_${year}.xlsx`);
+  prog.classList.remove('active');
+  showToast(`Downloaded ClassList_${cls}_${subj}_${year}.xlsx`, 'success');
+  addLog(`Exported class list — ${recs.length} records`, 'ok');
+}
+
+async function exportStockAudit() {
+  const year      = parseInt(document.getElementById('exp-au-year').value);
+  const threshold = document.getElementById('exp-au-date').value;
+  const prog      = document.getElementById('exp-au-prog');
+  prog.classList.add('active');
+
+  await animateProgress('exp-au-bar', 'exp-au-prog-text', [
+    [20,'Aggregating all records…'],
+    [50,'Computing totals…'],
+    [75,'Building exceptions log…'],
+    [100,'Serialising workbook…']
+  ]);
+
+  let recs = STATE.allocations.filter(a => a.year === year);
+
+  if (fsReady && window._db) {
+    const { collection, query, where, getDocs } = window._fs;
+    try {
+      const snap = await getDocs(query(collection(window._db, 'allocations'), where('year', '==', year)));
+      recs = snap.docs.map(d => d.data());
+    } catch(e) { addLog('Audit export used local cache: ' + e.message, 'warn'); }
+  }
+
+  const total     = recs.length;
+  const returned  = recs.filter(r=>r.status==='returned').length;
+  const issued    = recs.filter(r=>r.status==='issued').length;
+  const checked   = recs.filter(r=>r.status==='checked').length;
+  const lost      = recs.filter(r=>r.status==='lost').length;
+  const unverified= recs.filter(r=>r.status!=='returned'&&r.last_verified_date<threshold).length;
+  const exceptions= recs.filter(r=>r.status==='lost'||(r.status!=='returned'&&r.last_verified_date<threshold));
+
+  const wb = XLSX.utils.book_new();
+
+  /* Sheet 1: summary */
+  const ws1 = XLSX.utils.aoa_to_sheet([
+    [`TextbookTrack — Stock Audit ${year}`],
+    [`Generated: ${new Date().toLocaleDateString()}`],
+    [`Unverified threshold: ${threshold}`],
+    [],
+    ['Metric','Count','%'],
+    ['Total allocations',  total,        '100%'],
+    ['Returned',           returned,     total ? (returned/total*100).toFixed(1)+'%' : '-'],
+    ['Issued (outstanding)',issued,       total ? (issued/total*100).toFixed(1)+'%' : '-'],
+    ['Checked/verified',   checked,      total ? (checked/total*100).toFixed(1)+'%' : '-'],
+    ['Lost',               lost,         total ? (lost/total*100).toFixed(1)+'%' : '-'],
+    ['Unverified past threshold', unverified, total ? (unverified/total*100).toFixed(1)+'%' : '-'],
+    ['Total exceptions',   exceptions.length, ''],
+  ]);
+  ws1['!cols'] = [{wch:28},{wch:10},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+
+  /* Sheet 2: exceptions */
+  const hdr2 = ['ADMNR','Student','Class','Subject','Book Code','Status','Date Issued','Last Verified','Days Overdue','Flag'];
+  const data2 = exceptions.map(r => {
+    const days = Math.floor((Date.now()-new Date(r.last_verified_date))/(86400000));
+    return [r.admnr,r.student_name,r.class_id,r.subject,r.full_book_code,r.status,r.date_issued,r.last_verified_date,days,r.status==='lost'?'LOST':'UNVERIFIED'];
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet([hdr2,...data2]);
+  ws2['!cols'] = [{wch:12},{wch:22},{wch:8},{wch:8},{wch:26},{wch:10},{wch:14},{wch:14},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Exceptions Log');
+
+  /* Sheet 3: full stock list */
+  const hdr3 = ['ADMNR','Student','Class','Subject','Book Code','Status','Date Issued','Date Returned','Last Verified'];
+  const data3 = recs.map(r => [r.admnr,r.student_name,r.class_id,r.subject,r.full_book_code,r.status,r.date_issued,r.date_returned||'',r.last_verified_date]);
+  const ws3 = XLSX.utils.aoa_to_sheet([hdr3,...data3]);
+  ws3['!cols'] = [{wch:12},{wch:22},{wch:8},{wch:8},{wch:26},{wch:10},{wch:14},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Full Stock List');
+
+  XLSX.writeFile(wb, `StockAudit_${year}.xlsx`);
+  prog.classList.remove('active');
+  showToast(`Downloaded StockAudit_${year}.xlsx (${exceptions.length} exceptions)`, 'success');
+  addLog(`Stock audit exported — ${total} records, ${exceptions.length} exceptions`, 'ok');
+}
+
+async function animateProgress(barId, textId, steps) {
+  for (const [pct, label] of steps) {
+    document.getElementById(barId).style.width = pct + '%';
+    document.getElementById(textId).textContent = label;
+    await new Promise(r => setTimeout(r, 350));
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   OFFLINE / SYNC QUEUE
+   ═══════════════════════════════════════════════ */
+function queueWrite(docId, status) {
+  const item = { seq: STATE.queueSeq++, docId, status, ts: new Date().toTimeString().slice(0,5), state: 'pending' };
+  STATE.pendingQueue.unshift(item);
+  document.getElementById('sb-queue-badge').textContent = STATE.pendingQueue.filter(q=>q.state==='pending').length;
+  if (document.getElementById('view-offline').classList.contains('active')) renderQueue();
+}
+
+function renderQueue() {
+  const list = document.getElementById('queue-list');
+  const pending = STATE.pendingQueue.filter(q=>q.state==='pending');
+  document.getElementById('sync-now-btn').style.display = (pending.length > 0 && !STATE.isOffline) ? 'flex' : 'none';
+  if (STATE.pendingQueue.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:16px 0;text-align:center">Queue is empty — all writes committed.</div>';
+    return;
+  }
+  list.innerHTML = STATE.pendingQueue.map(q => `
+    <div class="q-item">
+      <div class="q-dot ${q.state}"></div>
+      <span class="q-code">allocations/${q.docId}</span>
+      <span class="badge b-${q.status}">${q.status}</span>
+      <span class="q-ts">${q.ts}</span>
+      <span class="badge ${q.state==='pending'?'b-issued':q.state==='synced'?'b-checked':'b-lost'}" style="margin-left:8px">${q.state}</span>
+    </div>`).join('');
+}
+
+async function simulateSync() {
+  const pending = STATE.pendingQueue.filter(q=>q.state==='pending');
+  if (pending.length === 0) return;
+  for (const item of pending) {
+    try {
+      await fsUpdateStatus(item.docId, item.status);
+      item.state = 'synced';
+    } catch(e) {
+      item.state = 'failed';
+    }
+    if (document.getElementById('view-offline').classList.contains('active')) renderQueue();
+    await new Promise(r => setTimeout(r, 200));
+  }
+  const synced = pending.filter(q=>q.state==='synced').length;
+  document.getElementById('sb-queue-badge').textContent = STATE.pendingQueue.filter(q=>q.state==='pending').length;
+  showToast(`Sync complete — ${synced} write${synced!==1?'s':''} committed`, 'success');
+  addLog(`Sync: ${synced}/${pending.length} writes committed`, 'ok');
+}
+
+/* ═══════════════════════════════════════════════
+   CONNECTIVITY MONITOR
+   ═══════════════════════════════════════════════ */
+function setConnStatus(status) {
+  STATE.isOffline = status === 'offline';
+  const badge = document.getElementById('conn-badge');
+  const dot   = document.getElementById('conn-dot');
+  const label = document.getElementById('conn-label');
+  badge.className = `conn-badge ${status}`;
+  label.textContent = status === 'syncing' ? 'Syncing…' : status.charAt(0).toUpperCase() + status.slice(1);
+  dot.className = status === 'syncing' ? 'conn-dot pulse' : 'conn-dot';
+  if (status === 'online') {
+    addLog('Network connection restored', 'ok');
+    if (STATE.pendingQueue.some(q=>q.state==='pending')) simulateSync();
+  }
+  if (status === 'offline') addLog('Network lost — writes will be queued', 'warn');
+}
+
+window.addEventListener('online',  () => setConnStatus('online'));
+window.addEventListener('offline', () => setConnStatus('offline'));
+
+/* ═══════════════════════════════════════════════
+   KEYBOARD SHORTCUTS
+   ═══════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  const activeView = document.querySelector('.view.active')?.id;
+  if (activeView !== 'view-checkin') return;
+  if (['Space','KeyC','KeyL','ArrowUp','ArrowDown'].includes(e.code) && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+    e.preventDefault();
+    if (e.code === 'Space')    checkAllPresent();
+    if (e.code === 'ArrowDown') moveSelection(1);
+    if (e.code === 'ArrowUp')   moveSelection(-1);
+    if (e.code === 'KeyC') {
+      const sel = document.querySelector('#ci-tbody tr.selected');
+      if (sel) checkStudent(sel.dataset.admnr);
+    }
+    if (e.code === 'KeyL') {
+      const sel = document.querySelector('#ci-tbody tr.selected');
+      if (sel) promptLost(sel.dataset.admnr);
+    }
+  }
+});
+
+function moveSelection(dir) {
+  const rows = [...document.querySelectorAll('#ci-tbody tr[data-admnr]')];
+  if (!rows.length) return;
+  const curIdx = rows.findIndex(r => r.classList.contains('selected'));
+  const nextIdx = Math.max(0, Math.min(rows.length - 1, curIdx + dir));
+  rows.forEach(r => r.classList.remove('selected'));
+  rows[nextIdx].classList.add('selected');
+  STATE.selectedIdx = nextIdx;
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL HELPERS
+   ═══════════════════════════════════════════════ */
+function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; }));
+
+/* ═══════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════ */
+function showToast(msg, type='success') {
+  const icons = { success:'✓', error:'✕', warning:'⚠' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]||'ℹ'}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR BADGES
+   ═══════════════════════════════════════════════ */
+function updateSidebarBadges() {
+  ['10A','10B','11A'].forEach(cls => {
+    const n = STATE.allocations.filter(a => a.class_id === cls && (a.status === 'issued' || a.status === 'lost')).length;
+    const el = document.getElementById(`sb-${cls}-badge`);
+    if (el) { el.textContent = n; el.className = n > 0 ? 'sb-badge warn' : 'sb-badge'; }
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   ACTIVITY LOG (in-memory, shown in console too)
+   ═══════════════════════════════════════════════ */
+const _logs = [];
+function addLog(msg, type='ok') {
+  const ts = new Date().toTimeString().slice(0,5);
+  _logs.unshift({ ts, msg, type });
+  if (_logs.length > 60) _logs.pop();
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════ */
+(function init() {
+  /* Render empty table immediately — no demo data */
+  renderCheckin();
+  updateSidebarBadges();
+  document.getElementById('tb-year-label').textContent =
+    `${new Date().getFullYear()} · T${new Date().getMonth() < 6 ? 1 : 2}`;
+
+  /* Load saved config fields into Settings form */
+  loadSavedConfig();
+
+  /* Auto-connect if a saved config exists */
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (saved && saved.apiKey && saved.projectId) {
+      addLog('Saved config found — auto-connecting to ' + saved.projectId, 'ok');
+      setCfgStatus('st-testing', 'Auto-connecting…', 'Restoring previous session for ' + saved.projectId);
+      setSettingsPill('syncing', 'Connecting…');
+      initFirebase(saved);
+    } else {
+      addLog('No saved Firestore config — go to Settings to connect', 'warn');
+      setCfgStatus('st-idle', 'Not configured',
+        'Enter your Firebase credentials in Settings → Save & Connect.');
+      setSettingsPill('offline', 'Not configured');
+      /* Show Settings view on first launch */
+      setView('settings', document.getElementById('nav-settings'));
+    }
+  } catch(e) {
+    addLog('Config load error: ' + e.message, 'err');
+  }
+})();
+</script>
+
+</body>
+</html>
