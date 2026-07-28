@@ -3,7 +3,7 @@
    ========================= */
 
 const STORAGE_KEY = "activityTeams";
-const DATA_URL = "../students.json";
+const DATA_URL = "./students.json";
 const LIST_URL_AGEGROUP = "list_of_teams.txt";
 const LIST_URL_ACTIVITY = "list_of_sports.txt";
 

@@ -2,7 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Sport / Culture / Service Team Manager</title>
+
+    <!-- Bootstrap CSS (for layout + tooltip styling) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+
+    <!-- Font Awesome (icon-only buttons use these instead of text labels) -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
 
     <!-- Styles -->
     <link rel="stylesheet" href="../css/style.css" />
@@ -22,39 +35,124 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   </head>
   <body>
-    <h1>School Activity Team Manager</h1>
-    <h4>
-      This builder is browser based.<br />
-      Export and Import to move to other devices
-    </h4>
+    <div class="container-fluid">
+      <h1>School Activity Team Manager</h1>
+      <h4>
+        This builder is browser based.<br />
+        Export and Import to move to other devices
+      </h4>
 
-    <div class="controls">
-      <label for="activitySelect">Activity</label>
-      <select id="activitySelect"></select>
+      <!--
+        #team is now rendered ABOVE the controls toolbar so the roster
+        is immediately visible without scrolling past the form.
+      -->
+      <h2 id="teamTitle"></h2>
+      <div id="team" class="mb-4"></div>
 
-      <label for="agegroupSelect">Age Group</label>
-      <select id="agegroupSelect"></select>
+      <!--
+        #syncToolbar is injected by sports-listing.js automatically,
+        right before .controls. It contains:
+          • "Save to Cloud" button  (explicit save — fires fsSaveTeam)
+          • Sync indicator pill     (shows idle / syncing / synced / error / offline)
+      -->
 
-      <input id="adminInput" placeholder="Admin No" />
+      <div class="controls d-flex flex-wrap align-items-center gap-2 mb-3">
+        <label for="activitySelect" class="visually-hidden">Activity</label>
+        <select id="activitySelect" class="form-select form-select-sm w-auto"></select>
 
-      <button onclick="addStudent()">Add</button>
-      <button onclick="removeStudent()">Delete</button>
-      <button onclick="exportTeam()">Export JSON</button>
-      <button onclick="exportTeamExcel()">Export Excel</button>
-      <input type="file" id="importFile" />
-      <button onclick="importTeam()">Import</button>
-      <button onclick="printTeam()">Print Team Sheet</button>
+        <label for="agegroupSelect" class="visually-hidden">Age Group</label>
+        <select id="agegroupSelect" class="form-select form-select-sm w-auto"></select>
+
+        <input
+          id="adminInput"
+          class="form-control form-control-sm w-auto"
+          placeholder="Admin No"
+        />
+
+        <button
+          type="button"
+          class="btn btn-success btn-sm"
+          onclick="addStudent()"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title="Add student to team"
+          aria-label="Add student to team"
+        >
+          <i class="fa-solid fa-user-plus"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-danger btn-sm"
+          onclick="removeStudent()"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title="Remove student from team"
+          aria-label="Remove student from team"
+        >
+          <i class="fa-solid fa-user-minus"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm"
+          onclick="exportTeam()"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title="Export team as JSON"
+          aria-label="Export team as JSON"
+        >
+          <i class="fa-solid fa-file-export"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline-success btn-sm"
+          onclick="exportTeamExcel()"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title="Export team as Excel"
+          aria-label="Export team as Excel"
+        >
+          <i class="fa-solid fa-file-excel"></i>
+        </button>
+
+        <label for="importFile" class="visually-hidden">Import team file</label>
+        <input
+          type="file"
+          id="importFile"
+          class="form-control form-control-sm w-auto"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title="Choose a team JSON file to import"
+          aria-label="Choose a team JSON file to import"
+        />
+
+        <button
+          type="button"
+          class="btn btn-outline-primary btn-sm"
+          onclick="importTeam()"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title="Import team from file"
+          aria-label="Import team from file"
+        >
+          <i class="fa-solid fa-file-import"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline-dark btn-sm"
+          onclick="printTeam()"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title="Print team sheet"
+          aria-label="Print team sheet"
+        >
+          <i class="fa-solid fa-print"></i>
+        </button>
+      </div>
     </div>
-
-    <!--
-      #syncToolbar is injected by sports-listing.js automatically,
-      right after .controls. It contains:
-        • "Save to Cloud" button  (explicit save — fires fsSaveTeam)
-        • Sync indicator pill     (shows idle / syncing / synced / error / offline)
-    -->
-
-    <h2 id="teamTitle"></h2>
-    <div id="team"></div>
 
     <!-- Vendor JS -->
     <script src="../js/jquery-4.0.0.min.js"></script>
@@ -62,5 +160,14 @@
 
     <!-- App JS -->
     <script src="../js/sports-listing.js"></script>
+
+    <!-- Enable Bootstrap tooltips (hover-text for icon-only buttons) -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        document
+          .querySelectorAll('[data-bs-toggle="tooltip"]')
+          .forEach((el) => new bootstrap.Tooltip(el));
+      });
+    </script>
   </body>
 </html>

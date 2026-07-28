@@ -1719,17 +1719,21 @@ function openCoverPrintPreview(action = null) {
   const day = parseInt(document.getElementById("absenceDaySelect").value);
   const tableHtml = buildCoverGridTableHtml(day, true);
   let win = window.open("", "_blank", "width=1100,height=850");
+
   win.document.write(`<html><head><title>Cover Grid Print Preview</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <style>
+      @page{size:portrait;margin:1.5cm}
       body{background:#fff;color:#000}
       table{table-layout:fixed;width:100%;border-collapse:collapse;word-wrap:break-word}
       th,td{border:1px solid #333;padding:.35rem;font-size:.85rem}
       th{background:#f4f4f4}
+      .teacher-block{page-break-inside:avoid;break-inside:avoid}
       .print-table-container{page-break-inside:avoid}
       @media print{body{margin:.5cm}.no-print{display:none!important}table{page-break-inside:auto}tr{page-break-inside:avoid;page-break-after:auto}}
     </style>
   </head><body>${tableHtml}</body></html>`);
+
   win.document.close();
   win.focus();
 
@@ -1769,63 +1773,82 @@ function openCoverPrintPreview(action = null) {
           );
         return Promise.all(promises);
       };
+
       doc.getElementById("downloadPdfBtn").onclick = () => {
         ensureLibs()
           .then(() => {
             const { jsPDF } = win.jspdf;
             const content = doc.querySelector(".container");
             if (!content) return;
+            const RENDER_SCALE = 2;
+
             win
-              .html2canvas(content, { scale: 2 })
+              .html2canvas(content, { scale: RENDER_SCALE })
               .then((canvas) => {
-                const imgData = canvas.toDataURL("image/png");
                 const pdf = new jsPDF({
-                  orientation: "landscape",
+                  orientation: "portrait",
                   unit: "pt",
                   format: "a4",
                 });
-                const pdfW = pdf.internal.pageSize.getWidth(),
-                  pdfH = pdf.internal.pageSize.getHeight();
-                const ratio = Math.min(
-                  pdfW / canvas.width,
-                  pdfH / canvas.height,
+                const pdfW = pdf.internal.pageSize.getWidth();
+                const pdfH = pdf.internal.pageSize.getHeight();
+
+                // Fit to page width; let height flow across as many pages as needed.
+                const ratio = pdfW / canvas.width;
+                const pageCanvasHeight = pdfH / ratio;
+
+                // Never split a teacher's block across two pages — build page
+                // breakpoints (in canvas px) that land on teacher-block boundaries.
+                const blocks = Array.from(
+                  content.querySelectorAll(".teacher-block"),
                 );
-                const imgW = canvas.width * ratio,
-                  imgH = canvas.height * ratio;
-                if (imgH <= pdfH) {
-                  pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH);
-                } else {
-                  let remaining = canvas.height,
-                    pos = 0;
-                  while (remaining > 0) {
-                    const pageH = Math.min(remaining, Math.floor(pdfH / ratio));
-                    const c = document.createElement("canvas");
-                    c.width = canvas.width;
-                    c.height = pageH;
-                    c.getContext("2d").drawImage(
+                const breakpoints = [0];
+                let pageStart = 0;
+                blocks.forEach((block) => {
+                  const top = block.offsetTop * RENDER_SCALE;
+                  const bottom =
+                    (block.offsetTop + block.offsetHeight) * RENDER_SCALE;
+                  if (bottom - pageStart > pageCanvasHeight && top > pageStart) {
+                    breakpoints.push(top);
+                    pageStart = top;
+                  }
+                });
+                breakpoints.push(canvas.height);
+
+                for (let i = 0; i < breakpoints.length - 1; i++) {
+                  const sliceStart = breakpoints[i];
+                  const sliceEnd = breakpoints[i + 1];
+                  const sliceHeight = sliceEnd - sliceStart;
+                  if (sliceHeight <= 0) continue;
+
+                  const pageCanvas = document.createElement("canvas");
+                  pageCanvas.width = canvas.width;
+                  pageCanvas.height = sliceHeight;
+                  pageCanvas
+                    .getContext("2d")
+                    .drawImage(
                       canvas,
                       0,
-                      pos,
+                      sliceStart,
                       canvas.width,
-                      pageH,
+                      sliceHeight,
                       0,
                       0,
                       canvas.width,
-                      pageH,
+                      sliceHeight,
                     );
-                    pdf.addImage(
-                      c.toDataURL("image/png"),
-                      "PNG",
-                      0,
-                      0,
-                      imgW,
-                      pageH * ratio,
-                    );
-                    remaining -= pageH;
-                    pos += pageH;
-                    if (remaining > 0) pdf.addPage();
-                  }
+
+                  if (i > 0) pdf.addPage();
+                  pdf.addImage(
+                    pageCanvas.toDataURL("image/png"),
+                    "PNG",
+                    0,
+                    0,
+                    pdfW,
+                    sliceHeight * ratio,
+                  );
                 }
+
                 pdf.save(`cover_plan_day_${day + 1}.pdf`);
               })
               .catch((err) => {
@@ -1835,6 +1858,7 @@ function openCoverPrintPreview(action = null) {
           })
           .catch((err) => alert("Failed to load PDF libraries: " + err));
       };
+
       doc.getElementById("downloadPngBtn").onclick = () => {
         ensureLibs()
           .then(() => {

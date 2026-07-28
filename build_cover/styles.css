@@ -133,6 +133,10 @@ body {
 }
 
 @media print {
+    @page {
+        size: portrait;
+    }
+
     .avail-badge {
         display: none
     }
@@ -404,9 +408,9 @@ body {
 }
 
 .teacher-block {
-  page-break-inside: avoid;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
-
 
 
 .heat-low {

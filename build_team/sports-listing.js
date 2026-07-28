@@ -52,6 +52,74 @@ function setSyncState(state, detail) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   Lightweight, non-blocking confirmation/error messages.
+   Used by addStudent / removeStudent instead of alert().
+   ══════════════════════════════════════════════════════════ */
+
+function injectToastStyles() {
+  if (document.getElementById("appToastStyle")) return;
+  const style = document.createElement("style");
+  style.id = "appToastStyle";
+  style.textContent = `
+    #appToastStack {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 320px;
+    }
+    .app-toast {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-family: system-ui, sans-serif;
+      font-size: 0.88rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .app-toast.show { opacity: 1; transform: translateX(0); }
+    .app-toast.success { background:#eafaf1; color:#1a7a45; border:1.5px solid #a3dfc0; }
+    .app-toast.error   { background:#fff0f0; color:#c0392b; border:1.5px solid #f5aaaa; }
+    .app-toast.warning { background:#fff8e1; color:#b06a00; border:1.5px solid #ffe08a; }
+  `;
+  document.head.appendChild(style);
+}
+
+function showToast(message, type = "success") {
+  injectToastStyles();
+  let stack = document.getElementById("appToastStack");
+  if (!stack) {
+    stack = document.createElement("div");
+    stack.id = "appToastStack";
+    document.body.appendChild(stack);
+  }
+
+  const icons = { success: "fa-circle-check", error: "fa-circle-xmark", warning: "fa-triangle-exclamation" };
+  const iconClass = icons[type] || icons.success;
+
+  const toast = document.createElement("div");
+  toast.className = `app-toast ${type}`;
+  toast.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${message}</span>`;
+  stack.appendChild(toast);
+
+  // Trigger transition on next frame
+  requestAnimationFrame(() => toast.classList.add("show"));
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+/* ══════════════════════════════════════════════════════════
    FIREBASE / FIRESTORE BOOTSTRAP
    ══════════════════════════════════════════════════════════ */
 
@@ -281,30 +349,63 @@ function findStudent(admin) { return students.find(s => s.adminNo === admin); }
 function addStudent() {
   const admin = document.getElementById("adminInput").value.trim();
   const key   = currentKey();
-  if (!admin || !key) return;
+
+  if (!key) {
+    showToast("Please select an Activity and Age Group first.", "warning");
+    return;
+  }
+  if (!admin) {
+    showToast("Please enter an Admin No.", "warning");
+    return;
+  }
 
   if (!team[key]) team[key] = [];
-  if (team[key].includes(admin)) return;
 
   const student = findStudent(admin);
-  if (!student) { alert("Student not found"); return; }
+  if (!student) {
+    showToast(`No matching student found for Admin No "${admin}".`, "error");
+    return;
+  }
+
+  if (team[key].includes(admin)) {
+    showToast(`${student.firstName} ${student.lastName} is already on this team.`, "warning");
+    return;
+  }
 
   team[key].push(admin);
   saveTeamStorage();
   render();
-  // Mark unsaved changes
   markUnsaved();
+
+  showToast(`${student.firstName} ${student.lastName} added to the team.`, "success");
 }
 
 function removeStudent() {
   const admin = document.getElementById("adminInput").value.trim();
   const key   = currentKey();
-  if (!admin || !key || !team[key]) return;
 
+  if (!key) {
+    showToast("Please select an Activity and Age Group first.", "warning");
+    return;
+  }
+  if (!admin) {
+    showToast("Please enter an Admin No.", "warning");
+    return;
+  }
+
+  if (!team[key] || !team[key].includes(admin)) {
+    showToast(`No matching student found on this team for Admin No "${admin}".`, "error");
+    return;
+  }
+
+  const student = findStudent(admin);
   team[key] = team[key].filter(a => a !== admin);
   saveTeamStorage();
   render();
   markUnsaved();
+
+  const displayName = student ? `${student.firstName} ${student.lastName}` : admin;
+  showToast(`${displayName} removed from the team.`, "success");
 }
 
 /* ── Unsaved-change indicator on the Save button ─────────── */
@@ -312,7 +413,8 @@ function markUnsaved() {
   const btn = document.getElementById("saveCloudBtn");
   if (btn) {
     btn.classList.add("unsaved");
-    btn.textContent = "Save to Cloud ●";
+    btn.title = "Save to Cloud (unsaved changes)";
+    btn.setAttribute("aria-label", btn.title);
   }
 }
 
@@ -320,7 +422,8 @@ function clearUnsaved() {
   const btn = document.getElementById("saveCloudBtn");
   if (btn) {
     btn.classList.remove("unsaved");
-    btn.textContent = "Save to Cloud";
+    btn.title = "Save to Cloud";
+    btn.setAttribute("aria-label", btn.title);
   }
 }
 
@@ -546,14 +649,18 @@ function injectSyncIndicator() {
 
       /* ── Save button ────────────────────────────── */
       #saveCloudBtn {
+        position: relative;
         cursor: pointer;
-        padding: 4px 14px;
-        border-radius: 4px;
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
         border: 1.5px solid #4a5bb5;
         background: #4a5bb5;
         color: #fff;
-        font-size: 0.82rem;
-        font-weight: 600;
+        font-size: 1rem;
         transition: background 0.2s, opacity 0.2s;
       }
       #saveCloudBtn:hover  { background: #3a4aa0; }
@@ -561,6 +668,17 @@ function injectSyncIndicator() {
         border-color: #e67e22;
         background: #e67e22;
         animation: pulse-unsaved 1.4s ease-in-out infinite;
+      }
+      #saveCloudBtn.unsaved::after {
+        content: "";
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1.5px solid #e67e22;
       }
       @keyframes pulse-unsaved {
         0%,100% { opacity: 1; }
@@ -584,17 +702,20 @@ function injectSyncIndicator() {
     const toolbar = document.createElement("div");
     toolbar.id = "syncToolbar";
     toolbar.innerHTML = `
-      <button id="saveCloudBtn" onclick="saveToCloud()">Save to Cloud</button>
+      <button id="saveCloudBtn" onclick="saveToCloud()" title="Save to Cloud" aria-label="Save to Cloud">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+      </button>
       <span id="syncIndicator" class="sync-offline">
         <span class="sync-icon">✗</span>
         <span class="sync-label">Connecting…</span>
       </span>
     `;
 
-    // Insert after .controls div, or after the first H1 if not found
+    // Insert before .controls (the team list now renders above .controls,
+    // so the toolbar sits directly above the controls toolbar it belongs to).
     const controls = document.querySelector(".controls");
     if (controls) {
-      controls.insertAdjacentElement("afterend", toolbar);
+      controls.insertAdjacentElement("beforebegin", toolbar);
     } else {
       const h1 = document.querySelector("h1");
       if (h1) h1.insertAdjacentElement("afterend", toolbar);

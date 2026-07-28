@@ -8,7 +8,7 @@ from pathlib import Path
 # =========================
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-INPUT_FILE = SCRIPT_DIR / "schoolT2.xlsx"
+INPUT_FILE = SCRIPT_DIR / "school.xlsx"
 OUTPUT_FILE = SCRIPT_DIR / "students.json"
 
 HEADER_ROW_INDEX = 6  # Excel row 8
@@ -57,9 +57,9 @@ COLUMN_MAP = {
     # Gender
     "g": "gender",
 
-    # NEW FIELDS
-    "AGE GROUP": "agegroup",
-    "B/DATE": "no",
+    # NEW FIELDS  (keys must be normalised — matching what normalise() produces)
+    "agegroup": "agegroup",
+    "bdate": "birthdate",
 }
 
 # =========================
@@ -99,7 +99,7 @@ for sheet_name in xls.sheet_names:
             "lastName",
             "gender",
             "agegroup",
-            "no"
+            "birthdate"
         }
 
         missing = sorted(required - set(df.columns))
@@ -122,11 +122,14 @@ for sheet_name in xls.sheet_names:
                 gender = str(row["gender"]).strip().upper()
                 gender = "M" if gender.startswith("M") else "F"
                 
-                birthdate = (
-                    pd.to_datetime(row["no"], errors="coerce").strftime("%Y-%m-%d")
-                    if pd.notna(row["no"])
-                    else None
-                )
+                birthdate_raw = row["birthdate"]
+                if pd.notna(birthdate_raw):
+                    # Already a YYYY-MM-DD string from Excel; normalise via
+                    # to_datetime only to handle any edge-case numeric serials.
+                    parsed = pd.to_datetime(str(birthdate_raw).strip(), errors="coerce")
+                    birthdate = parsed.strftime("%Y-%m-%d") if parsed is not pd.NaT else None
+                else:
+                    birthdate = None
 
                 student = {
                     "adminNo": admin_no,
@@ -137,12 +140,6 @@ for sheet_name in xls.sheet_names:
                     "gender": gender,
                     "agegroup": str(row["agegroup"]).strip(),
                     "birthdate": birthdate,
-
-                    ##"birthdate": (
-                    ##    row["no"].strftime("%Y-%m-%d")
-                    ##    if hasattr(row["no"], "strftime")
-                    ##    else str(row["no"]).strip()
-                    ##),
                     "registrationClass": registration_class,
                     "photo": f"{admin_no}.webp"
                 }
