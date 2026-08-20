@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hillcrest High • Exam Seating Plan Generator</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="../css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/subjects.css">
+
+  <style>
+    .card-fixed { border-radius: .75rem; }
+    .status-ok   { color: #198754; }
+    .status-warn { color: #fd7e14; }
+    .status-err  { color: #dc3545; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    /* ---- Student picker table ---- */
+    .student-table-wrap { max-height: 340px; overflow-y: auto; }
+    .student-table-wrap thead th { position: sticky; top: 0; background: #f8f9fa; z-index: 1; }
+    tr.is-concession { background: #fff3cd; }
+
+    /* ---- Unassigned pool ---- */
+    #unassignedPool { max-height: 260px; overflow-y: auto; }
+    .pool-chip {
+      display: inline-flex; align-items: center; gap: .35rem;
+      border: 1px solid #ced4da; border-radius: .5rem;
+      padding: .25rem .5rem; margin: .2rem; font-size: .8rem; cursor: pointer;
+      background: #fff; user-select: none;
+    }
+    .pool-chip.selected { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+    .pool-chip small { opacity: .75; }
+
+    /* ---- Seating grid ---- */
+    #seatingStage {
+      background: #ffffff;
+      border: 1px solid #dee2e6;
+      border-radius: .5rem;
+      padding: 1.25rem;
+    }
+    #seatGrid {
+      display: grid;
+      gap: 10px;
+      justify-content: start;
+    }
+    .seat {
+      width: 128px;
+      height: 84px;
+      border: 2px solid #495057;
+      border-radius: .4rem;
+      background: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: .72rem;
+      line-height: 1.15;
+      padding: 4px;
+      cursor: pointer;
+      transition: background-color .15s, border-color .15s;
+      overflow: hidden;
+    }
+    .seat.empty {
+      border-style: dashed;
+      color: #adb5bd;
+      background: #ffffff;
+    }
+    .seat.filled {
+      background: #e7f1ff;
+      border-color: #0d6efd;
+    }
+    .seat.filled:hover {
+      background: #ffe3e3;
+      border-color: #dc3545;
+    }
+    .seat .seat-no { position: absolute; margin-top: -70px; align-self: flex-start; font-size: .65rem; color: #6c757d; }
+    .seat .seat-admin { font-weight: 700; }
+    .seat .seat-name  { font-weight: 500; }
+    .seat .seat-hint  { font-size: .65rem; }
+    /* Hidden only while html2canvas is capturing the stage, so UI hints never end up in the exported image */
+    #seatingStage.capturing .capture-hide { visibility: hidden; }
+
+    .legend-swatch { display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:4px; vertical-align:middle; }
+  </style>
+</head>
+<body class="bg-light">
+
+  <header class="hhs-header py-4 mb-4">
+    <div class="container">
+      <h1 class="hhs-title mb-0 text-center">Hillcrest High School — Exam Seating Plan Generator</h1>
+    </div>
+  </header>
+
+  <div class="container pb-5">
+
+    <!-- STEP 1: Subject + Exam details -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">1. Exam details</h5>
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label for="gradeSelect" class="form-label">Grade</label>
+            <select id="gradeSelect" class="form-select">
+              <option value="10">Grade 10</option>
+              <option value="11">Grade 11</option>
+              <option value="12" selected>Grade 12</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="subjectSelect" class="form-label">Subject</label>
+            <select id="subjectSelect" class="form-select" disabled>
+              <option value="" selected disabled>Loading subjects…</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="examTitle" class="form-label">Examination Title</label>
+            <input type="text" id="examTitle" class="form-control" placeholder="e.g. Grade 12 Mathematics — November Final Exam" />
+          </div>
+        </div>
+        <div id="subjectConfirm" class="mt-3"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Student list & concessions -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <h5 class="card-title mb-0">2. Students for this subject</h5>
+          <div class="d-flex align-items-center gap-2">
+            <span id="studentCountBadge" class="badge bg-secondary">0 students</span>
+            <span id="concessionCountBadge" class="badge bg-warning text-dark">0 concessions</span>
+            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#bulkConcessionModal">
+              Mark concessions by Admin No.
+            </button>
+          </div>
+        </div>
+        <p class="text-muted small mb-2">
+          Tick <strong>Concession</strong> for any student who will <em>not</em> write in this venue.
+          They are excluded from the seating plan below.
+        </p>
+        <div class="student-table-wrap border rounded">
+          <table class="table table-sm mb-0" id="studentTable">
+            <thead>
+              <tr>
+                <th style="width:90px;">Concession</th>
+                <th>Admin&nbsp;No.</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th>Line</th>
+                <th>Teacher</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk concession-by-admin-number modal (centered) -->
+    <div class="modal fade" id="bulkConcessionModal" tabindex="-1" aria-labelledby="bulkConcessionModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="bulkConcessionModalLabel">Mark concessions by Admin No.</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <label for="bulkAdminNumbers" class="form-label">Admin numbers</label>
+            <textarea id="bulkAdminNumbers" class="form-control" rows="6"
+              placeholder="Enter admin numbers separated by a comma, space, or new line, e.g.&#10;14260, 14190&#10;14171"></textarea>
+            <div class="form-text">Only admin numbers found in the current subject's student list above will be affected.</div>
+            <div id="bulkConcessionResult" class="small mt-2"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" id="bulkConcessionApplyBtn" class="btn btn-warning">Mark as concession</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Layout + generate -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">3. Seating layout (S-snake pattern)</h5>
+        <div class="row g-3 align-items-end">
+          <div class="col-md-2">
+            <label for="rowsInput" class="form-label">Desks per row</label>
+            <input type="number" id="rowsInput" class="form-control" min="1" max="30" value="6">
+          </div>
+          <div class="col-md-2">
+            <label for="colsInput" class="form-label">Number of rows (columns of desks)</label>
+            <input type="number" id="colsInput" class="form-control" min="1" max="30" value="8">
+          </div>
+          <div class="col-md-3 d-grid">
+            <button id="generateBtn" type="button" class="btn btn-primary">Generate seating plan</button>
+          </div>
+          <div class="col-md-3 d-grid">
+            <button id="resetBtn" type="button" class="btn btn-outline-secondary">Reset grid</button>
+          </div>
+        </div>
+        <div id="planMessage" class="mt-3 small"></div>
+      </div>
+    </div>
+
+    <!-- STEP 4: Grid -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <h5 class="card-title mb-0">4. Seating grid</h5>
+          <div class="small text-muted d-flex align-items-center flex-wrap gap-2">
+            <span><span class="legend-swatch" style="background:#e7f1ff;border:2px solid #0d6efd;"></span>Filled (click to remove)</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#unassignedModal">
+              Unassigned students <span id="unassignedBadge" class="badge bg-secondary ms-1">0</span>
+            </button>
+            <span><span class="legend-swatch" style="background:#fff;border:2px dashed #adb5bd;"></span>Empty (select a name, then click to place)</span>
+          </div>
+        </div>
+        <div id="seatingStage">
+          <div id="seatGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unassigned students modal -->
+    <div class="modal fade" id="unassignedModal" tabindex="-1" aria-labelledby="unassignedModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="unassignedModalLabel">Unassigned students</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small mb-2">Click a name to select it, close this window, then click an empty seat to place them.</p>
+            <div id="unassignedPool" class="border rounded p-2"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: Preview / export -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">5. Preview &amp; export</h5>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button id="previewBtn" type="button" class="btn btn-outline-primary">Preview as image</button>
+          <button id="downloadImgBtn" type="button" class="btn btn-success" disabled>Download image (PNG)</button>
+          <button id="downloadJsonBtn" type="button" class="btn btn-secondary">Save seating plan as JSON</button>
+          <button id="loadJsonBtn" type="button" class="btn btn-outline-secondary">Load JSON…</button>
+          <input type="file" id="loadJsonFile" accept="application/json" class="d-none">
+          <button id="cloudSaveBtn" type="button" class="btn btn-outline-info">Save to Firebase</button>
+          <button id="openRegisterBuildBtn" type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#registerBuildModal">
+            Class register
+          </button>
+        </div>
+        <div id="exportMessage" class="small mb-3"></div>
+        <div id="imagePreviewWrap" class="border rounded p-2 d-none">
+          <img id="imagePreview" class="img-fluid" alt="Seating plan preview">
+        </div>
+      </div>
+    </div>
+
+    <!-- Class register build modal (centered) -->
+    <div class="modal fade" id="registerBuildModal" tabindex="-1" aria-labelledby="registerBuildModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="registerBuildModalLabel">Class register</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small mb-3">
+              A signable list of every student writing this exam in this venue (admin number, name and
+              a space to sign), sorted alphabetically by name. Concession students are left off, since
+              they are not writing here.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <button id="registerPreviewBtn" type="button" class="btn btn-outline-dark">Preview class register</button>
+              <button id="registerPrintBtn" type="button" class="btn btn-dark">Print class register</button>
+              <button id="registerDownloadBtn" type="button" class="btn btn-outline-secondary">Download register (HTML)</button>
+            </div>
+            <div id="registerMessage" class="small mt-3"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Class register preview modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="registerModalLabel">Class register preview</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="registerPreviewBody"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" id="registerModalPrintBtn" class="btn btn-dark">Print</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6 (optional): Cloud plans -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <h5 class="card-title mb-0">Saved plans in Firebase</h5>
+          <button id="refreshCloudBtn" type="button" class="btn btn-sm btn-outline-secondary">Refresh</button>
+        </div>
+        <p class="text-muted small mb-2">
+          To enable cloud storage, fill in <span class="mono">firebaseConfig</span> near the top of the
+          <span class="mono">&lt;script&gt;</span> block in this file with your own Firebase project credentials.
+        </p>
+        <ul id="cloudPlanList" class="list-group small"></ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- jQuery / Bootstrap (matches rest of site) -->
+  <script src="../js/jquery-4.0.0.min.js"></script>
+  <script src="../js/bootstrap.bundle.min.js"></script>
+
+  <!-- Image export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Firebase (compat build — optional, only used if firebaseConfig below is filled in) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // =========================================================
+    // FIREBASE CONFIG — replace with your own project's values.
+    // Leave as-is to run the page in "local only" mode: JSON
+    // save/load and image export still work without Firebase.
+    // =========================================================
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    const SEATING_COLLECTION = "seatingPlans";
+
+    let db = null;
+    let firebaseReady = false;
+    function initFirebase() {
+      try {
+        if (typeof firebase === 'undefined') return;
+        if (firebaseConfig.apiKey === "YOUR_API_KEY") return; // not configured
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        firebaseReady = true;
+      } catch (e) {
+        console.warn('Firebase not initialised:', e);
+      }
+    }
+    initFirebase();
+
+    // ===== Config =====
+    const gradeFiles = {
+      "10": "Subjects-Grade10.json",
+      "11": "Subjects-Grade11.json",
+      "12": "Subjects-Grade12.json"
+    };
+
+    // ===== State =====
+    let allStudents = [];          // full JSON for current grade
+    let subjectStudents = [];      // filtered by subject
+    let concessionIds = new Set(); // student_number set
+    let rows = 6, cols = 8;        // rows = desks per row, cols = number of rows of desks
+    let seats = [];                // flat array, length rows*cols, row-major: {row, col, student|null}
+    let unassigned = [];           // students not yet placed
+    let selectedPoolId = null;     // currently selected student_number in the pool
+
+    // ===== DOM refs =====
+    const $grade = $('#gradeSelect');
+    const $subject = $('#subjectSelect');
+    const $examTitle = $('#examTitle');
+    const $subjectConfirm = $('#subjectConfirm');
+    const $studentTbody = $('#studentTable tbody');
+    const $studentCount = $('#studentCountBadge');
+    const $concessionCount = $('#concessionCountBadge');
+    const $rowsInput = $('#rowsInput');
+    const $colsInput = $('#colsInput');
+    const $planMessage = $('#planMessage');
+    const $seatGrid = $('#seatGrid');
+    const $unassignedPool = $('#unassignedPool');
+    const $exportMessage = $('#exportMessage');
+    const $imagePreviewWrap = $('#imagePreviewWrap');
+    const $imagePreview = $('#imagePreview');
+    const $downloadImgBtn = $('#downloadImgBtn');
+    const $cloudPlanList = $('#cloudPlanList');
+
+    // ===== Helpers =====
+    function esc(s) {
+      if (s == null) return '';
+      return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    }
+    function setPlanMessage(html, cls) {
+      $planMessage.removeClass('status-ok status-warn status-err').addClass(cls || '').html(html || '');
+    }
+    function setExportMessage(html, cls) {
+      $exportMessage.removeClass('status-ok status-warn status-err').addClass(cls || '').html(html || '');
+    }
+    async function fetchJson(url) {
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error(`${url} (${resp.status})`);
+      return resp.json();
+    }
+    function sortByName(list) {
+      return [...list].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    }
+    function download(filename, content, mime) {
+      const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // ===== Load subjects for selected grade =====
+    async function loadGrade() {
+      const g = $grade.val();
+      const file = gradeFiles[g];
+      $subject.prop('disabled', true).html('<option value="" selected disabled>Loading subjects…</option>');
+      $subjectConfirm.html('');
+      allStudents = [];
+      try {
+        allStudents = await fetchJson(file);
+        const subjects = Array.from(new Set(allStudents.map(s => s.subject))).sort((a, b) => a.localeCompare(b));
+        $subject.html('<option value="" selected disabled>Select subject…</option>' +
+          subjects.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join(''));
+        $subject.prop('disabled', false);
+      } catch (e) {
+        $subject.html('<option value="" selected disabled>No data file for this grade</option>');
+        $subjectConfirm.html(`<div class="status-err">Could not load ${esc(file)}: ${esc(e.message)}</div>`);
+      }
+    }
+
+    // ===== Subject selected: build student table =====
+    function onSubjectChange() {
+      const subj = $subject.val();
+      subjectStudents = allStudents.filter(s => s.subject === subj);
+      concessionIds = new Set();
+      renderStudentTable();
+      $subjectConfirm.html(
+        `<div class="alert alert-info py-2 mb-0">Subject selected: <strong>${esc(subj)}</strong> — ${subjectStudents.length} student(s) found.</div>`
+      );
+      resetGrid(); // clear any previous plan when subject changes
+    }
+
+    function renderStudentTable() {
+      $studentTbody.empty();
+      subjectStudents.forEach(s => {
+        const tr = $(`
+          <tr data-id="${esc(s.student_number)}">
+            <td class="text-center"><input type="checkbox" class="form-check-input concession-check"></td>
+            <td>${esc(s.student_number)}</td>
+            <td>${esc(s.name)}</td>
+            <td>${esc(s.class)}</td>
+            <td>${s.line != null ? esc(s.line) : '-'}</td>
+            <td>${esc(s.teacher)}</td>
+          </tr>
+        `);
+        $studentTbody.append(tr);
+      });
+      updateStudentCounts();
+    }
+
+    function updateStudentCounts() {
+      $studentCount.text(`${subjectStudents.length} students`);
+      $concessionCount.text(`${concessionIds.size} concessions`);
+    }
+
+    $studentTbody.on('change', '.concession-check', function () {
+      const id = $(this).closest('tr').data('id');
+      if (this.checked) {
+        concessionIds.add(String(id));
+        $(this).closest('tr').addClass('is-concession');
+      } else {
+        concessionIds.delete(String(id));
+        $(this).closest('tr').removeClass('is-concession');
+      }
+      updateStudentCounts();
+    });
+
+    // ===== Bulk concession marking by admin number =====
+    function applyBulkConcessions() {
+      const raw = $('#bulkAdminNumbers').val() || '';
+      const tokens = Array.from(new Set(raw.split(/[\s,;]+/).map(t => t.trim()).filter(Boolean)));
+      if (!tokens.length) {
+        $('#bulkConcessionResult').html('<div class="status-warn">Enter at least one admin number.</div>');
+        return;
+      }
+      let newlyMarked = 0, alreadyMarked = 0;
+      const notFound = [];
+      tokens.forEach(tok => {
+        const student = subjectStudents.find(s => String(s.student_number) === String(tok));
+        if (!student) { notFound.push(tok); return; }
+        const id = String(student.student_number);
+        if (concessionIds.has(id)) {
+          alreadyMarked++;
+        } else {
+          concessionIds.add(id);
+          newlyMarked++;
+        }
+        const $row = $studentTbody.find(`tr[data-id="${id}"]`);
+        $row.find('.concession-check').prop('checked', true);
+        $row.addClass('is-concession');
+      });
+      updateStudentCounts();
+
+      let html = `<div class="status-ok">Marked ${newlyMarked} student(s) as concession.${alreadyMarked ? ` (${alreadyMarked} were already marked.)` : ''}</div>`;
+      if (notFound.length) {
+        html += `<div class="status-warn mt-1">Not found in this subject's list: ${notFound.map(esc).join(', ')}</div>`;
+      }
+      $('#bulkConcessionResult').html(html);
+      $('#bulkAdminNumbers').val('');
+    }
+
+    $('#bulkConcessionModal').on('show.bs.modal', function () {
+      $('#bulkConcessionResult').html('');
+    });
+
+    // ===== S-snake seat order =====
+    // Fills down each column first (top-to-bottom, then bottom-to-top on the
+    // next column, and so on), so that names sorted ascending land in
+    // reading order down a column — the default seating convention.
+    function computeSnakeOrder(nRows, nCols) {
+      // nRows = desks per row (grid columns), nCols = number of rows of desks (grid rows)
+      const order = [];
+      for (let c = 0; c < nRows; c++) {
+        if (c % 2 === 0) {
+          for (let r = 0; r < nCols; r++) order.push({ row: r, col: c }); // top to bottom
+        } else {
+          for (let r = nCols - 1; r >= 0; r--) order.push({ row: r, col: c }); // bottom to top
+        }
+      }
+      return order;
+    }
+
+    function resetGrid() {
+      rows = parseInt($rowsInput.val(), 10) || 1;
+      cols = parseInt($colsInput.val(), 10) || 1;
+      seats = [];
+      for (let r = 0; r < cols; r++) {
+        for (let c = 0; c < rows; c++) {
+          seats.push({ row: r, col: c, student: null });
+        }
+      }
+      unassigned = [];
+      selectedPoolId = null;
+      renderGrid();
+      renderPool();
+      setPlanMessage('');
+      hidePreview();
+    }
+
+    function seatAt(r, c) {
+      return seats.find(s => s.row === r && s.col === c);
+    }
+
+    // ===== Generate seating plan =====
+    function generatePlan() {
+      const subj = $subject.val();
+      if (!subj) { setPlanMessage('Please select a subject first.', 'status-err'); return; }
+      rows = Math.max(1, parseInt($rowsInput.val(), 10) || 1);
+      cols = Math.max(1, parseInt($colsInput.val(), 10) || 1);
+
+      const eligible = sortByName(subjectStudents.filter(s => !concessionIds.has(String(s.student_number))));
+      const order = computeSnakeOrder(rows, cols);
+
+      seats = [];
+      for (let r = 0; r < cols; r++) {
+        for (let c = 0; c < rows; c++) {
+          seats.push({ row: r, col: c, student: null });
+        }
+      }
+
+      const placedCount = Math.min(order.length, eligible.length);
+      for (let i = 0; i < placedCount; i++) {
+        const pos = order[i];
+        seatAt(pos.row, pos.col).student = eligible[i];
+      }
+      unassigned = eligible.slice(placedCount);
+      selectedPoolId = null;
+
+      renderGrid();
+      renderPool();
+
+      if (eligible.length > order.length) {
+        setPlanMessage(
+          `Generated plan with ${order.length} seats, but ${eligible.length} eligible students. ${eligible.length - order.length} student(s) remain unassigned — increase rows/columns or add another venue.`,
+          'status-warn'
+        );
+      } else if (eligible.length === 0) {
+        setPlanMessage('No eligible (non-concession) students found for this subject.', 'status-warn');
+      } else {
+        setPlanMessage(`Seating plan generated: ${placedCount} student(s) placed in S-snake order across ${order.length} seats.`, 'status-ok');
+      }
+      hidePreview();
+    }
+
+    function renderGrid() {
+      $seatGrid.css('grid-template-columns', `repeat(${rows}, 128px)`);
+      $seatGrid.empty();
+      seats.forEach(seat => {
+        const filled = !!seat.student;
+        const div = $(`<div class="seat ${filled ? 'filled' : 'empty'}" data-row="${seat.row}" data-col="${seat.col}"></div>`);
+        if (filled) {
+          div.html(`
+            <div class="seat-admin">${esc(seat.student.student_number)}</div>
+            <div class="seat-name">${esc(seat.student.name)}</div>
+            <div class="seat-hint text-muted capture-hide">click to remove</div>
+          `);
+        } else {
+          div.html(`<div class="seat-hint">Empty seat</div>`);
+        }
+        $seatGrid.append(div);
+      });
+    }
+
+    $seatGrid.on('click', '.seat', function () {
+      const r = parseInt($(this).data('row'), 10);
+      const c = parseInt($(this).data('col'), 10);
+      const seat = seatAt(r, c);
+      if (!seat) return;
+
+      if (seat.student) {
+        // remove placement -> back to unassigned pool
+        unassigned.push(seat.student);
+        unassigned = sortByName(unassigned);
+        seat.student = null;
+        renderGrid();
+        renderPool();
+        hidePreview();
+      } else if (selectedPoolId) {
+        const idx = unassigned.findIndex(s => String(s.student_number) === String(selectedPoolId));
+        if (idx > -1) {
+          seat.student = unassigned[idx];
+          unassigned.splice(idx, 1);
+          selectedPoolId = null;
+          renderGrid();
+          renderPool();
+          hidePreview();
+        }
+      } else {
+        setPlanMessage('Select a student from the "Unassigned students" panel first, then click an empty seat to place them.', 'status-warn');
+      }
+    });
+
+    function renderPool() {
+      $('#unassignedBadge').text(unassigned.length);
+      $unassignedPool.empty();
+      if (!unassigned.length) {
+        $unassignedPool.html('<span class="text-muted small">No unassigned students.</span>');
+        return;
+      }
+      unassigned.forEach(s => {
+        const chip = $(`
+          <span class="pool-chip ${String(s.student_number) === String(selectedPoolId) ? 'selected' : ''}" data-id="${esc(s.student_number)}">
+            ${esc(s.name)} <small>(${esc(s.student_number)})</small>
+          </span>
+        `);
+        $unassignedPool.append(chip);
+      });
+    }
+
+    $unassignedPool.on('click', '.pool-chip', function () {
+      const id = $(this).data('id');
+      selectedPoolId = (String(selectedPoolId) === String(id)) ? null : String(id);
+      renderPool();
+    });
+
+    // ===== Image preview / export =====
+    let lastCanvas = null;
+
+    function hidePreview() {
+      $imagePreviewWrap.addClass('d-none');
+      $downloadImgBtn.prop('disabled', true);
+      lastCanvas = null;
+    }
+
+    async function previewImage() {
+      setExportMessage('Rendering preview…', 'status-warn');
+      const stage = document.getElementById('seatingStage');
+      stage.classList.add('capturing'); // hide "click to remove" / other UI-only hints for the capture
+      try {
+        lastCanvas = await html2canvas(stage, { backgroundColor: '#ffffff', scale: 2 });
+        $imagePreview.attr('src', lastCanvas.toDataURL('image/png'));
+        $imagePreviewWrap.removeClass('d-none');
+        $downloadImgBtn.prop('disabled', false);
+        setExportMessage('Preview ready. Review it below, then download when you are happy with it.', 'status-ok');
+      } catch (e) {
+        setExportMessage('Could not render preview: ' + esc(e.message), 'status-err');
+      } finally {
+        stage.classList.remove('capturing');
+      }
+    }
+
+    function downloadImage() {
+      if (!lastCanvas) return;
+      const subj = ($subject.val() || 'Subject').replace(/[^\w\-]+/g, '_');
+      const title = ($examTitle.val() || 'SeatingPlan').replace(/[^\w\-]+/g, '_');
+      const a = document.createElement('a');
+      a.href = lastCanvas.toDataURL('image/png');
+      a.download = `${title}-${subj}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    // ===== JSON save / load =====
+    function buildPlanObject() {
+      return {
+        examTitle: $examTitle.val() || '',
+        subject: $subject.val() || '',
+        grade: $grade.val(),
+        pattern: 's-snake',
+        rowsPerRow: rows,       // desks per row
+        numberOfRows: cols,     // number of rows of desks
+        generatedAt: new Date().toISOString(),
+        concessionStudents: subjectStudents
+          .filter(s => concessionIds.has(String(s.student_number)))
+          .map(s => ({ student_number: s.student_number, name: s.name })),
+        seats: seats.map(s => ({
+          row: s.row,
+          col: s.col,
+          student: s.student ? {
+            student_number: s.student.student_number,
+            name: s.student.name,
+            class: s.student.class
+          } : null
+        })),
+        unassigned: unassigned.map(s => ({ student_number: s.student_number, name: s.name }))
+      };
+    }
+
+    function saveJson() {
+      if (!$subject.val()) { setExportMessage('Select a subject before saving.', 'status-err'); return; }
+      const plan = buildPlanObject();
+      const subj = plan.subject.replace(/[^\w\-]+/g, '_');
+      const title = (plan.examTitle || 'SeatingPlan').replace(/[^\w\-]+/g, '_');
+      download(`${title}-${subj}.json`, JSON.stringify(plan, null, 2), 'application/json;charset=utf-8');
+      setExportMessage('Seating plan JSON downloaded.', 'status-ok');
+    }
+
+    function applyLoadedPlan(plan) {
+      $examTitle.val(plan.examTitle || '');
+      rows = plan.rowsPerRow || rows;
+      cols = plan.numberOfRows || cols;
+      $rowsInput.val(rows);
+      $colsInput.val(cols);
+
+      // rebuild concession set + seats using currently loaded subjectStudents by admin number
+      concessionIds = new Set((plan.concessionStudents || []).map(s => String(s.student_number)));
+      $studentTbody.find('tr').each(function () {
+        const id = String($(this).data('id'));
+        const checked = concessionIds.has(id);
+        $(this).find('.concession-check').prop('checked', checked);
+        $(this).toggleClass('is-concession', checked);
+      });
+      updateStudentCounts();
+
+      seats = (plan.seats || []).map(s => {
+        let student = null;
+        if (s.student) {
+          student = subjectStudents.find(st => String(st.student_number) === String(s.student.student_number)) || s.student;
+        }
+        return { row: s.row, col: s.col, student };
+      });
+      unassigned = (plan.unassigned || []).map(u =>
+        subjectStudents.find(st => String(st.student_number) === String(u.student_number)) || u
+      );
+      selectedPoolId = null;
+      renderGrid();
+      renderPool();
+      setPlanMessage('Loaded seating plan from JSON.', 'status-ok');
+      hidePreview();
+    }
+
+    function loadJsonFile(file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const plan = JSON.parse(e.target.result);
+          if ($subject.val() !== plan.subject) {
+            setPlanMessage(`Note: loaded plan was for subject "${esc(plan.subject)}". Select that subject first for full name matching.`, 'status-warn');
+          }
+          applyLoadedPlan(plan);
+        } catch (err) {
+          setPlanMessage('Could not read JSON file: ' + esc(err.message), 'status-err');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ===== Class register =====
+    function setRegisterMessage(html, cls) {
+      $('#registerMessage').removeClass('status-ok status-warn status-err').addClass(cls || '').html(html || '');
+    }
+
+    function getRegisterStudents() {
+      return sortByName(subjectStudents.filter(s => !concessionIds.has(String(s.student_number))));
+    }
+
+    function buildRegisterRowsHtml(students) {
+      return students.map((s, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${esc(s.student_number)}</td>
+          <td>${esc(s.name)}</td>
+          <td class="reg-sign-cell">&nbsp;</td>
+        </tr>`).join('');
+    }
+
+    function buildRegisterDocument() {
+      const students = getRegisterStudents();
+      const subj = $subject.val() || '';
+      const title = $examTitle.val() || 'Class Register';
+      const dateStr = new Date().toLocaleDateString();
+      return `<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Class Register - ${esc(subj)}</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 24px; color: #212529; }
+  h1 { font-size: 1.25rem; margin: 0 0 .1rem 0; }
+  h2 { font-size: 1rem; font-weight: 400; margin: 0 0 .75rem 0; color: #495057; }
+  .meta { margin-bottom: 1rem; font-size: .85rem; color: #495057; }
+  table.register-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table.register-table th, table.register-table td { border: 1px solid #495057; padding: 8px 10px; }
+  table.register-table th { background: #f1f3f5; text-align: left; }
+  table.register-table td:first-child, table.register-table th:first-child { width: 40px; text-align: center; }
+  table.register-table td:nth-child(2), table.register-table th:nth-child(2) { width: 110px; }
+  td.reg-sign-cell { width: 220px; }
+  @media print {
+    @page { margin: 14mm; }
+  }
+</style>
+</head>
+<body>
+  <h1>${esc(title)}</h1>
+  <h2>Subject: ${esc(subj)}</h2>
+  <div class="meta">Date: ${esc(dateStr)} &bull; Total students: ${students.length}</div>
+  <table class="register-table">
+    <thead><tr><th>#</th><th>Admin&nbsp;No.</th><th>Name</th><th>Signature</th></tr></thead>
+    <tbody>${buildRegisterRowsHtml(students)}</tbody>
+  </table>
+</body></html>`;
+    }
+
+    let pendingShowRegisterPreview = false;
+    $('#registerBuildModal').on('show.bs.modal', function () {
+      setRegisterMessage('');
+    });
+    $('#registerBuildModal').on('hidden.bs.modal', function () {
+      if (pendingShowRegisterPreview) {
+        pendingShowRegisterPreview = false;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('registerModal')).show();
+      }
+    });
+
+    function previewRegister() {
+      if (!$subject.val()) { setRegisterMessage('Select a subject first.', 'status-err'); return; }
+      const students = getRegisterStudents();
+      if (!students.length) {
+        setRegisterMessage('No non-concession students found for this subject.', 'status-warn');
+      } else {
+        setRegisterMessage('');
+      }
+      $('#registerPreviewBody').html(`
+        <table class="table table-sm table-bordered align-middle mb-0">
+          <thead>
+            <tr><th style="width:40px;">#</th><th style="width:110px;">Admin&nbsp;No.</th><th>Name</th><th style="width:200px;">Signature</th></tr>
+          </thead>
+          <tbody>${buildRegisterRowsHtml(students)}</tbody>
+        </table>
+      `);
+      // Hand off from the build modal to the preview modal rather than stacking them.
+      const buildModalEl = document.getElementById('registerBuildModal');
+      const buildModalInstance = bootstrap.Modal.getInstance(buildModalEl);
+      if (buildModalInstance && buildModalEl.classList.contains('show')) {
+        pendingShowRegisterPreview = true;
+        buildModalInstance.hide();
+      } else {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('registerModal')).show();
+      }
+    }
+
+    function printRegister() {
+      if (!$subject.val()) { setRegisterMessage('Select a subject first.', 'status-err'); return; }
+      const doc = buildRegisterDocument();
+      const w = window.open('', '_blank');
+      if (!w) {
+        setRegisterMessage('Pop-up blocked — please allow pop-ups for this page, or use "Download register" instead.', 'status-err');
+        return;
+      }
+      w.document.open();
+      w.document.write(doc);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 300);
+    }
+
+    function downloadRegisterHtml() {
+      const subj = $subject.val();
+      if (!subj) { setRegisterMessage('Select a subject first.', 'status-err'); return; }
+      const doc = buildRegisterDocument();
+      const title = ($examTitle.val() || 'ClassRegister').replace(/[^\w\-]+/g, '_');
+      const subjSafe = subj.replace(/[^\w\-]+/g, '_');
+      download(`${title}-${subjSafe}-Register.html`, doc, 'text/html;charset=utf-8');
+      setRegisterMessage('Class register downloaded as HTML — open it in a browser and use Print (or Print to PDF) to produce a paper copy.', 'status-ok');
+    }
+
+    // ===== Firebase cloud save / list =====
+    async function saveToCloud() {
+      if (!firebaseReady) {
+        setExportMessage('Firebase is not configured. Fill in <span class="mono">firebaseConfig</span> in the script to enable cloud save.', 'status-warn');
+        return;
+      }
+      if (!$subject.val()) { setExportMessage('Select a subject before saving.', 'status-err'); return; }
+      try {
+        const plan = buildPlanObject();
+        await db.collection(SEATING_COLLECTION).add(plan);
+        setExportMessage('Seating plan saved to Firebase.', 'status-ok');
+        refreshCloudList();
+      } catch (e) {
+        setExportMessage('Firebase save failed: ' + esc(e.message), 'status-err');
+      }
+    }
+
+    async function refreshCloudList() {
+      $cloudPlanList.empty();
+      if (!firebaseReady) {
+        $cloudPlanList.html('<li class="list-group-item text-muted">Firebase not configured.</li>');
+        return;
+      }
+      try {
+        let query = db.collection(SEATING_COLLECTION).orderBy('generatedAt', 'desc').limit(15);
+        const snap = await query.get();
+        if (snap.empty) {
+          $cloudPlanList.html('<li class="list-group-item text-muted">No saved plans yet.</li>');
+          return;
+        }
+        snap.forEach(doc => {
+          const d = doc.data();
+          const li = $(`
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>${esc(d.examTitle || '(untitled)')} — ${esc(d.subject)} <span class="text-muted">(${esc((d.generatedAt || '').slice(0, 10))})</span></span>
+              <button class="btn btn-sm btn-outline-primary" data-doc="${doc.id}">Load</button>
+            </li>
+          `);
+          li.find('button').on('click', () => applyLoadedPlan(d));
+          $cloudPlanList.append(li);
+        });
+      } catch (e) {
+        $cloudPlanList.html(`<li class="list-group-item status-err">Could not load: ${esc(e.message)}</li>`);
+      }
+    }
+
+    // ===== Wire up events =====
+    $grade.on('change', loadGrade);
+    $subject.on('change', onSubjectChange);
+    $('#generateBtn').on('click', generatePlan);
+    $('#resetBtn').on('click', resetGrid);
+    $('#previewBtn').on('click', previewImage);
+    $downloadImgBtn.on('click', downloadImage);
+    $('#downloadJsonBtn').on('click', saveJson);
+    $('#cloudSaveBtn').on('click', saveToCloud);
+    $('#refreshCloudBtn').on('click', refreshCloudList);
+    $('#loadJsonBtn').on('click', () => document.getElementById('loadJsonFile').click());
+    $('#loadJsonFile').on('change', function (e) {
+      if (this.files && this.files[0]) loadJsonFile(this.files[0]);
+      this.value = '';
+    });
+    $('#bulkConcessionApplyBtn').on('click', applyBulkConcessions);
+    $('#registerPreviewBtn').on('click', previewRegister);
+    $('#registerPrintBtn').on('click', printRegister);
+    $('#registerDownloadBtn').on('click', downloadRegisterHtml);
+    $('#registerModalPrintBtn').on('click', printRegister);
+
+    // ===== Init =====
+    loadGrade();
+    refreshCloudList();
+  })();
+  </script>
+</body>
+</html>

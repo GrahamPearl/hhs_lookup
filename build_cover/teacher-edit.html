@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teacher Timetable Editor</title>
+  <link rel="stylesheet" href="./bootstrap.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    body { background:#f4f6f9; }
+    #gridWrap table { table-layout:fixed; }
+    #gridWrap td[data-row] { cursor:pointer; }
+    #gridWrap td[data-row]:hover { filter:brightness(0.95); }
+    .cell-empty { background:#f8f9fa !important; color:#adb5bd; font-size:.85em; }
+    .unsaved-badge { display:none; }
+    .unsaved-badge.show { display:inline-block; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+      <span class="navbar-brand fw-bold">🧑‍🏫 Teacher Timetable Editor</span>
+      <a href="index.html" class="btn btn-outline-light btn-sm">← Dashboard</a>
+    </div>
+  </nav>
+
+  <div class="container-fluid py-4">
+    <div class="row g-4">
+
+      <!-- Left: teacher selection & identity -->
+      <div class="col-lg-4">
+        <div class="card mb-3">
+          <div class="card-header bg-light fw-semibold">Select Teacher</div>
+          <div class="card-body">
+            <input type="text" id="teacherSearchInput" class="form-control mb-2"
+                   placeholder="Search teacher name…" autocomplete="off" />
+            <select id="teacherCombo" class="form-select" size="8"></select>
+            <button id="newTeacherBtn" class="btn btn-outline-primary w-100 mt-2">➕ New Teacher</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header bg-light fw-semibold d-flex justify-content-between align-items-center">
+            <span>Teacher Details</span>
+            <span class="badge bg-warning text-dark unsaved-badge" id="unsavedBadge">Unsaved changes</span>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Teacher Name</label>
+              <input type="text" id="teacherNameInput" class="form-control" placeholder="e.g. J. Smith" />
+              <small class="text-muted">Editing this and saving will rename the teacher.</small>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="lastResortCheck" />
+              <label class="form-check-label" for="lastResortCheck">
+                Last Resort teacher
+              </label>
+              <small class="text-muted d-block">Only used for cover when no other options are available.</small>
+            </div>
+            <div class="mb-2 small text-muted" id="statusLine">New teacher (not yet saved)</div>
+            <div class="d-grid gap-2">
+              <button id="saveTeacherBtn" class="btn btn-primary">💾 Save Changes</button>
+              <button id="discardBtn" class="btn btn-outline-secondary">↺ Discard Changes</button>
+              <button id="deleteTeacherBtn" class="btn btn-outline-danger">🗑️ Delete Teacher</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: timetable grid -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Timetable</span>
+            <div class="btn-group btn-group-sm">
+              <button id="addPeriodBtn" class="btn btn-outline-secondary">+ Add Period</button>
+              <button id="removePeriodBtn" class="btn btn-outline-secondary">− Remove Last Period</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="text-muted small">Click any cell to edit that period. Legend:
+              <span class="badge free text-dark">Free</span>
+              <span class="badge lesson text-dark">Lesson</span>
+              <span class="badge meeting text-dark">Meeting</span>
+              ⛔ = Do Not Disturb
+            </p>
+            <div id="gridWrap" class="table-responsive"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Cell Edit Modal -->
+  <div class="modal fade" id="cellModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cellModalLabel">Edit Period</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Type</label>
+            <select id="cellTypeSelect" class="form-select">
+              <option value="free">Free</option>
+              <option value="lesson">Lesson</option>
+              <option value="meeting">Meeting</option>
+            </select>
+          </div>
+          <div id="cellDetailFields">
+            <div class="mb-2">
+              <label class="form-label">Subject</label>
+              <input type="text" id="cellSubjectInput" class="form-control" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Class</label>
+              <input type="text" id="cellClassInput" class="form-control" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Venue</label>
+              <input type="text" id="cellVenueInput" class="form-control" />
+            </div>
+          </div>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="cellDndCheck" />
+            <label class="form-check-label" for="cellDndCheck">Do Not Disturb (⛔ exclude from auto-assign)</label>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-outline-danger" id="clearCellBtn">Clear Period</button>
+          <div>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="saveCellBtn">Save Period</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./bootstrap.bundle.min.js"></script>
+  <script>
+  (() => {
+    "use strict";
+
+    const PREFIX        = "teacher_";
+    const METRICS_KEY    = "teacherMetrics";
+    const HISTORY_KEY    = "coverHistory";
+    const DAY_LABELS     = ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"];
+    const DEFAULT_PERIODS = 7;
+
+    let teacherNames  = [];
+    let originalName  = null;   // name currently saved under, null if new/unsaved
+    let draftEntries  = [];
+    let periodCount   = DEFAULT_PERIODS;
+    let dirty         = false;
+    let editingCell   = null;
+
+    function esc(v) {
+      return String(v ?? "")
+        .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    }
+
+    // ── Storage helpers ──────────────────────────────────────────
+    function loadTeacherNames() {
+      const names = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k.startsWith(PREFIX)) names.push(k.slice(PREFIX.length));
+      }
+      return names.sort((a,b) => a.localeCompare(b));
+    }
+    function loadTeacherData(name) {
+      const raw = localStorage.getItem(PREFIX + name);
+      if (!raw) return null;
+      try { return JSON.parse(raw); }
+      catch { console.warn("Corrupt teacher record:", name); return null; }
+    }
+
+    // ── Combo / search list ──────────────────────────────────────
+    function renderCombo(filter = "") {
+      const sel = document.getElementById("teacherCombo");
+      const f = filter.trim().toLowerCase();
+      const shown = f ? teacherNames.filter(n => n.toLowerCase().includes(f)) : teacherNames;
+      sel.innerHTML = shown.map(n =>
+        `<option value="${esc(n)}" ${n===originalName?"selected":""}>${esc(n)}</option>`
+      ).join("") || `<option disabled>No teachers found</option>`;
+    }
+    document.getElementById("teacherSearchInput").addEventListener("input", (e) => {
+      renderCombo(e.target.value);
+    });
+    document.getElementById("teacherCombo").addEventListener("change", (e) => {
+      const name = e.target.value;
+      if (name) loadTeacher(name);
+    });
+
+    // ── Dirty state ───────────────────────────────────────────────
+    function markDirty() {
+      dirty = true;
+      document.getElementById("unsavedBadge").classList.add("show");
+    }
+    function clearDirty() {
+      dirty = false;
+      document.getElementById("unsavedBadge").classList.remove("show");
+    }
+    function confirmDiscardIfDirty(cb) {
+      if (dirty && !confirm("You have unsaved changes. Discard them and continue?")) return;
+      cb();
+    }
+
+    function updateStatusLine() {
+      const el = document.getElementById("statusLine");
+      el.textContent = originalName
+        ? `Editing: ${originalName}`
+        : "New teacher (not yet saved)";
+    }
+
+    // ── Load / new ────────────────────────────────────────────────
+    function loadTeacher(name) {
+      confirmDiscardIfDirty(() => {
+        const data = loadTeacherData(name);
+        if (!data) { alert("Teacher not found: " + name); return; }
+        originalName = name;
+        draftEntries = Array.isArray(data.entries) ? data.entries.map(e => ({...e})) : [];
+        periodCount  = draftEntries.length
+          ? Math.max(6, ...draftEntries.map(e => (e.col ?? 0) + 1))
+          : DEFAULT_PERIODS;
+
+        document.getElementById("teacherNameInput").value = name;
+        document.getElementById("lastResortCheck").checked = !!data.lastResort;
+        clearDirty();
+        updateStatusLine();
+        renderGrid();
+        renderCombo(document.getElementById("teacherSearchInput").value);
+      });
+    }
+
+    function startNewTeacher() {
+      confirmDiscardIfDirty(() => {
+        originalName = null;
+        periodCount  = DEFAULT_PERIODS;
+        draftEntries = [];
+        for (let r = 0; r < 5; r++)
+          for (let c = 0; c < periodCount; c++)
+            draftEntries.push({ row: r, col: c, type: "free" });
+
+        document.getElementById("teacherNameInput").value = "";
+        document.getElementById("lastResortCheck").checked = false;
+        document.getElementById("teacherCombo").selectedIndex = -1;
+        clearDirty();
+        updateStatusLine();
+        renderGrid();
+      });
+    }
+    document.getElementById("newTeacherBtn").onclick = startNewTeacher;
+
+    // ── Grid rendering ───────────────────────────────────────────
+    function getEntry(row, col) {
+      return draftEntries.find(e => e.row === row && e.col === col);
+    }
+    function renderGrid() {
+      let html = `<table class="table table-bordered text-center align-middle mb-0">
+        <thead><tr><th style="width:80px">Day</th>`;
+      for (let c = 0; c < periodCount; c++) html += `<th>P${c+1}</th>`;
+      html += `</tr></thead><tbody>`;
+
+      for (let r = 0; r < 5; r++) {
+        html += `<tr><th class="table-light">${DAY_LABELS[r]}</th>`;
+        for (let c = 0; c < periodCount; c++) {
+          const e = getEntry(r, c);
+          if (!e) {
+            html += `<td class="cell-empty" data-row="${r}" data-col="${c}">+ Set</td>`;
+            continue;
+          }
+          const cls  = e.type === "lesson" ? "lesson" : e.type === "meeting" ? "meeting" : "free";
+          const dnd  = e.doNotDisturb ? " ⛔" : "";
+          const body = e.type === "free"
+            ? `Free${dnd}`
+            : `<strong>${esc(e.subject || e.type)}</strong>${dnd}<br>
+               <small class="text-muted">${esc(e.className||"")}${e.venue ? " · " + esc(e.venue) : ""}</small>`;
+          html += `<td class="${cls}" data-row="${r}" data-col="${c}">${body}</td>`;
+        }
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+
+      const wrap = document.getElementById("gridWrap");
+      wrap.innerHTML = html;
+      wrap.querySelectorAll("td[data-row]").forEach(td => {
+        td.addEventListener("click", () =>
+          openCellEditor(parseInt(td.dataset.row), parseInt(td.dataset.col)));
+      });
+    }
+
+    // ── Add / remove period columns ─────────────────────────────
+    document.getElementById("addPeriodBtn").onclick = () => {
+      for (let r = 0; r < 5; r++)
+        draftEntries.push({ row: r, col: periodCount, type: "free" });
+      periodCount++;
+      markDirty();
+      renderGrid();
+    };
+    document.getElementById("removePeriodBtn").onclick = () => {
+      if (periodCount <= 1) { alert("At least one period is required."); return; }
+      const lastCol = periodCount - 1;
+      const affected = draftEntries.filter(e =>
+        e.col === lastCol && (e.type !== "free" || e.subject || e.className || e.venue || e.doNotDisturb));
+      if (affected.length &&
+          !confirm(`Removing Period ${lastCol+1} will delete ${affected.length} configured entr${affected.length===1?"y":"ies"}. Continue?`))
+        return;
+      draftEntries = draftEntries.filter(e => e.col !== lastCol);
+      periodCount--;
+      markDirty();
+      renderGrid();
+    };
+
+    // ── Cell editor modal ────────────────────────────────────────
+    function toggleCellFieldVisibility() {
+      const type = document.getElementById("cellTypeSelect").value;
+      document.getElementById("cellDetailFields").style.display = type === "free" ? "none" : "block";
+    }
+    document.getElementById("cellTypeSelect").addEventListener("change", toggleCellFieldVisibility);
+
+    function openCellEditor(row, col) {
+      editingCell = { row, col };
+      const e = getEntry(row, col) || { type: "free" };
+      document.getElementById("cellModalLabel").textContent = `${DAY_LABELS[row]} — Period ${col+1}`;
+      document.getElementById("cellTypeSelect").value    = e.type || "free";
+      document.getElementById("cellSubjectInput").value  = e.subject || "";
+      document.getElementById("cellClassInput").value    = e.className || "";
+      document.getElementById("cellVenueInput").value     = e.venue || "";
+      document.getElementById("cellDndCheck").checked     = !!e.doNotDisturb;
+      toggleCellFieldVisibility();
+      new bootstrap.Modal(document.getElementById("cellModal")).show();
+    }
+
+    document.getElementById("saveCellBtn").onclick = () => {
+      const { row, col } = editingCell;
+      const type       = document.getElementById("cellTypeSelect").value;
+      const subject    = document.getElementById("cellSubjectInput").value.trim();
+      const className  = document.getElementById("cellClassInput").value.trim();
+      const venue      = document.getElementById("cellVenueInput").value.trim();
+      const dnd        = document.getElementById("cellDndCheck").checked;
+
+      draftEntries = draftEntries.filter(e => !(e.row === row && e.col === col));
+      const entry = { row, col, type, doNotDisturb: dnd };
+      if (type !== "free") {
+        if (subject)   entry.subject   = subject;
+        if (className) entry.className = className;
+        if (venue)     entry.venue     = venue;
+      }
+      draftEntries.push(entry);
+      markDirty();
+      bootstrap.Modal.getInstance(document.getElementById("cellModal"))?.hide();
+      renderGrid();
+    };
+
+    document.getElementById("clearCellBtn").onclick = () => {
+      const { row, col } = editingCell;
+      draftEntries = draftEntries.filter(e => !(e.row === row && e.col === col));
+      markDirty();
+      bootstrap.Modal.getInstance(document.getElementById("cellModal"))?.hide();
+      renderGrid();
+    };
+
+    // ── Name / last-resort field changes ─────────────────────────
+    document.getElementById("teacherNameInput").addEventListener("input", markDirty);
+    document.getElementById("lastResortCheck").addEventListener("change", markDirty);
+
+    // ── Cascade rename into history / metrics ────────────────────
+    function cascadeRenameEverywhere(oldName, newName) {
+      try {
+        const metrics = JSON.parse(localStorage.getItem(METRICS_KEY) || "{}");
+        if (metrics[oldName]) {
+          metrics[newName] = Object.assign({}, metrics[newName] || {}, metrics[oldName]);
+          delete metrics[oldName];
+          localStorage.setItem(METRICS_KEY, JSON.stringify(metrics));
+        }
+      } catch (e) { console.warn("Metrics cascade failed:", e); }
+
+      try {
+        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+        let touched = false;
+        history.forEach(h => {
+          if (h.coveredTeacher === oldName) { h.coveredTeacher = newName; touched = true; }
+          if (h.coverTeacher   === oldName) { h.coverTeacher   = newName; touched = true; }
+        });
+        if (touched) localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      } catch (e) { console.warn("History cascade failed:", e); }
+    }
+
+    // ── Save / discard / delete ──────────────────────────────────
+    function saveTeacher() {
+      const newName = document.getElementById("teacherNameInput").value.trim();
+      if (!newName) { alert("Please enter a teacher name."); return; }
+
+      const currentNames = loadTeacherNames();
+      if (currentNames.includes(newName) && newName !== originalName) {
+        alert(`A teacher named "${newName}" already exists. Choose a different name, or delete the existing record first.`);
+        return;
+      }
+
+      const isRename = !!originalName && originalName !== newName;
+      let cascade = false;
+      if (isRename) {
+        cascade = confirm(
+          `Rename "${originalName}" to "${newName}"?\n\n` +
+          `Click OK to also update this teacher's name in Cover History and Metrics records (recommended).\n` +
+          `Click Cancel to rename the timetable only.`
+        );
+      }
+
+      const payload = {
+        teacherName: newName,
+        lastResort: document.getElementById("lastResortCheck").checked,
+        entries: draftEntries.map(e => ({...e})),
+      };
+      localStorage.setItem(PREFIX + newName, JSON.stringify(payload));
+
+      if (isRename) {
+        localStorage.removeItem(PREFIX + originalName);
+        if (cascade) cascadeRenameEverywhere(originalName, newName);
+      }
+
+      originalName = newName;
+      teacherNames = loadTeacherNames();
+      clearDirty();
+      updateStatusLine();
+      renderCombo(document.getElementById("teacherSearchInput").value);
+      alert(`✅ Saved "${newName}".`);
+    }
+    document.getElementById("saveTeacherBtn").onclick = saveTeacher;
+
+    document.getElementById("discardBtn").onclick = () => {
+      if (originalName) loadTeacherNoConfirm(originalName);
+      else startNewTeacherNoConfirm();
+    };
+    function loadTeacherNoConfirm(name) {
+      const data = loadTeacherData(name);
+      if (!data) return;
+      draftEntries = Array.isArray(data.entries) ? data.entries.map(e => ({...e})) : [];
+      periodCount  = draftEntries.length
+        ? Math.max(6, ...draftEntries.map(e => (e.col ?? 0) + 1))
+        : DEFAULT_PERIODS;
+      document.getElementById("teacherNameInput").value = name;
+      document.getElementById("lastResortCheck").checked = !!data.lastResort;
+      clearDirty();
+      renderGrid();
+    }
+    function startNewTeacherNoConfirm() {
+      originalName = null;
+      periodCount  = DEFAULT_PERIODS;
+      draftEntries = [];
+      for (let r = 0; r < 5; r++)
+        for (let c = 0; c < periodCount; c++)
+          draftEntries.push({ row: r, col: c, type: "free" });
+      document.getElementById("teacherNameInput").value = "";
+      document.getElementById("lastResortCheck").checked = false;
+      clearDirty();
+      updateStatusLine();
+      renderGrid();
+    }
+
+    document.getElementById("deleteTeacherBtn").onclick = () => {
+      if (!originalName) { alert("Nothing to delete — this teacher hasn't been saved yet."); return; }
+      if (!confirm(`Delete "${originalName}"'s timetable permanently?\n\nThis does NOT remove them from Cover History records.`)) return;
+      localStorage.removeItem(PREFIX + originalName);
+      teacherNames = loadTeacherNames();
+      originalName = null;
+      renderCombo();
+      startNewTeacherNoConfirm();
+    };
+
+    // ── Guard against accidental tab close ───────────────────────
+    window.addEventListener("beforeunload", (e) => {
+      if (dirty) { e.preventDefault(); e.returnValue = ""; }
+    });
+
+    // ── Init ──────────────────────────────────────────────────────
+    teacherNames = loadTeacherNames();
+    renderCombo();
+    if (teacherNames.length) loadTeacher(teacherNames[0]);
+    else startNewTeacherNoConfirm();
+
+  })();
+  </script>
+</body>
+</html>
