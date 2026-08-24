@@ -215,7 +215,7 @@ def excel_to_master_json(excel_path: Path, subjects_txt: Path) -> list[dict]:
         top_cell = str(df.iat[3, 3]) if df.shape[0] > 3 else None
         line = subject_line
 
-        header_row = 9 
+        header_row = 8 
         data = df.iloc[header_row + 1 :].dropna(subset=[0])
         data.columns = ["NO", "ADMNR", "NAME", "GENDER", "CLASS"]
 
