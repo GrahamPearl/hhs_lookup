@@ -234,6 +234,15 @@
     "teacher": "JA Chabant"
   },
   {
+    "student_number": 14203,
+    "name": "Hlambisa, S (Sphesihle)",
+    "gender": "M",
+    "class": "12SD",
+    "subject": "Accounting",
+    "line": 6,
+    "teacher": "JA Chabant"
+  },
+  {
     "student_number": 14271,
     "name": "Jiyane, NN (Nolwandle)",
     "gender": "F",
@@ -517,15 +526,6 @@
     "name": "Enslin, TG (Tyler)",
     "gender": "M",
     "class": "12LH",
-    "subject": "Accounting",
-    "line": 6,
-    "teacher": "N Nkosi"
-  },
-  {
-    "student_number": 14203,
-    "name": "Hlambisa, S (Sphesihle)",
-    "gender": "M",
-    "class": "12SD",
     "subject": "Accounting",
     "line": 6,
     "teacher": "N Nkosi"
@@ -1845,15 +1845,6 @@
     "teacher": "MB Leppan"
   },
   {
-    "student_number": 15003,
-    "name": "Mzimela, LN (Lusanda)",
-    "gender": "F",
-    "class": "12LT",
-    "subject": "Business Studies",
-    "line": 5,
-    "teacher": "MB Leppan"
-  },
-  {
     "student_number": 14266,
     "name": "Ndlovu, EL (Emihle)",
     "gender": "M",
@@ -2010,6 +2001,15 @@
     "student_number": 15006,
     "name": "Kunene, N (Ntwenhle)",
     "gender": "F",
+    "class": "12SD",
+    "subject": "Business Studies",
+    "line": 7,
+    "teacher": "SP Mtakwende"
+  },
+  {
+    "student_number": 14349,
+    "name": "Maseatile, MM (Motobatsi Mnqobi)",
+    "gender": "M",
     "class": "12SD",
     "subject": "Business Studies",
     "line": 7,
@@ -3129,7 +3129,7 @@
     "class": "12SD",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14227,
@@ -3138,7 +3138,7 @@
     "class": "12SD",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14350,
@@ -3147,7 +3147,7 @@
     "class": "12LM",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 15004,
@@ -3156,7 +3156,7 @@
     "class": "12SD",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14146,
@@ -3165,7 +3165,7 @@
     "class": "12SD",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14185,
@@ -3174,7 +3174,7 @@
     "class": "12AW",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14362,
@@ -3183,7 +3183,7 @@
     "class": "12SD",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14295,
@@ -3192,7 +3192,7 @@
     "class": "12SD",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14342,
@@ -3201,7 +3201,7 @@
     "class": "12SD",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14273,
@@ -3210,7 +3210,7 @@
     "class": "12MW",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14121,
@@ -3219,7 +3219,7 @@
     "class": "12SD",
     "subject": "Dramatic Arts",
     "line": 7,
-    "teacher": "S MacDonald"
+    "teacher": "S Macdonald"
   },
   {
     "student_number": 14302,
@@ -3672,6 +3672,15 @@
     "teacher": "MS Bourreau"
   },
   {
+    "student_number": 14156,
+    "name": "Geel, LM (Lilli)",
+    "gender": "F",
+    "class": "12SD",
+    "subject": "English Home Language",
+    "line": 1,
+    "teacher": "MS Bourreau"
+  },
+  {
     "student_number": 14146,
     "name": "Hlophe, L (Luyanda)",
     "gender": "F",
@@ -3793,6 +3802,15 @@
     "name": "Ngubane, BA (Bonga)",
     "gender": "M",
     "class": "12LH",
+    "subject": "English Home Language",
+    "line": 1,
+    "teacher": "MS Bourreau"
+  },
+  {
+    "student_number": 14174,
+    "name": "Oberholzer, TR (Taygen)",
+    "gender": "F",
+    "class": "12SD",
     "subject": "English Home Language",
     "line": 1,
     "teacher": "MS Bourreau"
@@ -3942,6 +3960,15 @@
     "teacher": "SJ Boyce"
   },
   {
+    "student_number": 14349,
+    "name": "Maseatile, MM (Motobatsi Mnqobi)",
+    "gender": "M",
+    "class": "12SD",
+    "subject": "English Home Language",
+    "line": 1,
+    "teacher": "SJ Boyce"
+  },
+  {
     "student_number": 14366,
     "name": "Mkhize, LB (Luyanda)",
     "gender": "M",
@@ -3978,15 +4005,6 @@
     "teacher": "SJ Boyce"
   },
   {
-    "student_number": 14331,
-    "name": "Naidoo, N (Natara)",
-    "gender": "F",
-    "class": "12LM",
-    "subject": "English Home Language",
-    "line": 1,
-    "teacher": "SJ Boyce"
-  },
-  {
     "student_number": 14259,
     "name": "Newcombe-Bond, S (Sophie)",
     "gender": "F",
@@ -4000,15 +4018,6 @@
     "name": "Olsen, KJ (Kaylin)",
     "gender": "F",
     "class": "12LM",
-    "subject": "English Home Language",
-    "line": 1,
-    "teacher": "SJ Boyce"
-  },
-  {
-    "student_number": 14135,
-    "name": "Perumal, KD (Kaitlyn)",
-    "gender": "F",
-    "class": "12SD",
     "subject": "English Home Language",
     "line": 1,
     "teacher": "SJ Boyce"
@@ -4077,6 +4086,15 @@
     "teacher": "SJ Boyce"
   },
   {
+    "student_number": 14129,
+    "name": "Clark, DG (Dylan)",
+    "gender": "M",
+    "class": "12LH",
+    "subject": "English Home Language",
+    "line": 1,
+    "teacher": "S Ramsout"
+  },
+  {
     "student_number": 14218,
     "name": "Cresswell, AT (Ashton )",
     "gender": "M",
@@ -4108,15 +4126,6 @@
     "name": "Egersdorfer, TD (Tanith)",
     "gender": "F",
     "class": "12AW",
-    "subject": "English Home Language",
-    "line": 1,
-    "teacher": "S Ramsout"
-  },
-  {
-    "student_number": 14156,
-    "name": "Geel, LM (Lilli)",
-    "gender": "F",
-    "class": "12SD",
     "subject": "English Home Language",
     "line": 1,
     "teacher": "S Ramsout"
@@ -4216,15 +4225,6 @@
     "name": "Ndawonde, TA (Thabiso)",
     "gender": "M",
     "class": "12LT",
-    "subject": "English Home Language",
-    "line": 1,
-    "teacher": "S Ramsout"
-  },
-  {
-    "student_number": 14174,
-    "name": "Oberholzer, TR (Taygen)",
-    "gender": "F",
-    "class": "12SD",
     "subject": "English Home Language",
     "line": 1,
     "teacher": "S Ramsout"
@@ -4430,15 +4430,6 @@
   {
     "student_number": 15231,
     "name": "Botha, TJD (Tristan)",
-    "gender": "M",
-    "class": "12LH",
-    "subject": "English Home Language",
-    "line": 3,
-    "teacher": "GDZ Bastion"
-  },
-  {
-    "student_number": 14129,
-    "name": "Clark, DG (Dylan)",
     "gender": "M",
     "class": "12LH",
     "subject": "English Home Language",
@@ -4734,6 +4725,15 @@
     "teacher": "MS Bourreau"
   },
   {
+    "student_number": 14331,
+    "name": "Naidoo, N (Natara)",
+    "gender": "F",
+    "class": "12LM",
+    "subject": "English Home Language",
+    "line": 3,
+    "teacher": "MS Bourreau"
+  },
+  {
     "student_number": 14266,
     "name": "Ndlovu, EL (Emihle)",
     "gender": "M",
@@ -4765,6 +4765,15 @@
     "name": "Pedersen, A (Asanda)",
     "gender": "F",
     "class": "12MW",
+    "subject": "English Home Language",
+    "line": 3,
+    "teacher": "MS Bourreau"
+  },
+  {
+    "student_number": 14135,
+    "name": "Perumal, KD (Kaitlyn)",
+    "gender": "F",
+    "class": "12SD",
     "subject": "English Home Language",
     "line": 3,
     "teacher": "MS Bourreau"
@@ -4817,15 +4826,6 @@
   {
     "student_number": 14376,
     "name": "Mkhize, A (Akhona)",
-    "gender": "F",
-    "class": "12LT",
-    "subject": "English Home Language",
-    "line": 3,
-    "teacher": "LG Hudson-Piccione"
-  },
-  {
-    "student_number": 15003,
-    "name": "Mzimela, LN (Lusanda)",
     "gender": "F",
     "class": "12LT",
     "subject": "English Home Language",
@@ -5607,15 +5607,6 @@
     "teacher": "S Silochan"
   },
   {
-    "student_number": 15003,
-    "name": "Mzimela, LN (Lusanda)",
-    "gender": "F",
-    "class": "12LT",
-    "subject": "Geography",
-    "line": 12,
-    "teacher": "S Silochan"
-  },
-  {
     "student_number": 14640,
     "name": "Ngcobo, GW (Gift)",
     "gender": "M",
@@ -5868,15 +5859,6 @@
     "teacher": "IA Bothma"
   },
   {
-    "student_number": 14121,
-    "name": "Zungu, ASS (Amahle)",
-    "gender": "M",
-    "class": "12SD",
-    "subject": "German Second Additional Language",
-    "line": 12,
-    "teacher": "IA Bothma"
-  },
-  {
     "student_number": 14366,
     "name": "Mkhize, LB (Luyanda)",
     "gender": "M",
@@ -5915,15 +5897,6 @@
   {
     "student_number": 14344,
     "name": "Shandu, AB (Azola Balondwe)",
-    "gender": "M",
-    "class": "12SD",
-    "subject": "Further Studies Mathematics",
-    "line": 12,
-    "teacher": "DE Reuben"
-  },
-  {
-    "student_number": 14258,
-    "name": "Shozi, SM (Sinenhloso)",
     "gender": "M",
     "class": "12SD",
     "subject": "Further Studies Mathematics",
@@ -6867,6 +6840,15 @@
     "teacher": "SD Ndebele"
   },
   {
+    "student_number": 14349,
+    "name": "Maseatile, MM (Motobatsi Mnqobi)",
+    "gender": "M",
+    "class": "12SD",
+    "subject": "IsiZulu First Additional Language",
+    "line": null,
+    "teacher": "SD Ndebele"
+  },
+  {
     "student_number": 14105,
     "name": "Miya, ZZU (Zinziswa)",
     "gender": "F",
@@ -7222,15 +7204,6 @@
     "name": "Mnqondo, SJ (Sandile)",
     "gender": "M",
     "class": "12AW",
-    "subject": "IsiZulu First Additional Language",
-    "line": null,
-    "teacher": "LS Zuma"
-  },
-  {
-    "student_number": 15003,
-    "name": "Mzimela, LN (Lusanda)",
-    "gender": "F",
-    "class": "12LT",
     "subject": "IsiZulu First Additional Language",
     "line": null,
     "teacher": "LS Zuma"
@@ -9126,15 +9099,6 @@
     "teacher": "E Naidoo"
   },
   {
-    "student_number": 15003,
-    "name": "Mzimela, LN (Lusanda)",
-    "gender": "F",
-    "class": "12LT",
-    "subject": "Life Orientation",
-    "line": 12,
-    "teacher": "E Naidoo"
-  },
-  {
     "student_number": 15368,
     "name": "Naicker, AG (Ariel)",
     "gender": "F",
@@ -9366,7 +9330,7 @@
     "class": "12AW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14325,
@@ -9375,7 +9339,7 @@
     "class": "12SO",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14171,
@@ -9384,7 +9348,7 @@
     "class": "12TP",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14709,
@@ -9393,7 +9357,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 15642,
@@ -9402,7 +9366,7 @@
     "class": "12SO",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14286,
@@ -9411,7 +9375,7 @@
     "class": "12MW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14296,
@@ -9420,7 +9384,7 @@
     "class": "12LM",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14146,
@@ -9429,7 +9393,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14232,
@@ -9438,7 +9402,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14215,
@@ -9447,7 +9411,7 @@
     "class": "12LM",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14338,
@@ -9456,7 +9420,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14753,
@@ -9465,7 +9429,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14248,
@@ -9474,7 +9438,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14062,
@@ -9483,7 +9447,7 @@
     "class": "12AW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14376,
@@ -9492,7 +9456,7 @@
     "class": "12LT",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14362,
@@ -9501,7 +9465,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14134,
@@ -9510,7 +9474,7 @@
     "class": "12TP",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14149,
@@ -9519,7 +9483,7 @@
     "class": "12LT",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14295,
@@ -9528,7 +9492,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14136,
@@ -9537,7 +9501,7 @@
     "class": "12MW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14104,
@@ -9546,7 +9510,7 @@
     "class": "12MW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14139,
@@ -9555,7 +9519,7 @@
     "class": "12LH",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14323,
@@ -9564,7 +9528,7 @@
     "class": "12SO",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 15366,
@@ -9573,7 +9537,7 @@
     "class": "12AW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 15038,
@@ -9582,7 +9546,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14153,
@@ -9591,7 +9555,7 @@
     "class": "12SO",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14741,
@@ -9600,7 +9564,7 @@
     "class": "12LT",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14725,
@@ -9609,7 +9573,7 @@
     "class": "12SO",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14190,
@@ -9618,7 +9582,7 @@
     "class": "12AW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14275,
@@ -9627,7 +9591,7 @@
     "class": "12LH",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14203,
@@ -9636,7 +9600,7 @@
     "class": "12SD",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14393,
@@ -9645,7 +9609,7 @@
     "class": "12MW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14394,
@@ -9654,7 +9618,7 @@
     "class": "12TP",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14366,
@@ -9663,7 +9627,7 @@
     "class": "12LM",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14158,
@@ -9672,7 +9636,7 @@
     "class": "12AW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14241,
@@ -9681,7 +9645,7 @@
     "class": "12LH",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 15007,
@@ -9690,7 +9654,7 @@
     "class": "12MW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 15041,
@@ -9699,7 +9663,7 @@
     "class": "12AW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 15395,
@@ -9708,7 +9672,7 @@
     "class": "12LT",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14130,
@@ -9717,7 +9681,7 @@
     "class": "12SO",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 15247,
@@ -9726,7 +9690,7 @@
     "class": "12MW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14284,
@@ -9735,7 +9699,7 @@
     "class": "12LM",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14166,
@@ -9744,7 +9708,7 @@
     "class": "12AW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14127,
@@ -9753,7 +9717,7 @@
     "class": "12AW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14214,
@@ -9762,7 +9726,7 @@
     "class": "12MW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14257,
@@ -9771,7 +9735,7 @@
     "class": "12TP",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14297,
@@ -9780,7 +9744,7 @@
     "class": "12AW",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14735,
@@ -9789,7 +9753,7 @@
     "class": "12LT",
     "subject": "Life Orientation",
     "line": 12,
-    "teacher": "B White"
+    "teacher": "PD Windsor"
   },
   {
     "student_number": 14153,
@@ -10122,7 +10086,7 @@
     "class": "12SD",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14131,
@@ -10131,7 +10095,7 @@
     "class": "12SD",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 15340,
@@ -10140,7 +10104,7 @@
     "class": "12LH",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14205,
@@ -10149,7 +10113,7 @@
     "class": "12LM",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14293,
@@ -10158,7 +10122,7 @@
     "class": "12TP",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14338,
@@ -10167,7 +10131,7 @@
     "class": "12SD",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14213,
@@ -10176,7 +10140,7 @@
     "class": "12SD",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14369,
@@ -10185,7 +10149,7 @@
     "class": "12SO",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14686,
@@ -10194,7 +10158,7 @@
     "class": "12SD",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14331,
@@ -10203,7 +10167,7 @@
     "class": "12LM",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14157,
@@ -10212,7 +10176,7 @@
     "class": "12LH",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14259,
@@ -10221,7 +10185,7 @@
     "class": "12SD",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14640,
@@ -10230,7 +10194,7 @@
     "class": "12LM",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14364,
@@ -10239,7 +10203,7 @@
     "class": "12TP",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14180,
@@ -10248,7 +10212,7 @@
     "class": "12AW",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14135,
@@ -10257,7 +10221,7 @@
     "class": "12SD",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14168,
@@ -10266,7 +10230,7 @@
     "class": "12SO",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14199,
@@ -10275,7 +10239,7 @@
     "class": "12SD",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14214,
@@ -10284,7 +10248,7 @@
     "class": "12MW",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14163,
@@ -10293,7 +10257,7 @@
     "class": "12SO",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14258,
@@ -10302,7 +10266,7 @@
     "class": "12SD",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14208,
@@ -10311,7 +10275,7 @@
     "class": "12AW",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14195,
@@ -10320,7 +10284,7 @@
     "class": "12LM",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14133,
@@ -10329,7 +10293,7 @@
     "class": "12TP",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14370,
@@ -10338,7 +10302,7 @@
     "class": "12MW",
     "subject": "Life Sciences",
     "line": 7,
-    "teacher": "ES Blom"
+    "teacher": "ES van Staden"
   },
   {
     "student_number": 14724,
@@ -10606,15 +10570,6 @@
     "name": "Mshengu, NO (Nosihle)",
     "gender": "F",
     "class": "12MW",
-    "subject": "Life Sciences",
-    "line": 7,
-    "teacher": "LJ Prior"
-  },
-  {
-    "student_number": 15003,
-    "name": "Mzimela, LN (Lusanda)",
-    "gender": "F",
-    "class": "12LT",
     "subject": "Life Sciences",
     "line": 7,
     "teacher": "LJ Prior"
@@ -12096,15 +12051,6 @@
     "teacher": "MOE Woodrow"
   },
   {
-    "student_number": 15003,
-    "name": "Mzimela, LN (Lusanda)",
-    "gender": "F",
-    "class": "12LT",
-    "subject": "Mathematics",
-    "line": 1,
-    "teacher": "MOE Woodrow"
-  },
-  {
     "student_number": 15368,
     "name": "Naicker, AG (Ariel)",
     "gender": "F",
@@ -12477,6 +12423,15 @@
     "student_number": 14213,
     "name": "Maphumulo, AP (Andiswa)",
     "gender": "F",
+    "class": "12SD",
+    "subject": "Mathematics",
+    "line": 3,
+    "teacher": "DE Reuben"
+  },
+  {
+    "student_number": 14349,
+    "name": "Maseatile, MM (Motobatsi Mnqobi)",
+    "gender": "M",
     "class": "12SD",
     "subject": "Mathematics",
     "line": 3,
@@ -12945,6 +12900,15 @@
     "student_number": 14753,
     "name": "Majola, PT (Pamela )",
     "gender": "F",
+    "class": "12SD",
+    "subject": "Physical Sciences",
+    "line": 6,
+    "teacher": "N Badenhorst"
+  },
+  {
+    "student_number": 14349,
+    "name": "Maseatile, MM (Motobatsi Mnqobi)",
+    "gender": "M",
     "class": "12SD",
     "subject": "Physical Sciences",
     "line": 6,
