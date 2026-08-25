@@ -89,7 +89,7 @@
     "link": "./viewer_coverAdmin/index.html",
     "buttonClass": "btn-hhs"
   },
-   {
+  {
     "badge": "Management",
     "badgeClass": "bg-secondary",
     "title": "Exam Seating Plan (Admin)",
