@@ -89,6 +89,15 @@
     "link": "./viewer_coverAdmin/index.html",
     "buttonClass": "btn-hhs"
   },
+   {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Exam Seating Plan (Admin)",
+    "description": "Exam Seating Plan - Trials 2026.",
+    "buttonText": "Exam Seating Plan - Trials 2026",
+    "link": "./build_seating/seating-plan.html",
+    "buttonClass": "btn-hhs"
+  },
   {
     "badge": "Management",
     "badgeClass": "bg-secondary",
