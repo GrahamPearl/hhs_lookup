@@ -129,9 +129,12 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
           <h5 class="card-title mb-0">2. Students for this subject</h5>
-          <div>
+          <div class="d-flex align-items-center gap-2">
             <span id="studentCountBadge" class="badge bg-secondary">0 students</span>
             <span id="concessionCountBadge" class="badge bg-warning text-dark">0 concessions</span>
+            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#bulkConcessionModal">
+              Mark concessions by Admin No.
+            </button>
           </div>
         </div>
         <p class="text-muted small mb-2">
@@ -152,6 +155,29 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk concession-by-admin-number modal (centered) -->
+    <div class="modal fade" id="bulkConcessionModal" tabindex="-1" aria-labelledby="bulkConcessionModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="bulkConcessionModalLabel">Mark concessions by Admin No.</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <label for="bulkAdminNumbers" class="form-label">Admin numbers</label>
+            <textarea id="bulkAdminNumbers" class="form-control" rows="6"
+              placeholder="Enter admin numbers separated by a comma, space, or new line, e.g.&#10;14260, 14190&#10;14171"></textarea>
+            <div class="form-text">Only admin numbers found in the current subject's student list above will be affected.</div>
+            <div id="bulkConcessionResult" class="small mt-2"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" id="bulkConcessionApplyBtn" class="btn btn-warning">Mark as concession</button>
+          </div>
         </div>
       </div>
     </div>
@@ -224,15 +250,70 @@
         <h5 class="card-title mb-3">5. Preview &amp; export</h5>
         <div class="d-flex flex-wrap gap-2 mb-3">
           <button id="previewBtn" type="button" class="btn btn-outline-primary">Preview as image</button>
-          <button id="downloadImgBtn" type="button" class="btn btn-success" disabled>Download image (PNG)</button>
+          <button id="downloadImgBtn" type="button" class="btn btn-success" disabled>Download image(s) (PNG)</button>
+          <button id="printImgBtn" type="button" class="btn btn-outline-success" disabled>Print seating plan</button>
           <button id="downloadJsonBtn" type="button" class="btn btn-secondary">Save seating plan as JSON</button>
           <button id="loadJsonBtn" type="button" class="btn btn-outline-secondary">Load JSON…</button>
           <input type="file" id="loadJsonFile" accept="application/json" class="d-none">
           <button id="cloudSaveBtn" type="button" class="btn btn-outline-info">Save to Firebase</button>
+          <button id="openRegisterBuildBtn" type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#registerBuildModal">
+            Class register
+          </button>
         </div>
+        <p class="text-muted small mb-2">
+          Images are generated 5 columns of desks per picture. Layouts wider than 5 columns produce a
+          numbered series of pictures, so each one prints cleanly on its own page.
+        </p>
         <div id="exportMessage" class="small mb-3"></div>
         <div id="imagePreviewWrap" class="border rounded p-2 d-none">
-          <img id="imagePreview" class="img-fluid" alt="Seating plan preview">
+          <div id="imagePreviewPages"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Class register build modal (centered) -->
+    <div class="modal fade" id="registerBuildModal" tabindex="-1" aria-labelledby="registerBuildModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="registerBuildModalLabel">Class register</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small mb-3">
+              A signable list of every student writing this exam in this venue (admin number, name and
+              a space to sign), sorted alphabetically by name. Concession students are left off, since
+              they are not writing here.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <button id="registerPreviewBtn" type="button" class="btn btn-outline-dark">Preview class register</button>
+              <button id="registerPrintBtn" type="button" class="btn btn-dark">Print class register</button>
+              <button id="registerDownloadBtn" type="button" class="btn btn-outline-secondary">Download register (HTML)</button>
+            </div>
+            <div id="registerMessage" class="small mt-3"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Class register preview modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="registerModalLabel">Class register preview</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="registerPreviewBody"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" id="registerModalPrintBtn" class="btn btn-dark">Print</button>
+          </div>
         </div>
       </div>
     </div>
@@ -330,8 +411,9 @@
     const $unassignedPool = $('#unassignedPool');
     const $exportMessage = $('#exportMessage');
     const $imagePreviewWrap = $('#imagePreviewWrap');
-    const $imagePreview = $('#imagePreview');
+    const $imagePreviewPages = $('#imagePreviewPages');
     const $downloadImgBtn = $('#downloadImgBtn');
+    const $printImgBtn = $('#printImgBtn');
     const $cloudPlanList = $('#cloudPlanList');
 
     // ===== Helpers =====
@@ -425,6 +507,44 @@
         $(this).closest('tr').removeClass('is-concession');
       }
       updateStudentCounts();
+    });
+
+    // ===== Bulk concession marking by admin number =====
+    function applyBulkConcessions() {
+      const raw = $('#bulkAdminNumbers').val() || '';
+      const tokens = Array.from(new Set(raw.split(/[\s,;]+/).map(t => t.trim()).filter(Boolean)));
+      if (!tokens.length) {
+        $('#bulkConcessionResult').html('<div class="status-warn">Enter at least one admin number.</div>');
+        return;
+      }
+      let newlyMarked = 0, alreadyMarked = 0;
+      const notFound = [];
+      tokens.forEach(tok => {
+        const student = subjectStudents.find(s => String(s.student_number) === String(tok));
+        if (!student) { notFound.push(tok); return; }
+        const id = String(student.student_number);
+        if (concessionIds.has(id)) {
+          alreadyMarked++;
+        } else {
+          concessionIds.add(id);
+          newlyMarked++;
+        }
+        const $row = $studentTbody.find(`tr[data-id="${id}"]`);
+        $row.find('.concession-check').prop('checked', true);
+        $row.addClass('is-concession');
+      });
+      updateStudentCounts();
+
+      let html = `<div class="status-ok">Marked ${newlyMarked} student(s) as concession.${alreadyMarked ? ` (${alreadyMarked} were already marked.)` : ''}</div>`;
+      if (notFound.length) {
+        html += `<div class="status-warn mt-1">Not found in this subject's list: ${notFound.map(esc).join(', ')}</div>`;
+      }
+      $('#bulkConcessionResult').html(html);
+      $('#bulkAdminNumbers').val('');
+    }
+
+    $('#bulkConcessionModal').on('show.bs.modal', function () {
+      $('#bulkConcessionResult').html('');
     });
 
     // ===== S-snake seat order =====
@@ -577,40 +697,182 @@
       renderPool();
     });
 
-    // ===== Image preview / export =====
-    let lastCanvas = null;
+    // ===== Image preview / export (5 columns of desks per picture) =====
+    const COLUMNS_PER_IMAGE = 5;
+    let lastImageChunks = []; // [{ label, canvas }]
 
     function hidePreview() {
       $imagePreviewWrap.addClass('d-none');
+      $imagePreviewPages.empty();
       $downloadImgBtn.prop('disabled', true);
-      lastCanvas = null;
+      $printImgBtn.prop('disabled', true);
+      lastImageChunks = [];
+    }
+
+    // Splits the current grid's columns (seat.col, i.e. the "desks per row" axis)
+    // into consecutive groups of COLUMNS_PER_IMAGE, so each picture is at most 5 columns wide.
+    function getColumnChunks() {
+      const totalCols = rows; // "rows" = desks per row = number of visual columns
+      const chunks = [];
+      for (let start = 0; start < totalCols; start += COLUMNS_PER_IMAGE) {
+        const end = Math.min(start + COLUMNS_PER_IMAGE, totalCols) - 1;
+        const colIndices = [];
+        for (let c = start; c <= end; c++) colIndices.push(c);
+        chunks.push({ start, end, colIndices });
+      }
+      return chunks;
+    }
+
+    // Builds a standalone, off-screen copy of the seats for one column chunk so
+    // it can be captured on its own — independent of the live, interactive grid.
+    function buildChunkStage(chunk, pageNum, totalPages, examTitle, subj, totalCols) {
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-10000px';
+      wrapper.style.top = '0';
+      wrapper.style.background = '#ffffff';
+      wrapper.style.padding = '20px';
+      wrapper.style.fontFamily = 'Arial, Helvetica, sans-serif';
+
+      const header = document.createElement('div');
+      header.style.marginBottom = '14px';
+      const rangeText = totalPages > 1
+        ? `Columns ${chunk.start + 1}\u2013${chunk.end + 1} of ${totalCols} (Page ${pageNum} of ${totalPages})`
+        : `${totalCols} column${totalCols === 1 ? '' : 's'}`;
+      header.innerHTML = `
+        <div style="font-size:16px;font-weight:700;">${esc(examTitle)}</div>
+        <div style="font-size:13px;color:#495057;">${esc(subj)} — Seating plan — ${esc(rangeText)}</div>
+      `;
+      wrapper.appendChild(header);
+
+      const grid = document.createElement('div');
+      grid.style.display = 'grid';
+      grid.style.gap = '10px';
+      grid.style.gridTemplateColumns = `repeat(${chunk.colIndices.length}, 128px)`;
+
+      for (let r = 0; r < cols; r++) {
+        chunk.colIndices.forEach(c => {
+          const seat = seatAt(r, c);
+          const div = document.createElement('div');
+          div.className = 'seat ' + (seat && seat.student ? 'filled' : 'empty');
+          if (seat && seat.student) {
+            div.innerHTML = `
+              <div class="seat-admin">${esc(seat.student.student_number)}</div>
+              <div class="seat-name">${esc(seat.student.name)}</div>
+            `;
+          } else {
+            div.innerHTML = `<div class="seat-hint">Empty seat</div>`;
+          }
+          grid.appendChild(div);
+        });
+      }
+      wrapper.appendChild(grid);
+      document.body.appendChild(wrapper);
+      return wrapper;
+    }
+
+    async function generateSeatingImages() {
+      const chunks = getColumnChunks();
+      const examTitle = $examTitle.val() || 'Seating Plan';
+      const subj = $subject.val() || '';
+      const totalCols = rows;
+      const images = [];
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        const wrapper = buildChunkStage(chunk, i + 1, chunks.length, examTitle, subj, totalCols);
+        try {
+          const canvas = await html2canvas(wrapper, { backgroundColor: '#ffffff', scale: 2 });
+          images.push({
+            label: chunks.length > 1
+              ? `Page ${i + 1} of ${chunks.length} — columns ${chunk.start + 1}\u2013${chunk.end + 1} of ${totalCols}`
+              : `Full seating plan (${totalCols} column${totalCols === 1 ? '' : 's'})`,
+            canvas
+          });
+        } finally {
+          wrapper.remove();
+        }
+      }
+      return images;
+    }
+
+    function renderImagePreview() {
+      $imagePreviewPages.empty();
+      lastImageChunks.forEach(img => {
+        $imagePreviewPages.append(`
+          <div class="mb-3">
+            <div class="small text-muted mb-1">${esc(img.label)}</div>
+            <img src="${img.canvas.toDataURL('image/png')}" class="img-fluid border rounded" alt="${esc(img.label)}">
+          </div>
+        `);
+      });
     }
 
     async function previewImage() {
+      if (!$subject.val()) { setExportMessage('Select a subject first.', 'status-err'); return; }
+      if (!seats.some(s => s.student)) { setExportMessage('Generate a seating plan first.', 'status-err'); return; }
       setExportMessage('Rendering preview…', 'status-warn');
-      const stage = document.getElementById('seatingStage');
-      stage.classList.add('capturing'); // hide "click to remove" / other UI-only hints for the capture
       try {
-        lastCanvas = await html2canvas(stage, { backgroundColor: '#ffffff', scale: 2 });
-        $imagePreview.attr('src', lastCanvas.toDataURL('image/png'));
+        lastImageChunks = await generateSeatingImages();
+        renderImagePreview();
         $imagePreviewWrap.removeClass('d-none');
         $downloadImgBtn.prop('disabled', false);
-        setExportMessage('Preview ready. Review it below, then download when you are happy with it.', 'status-ok');
+        $printImgBtn.prop('disabled', false);
+        const n = lastImageChunks.length;
+        setExportMessage(
+          `Preview ready — ${n} image${n === 1 ? '' : 's'} generated (5 columns per image). Review below, then download or print.`,
+          'status-ok'
+        );
       } catch (e) {
         setExportMessage('Could not render preview: ' + esc(e.message), 'status-err');
-      } finally {
-        stage.classList.remove('capturing');
       }
     }
 
     function downloadImage() {
-      if (!lastCanvas) return;
+      if (!lastImageChunks.length) return;
       const subj = ($subject.val() || 'Subject').replace(/[^\w\-]+/g, '_');
       const title = ($examTitle.val() || 'SeatingPlan').replace(/[^\w\-]+/g, '_');
-      const a = document.createElement('a');
-      a.href = lastCanvas.toDataURL('image/png');
-      a.download = `${title}-${subj}.png`;
-      document.body.appendChild(a); a.click(); a.remove();
+      const multi = lastImageChunks.length > 1;
+      lastImageChunks.forEach((img, i) => {
+        const suffix = multi ? `-Page${i + 1}of${lastImageChunks.length}` : '';
+        const a = document.createElement('a');
+        a.href = img.canvas.toDataURL('image/png');
+        a.download = `${title}-${subj}${suffix}.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+      setExportMessage(
+        multi
+          ? `Downloading ${lastImageChunks.length} images — your browser may ask permission to download multiple files.`
+          : 'Image downloaded.',
+        'status-ok'
+      );
+    }
+
+    function printImages() {
+      if (!lastImageChunks.length) { setExportMessage('Preview the seating plan first.', 'status-err'); return; }
+      const w = window.open('', '_blank');
+      if (!w) {
+        setExportMessage('Pop-up blocked — please allow pop-ups for this page, or use "Download image(s)" instead.', 'status-err');
+        return;
+      }
+      const pagesHtml = lastImageChunks.map(img => `
+        <div class="print-page">
+          <img src="${img.canvas.toDataURL('image/png')}">
+        </div>
+      `).join('');
+      const doc = `<!doctype html><html><head><meta charset="utf-8"><title>Seating Plan</title>
+        <style>
+          body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
+          .print-page { page-break-after: always; padding: 16px; text-align: center; }
+          .print-page:last-child { page-break-after: auto; }
+          .print-page img { max-width: 100%; }
+          @media print { @page { margin: 10mm; } }
+        </style>
+      </head><body>${pagesHtml}</body></html>`;
+      w.document.open();
+      w.document.write(doc);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 400);
     }
 
     // ===== JSON save / load =====
@@ -698,6 +960,123 @@
       reader.readAsText(file);
     }
 
+    // ===== Class register =====
+    function setRegisterMessage(html, cls) {
+      $('#registerMessage').removeClass('status-ok status-warn status-err').addClass(cls || '').html(html || '');
+    }
+
+    function getRegisterStudents() {
+      return sortByName(subjectStudents.filter(s => !concessionIds.has(String(s.student_number))));
+    }
+
+    function buildRegisterRowsHtml(students) {
+      return students.map((s, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${esc(s.student_number)}</td>
+          <td>${esc(s.name)}</td>
+          <td class="reg-sign-cell">&nbsp;</td>
+        </tr>`).join('');
+    }
+
+    function buildRegisterDocument() {
+      const students = getRegisterStudents();
+      const subj = $subject.val() || '';
+      const title = $examTitle.val() || 'Class Register';
+      const dateStr = new Date().toLocaleDateString();
+      return `<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Class Register - ${esc(subj)}</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 24px; color: #212529; }
+  h1 { font-size: 1.25rem; margin: 0 0 .1rem 0; }
+  h2 { font-size: 1rem; font-weight: 400; margin: 0 0 .75rem 0; color: #495057; }
+  .meta { margin-bottom: 1rem; font-size: .85rem; color: #495057; }
+  table.register-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table.register-table th, table.register-table td { border: 1px solid #495057; padding: 8px 10px; }
+  table.register-table th { background: #f1f3f5; text-align: left; }
+  table.register-table td:first-child, table.register-table th:first-child { width: 40px; text-align: center; }
+  table.register-table td:nth-child(2), table.register-table th:nth-child(2) { width: 110px; }
+  td.reg-sign-cell { width: 220px; }
+  @media print {
+    @page { margin: 14mm; }
+  }
+</style>
+</head>
+<body>
+  <h1>${esc(title)}</h1>
+  <h2>Subject: ${esc(subj)}</h2>
+  <div class="meta">Date: ${esc(dateStr)} &bull; Total students: ${students.length}</div>
+  <table class="register-table">
+    <thead><tr><th>#</th><th>Admin&nbsp;No.</th><th>Name</th><th>Signature</th></tr></thead>
+    <tbody>${buildRegisterRowsHtml(students)}</tbody>
+  </table>
+</body></html>`;
+    }
+
+    let pendingShowRegisterPreview = false;
+    $('#registerBuildModal').on('show.bs.modal', function () {
+      setRegisterMessage('');
+    });
+    $('#registerBuildModal').on('hidden.bs.modal', function () {
+      if (pendingShowRegisterPreview) {
+        pendingShowRegisterPreview = false;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('registerModal')).show();
+      }
+    });
+
+    function previewRegister() {
+      if (!$subject.val()) { setRegisterMessage('Select a subject first.', 'status-err'); return; }
+      const students = getRegisterStudents();
+      if (!students.length) {
+        setRegisterMessage('No non-concession students found for this subject.', 'status-warn');
+      } else {
+        setRegisterMessage('');
+      }
+      $('#registerPreviewBody').html(`
+        <table class="table table-sm table-bordered align-middle mb-0">
+          <thead>
+            <tr><th style="width:40px;">#</th><th style="width:110px;">Admin&nbsp;No.</th><th>Name</th><th style="width:200px;">Signature</th></tr>
+          </thead>
+          <tbody>${buildRegisterRowsHtml(students)}</tbody>
+        </table>
+      `);
+      // Hand off from the build modal to the preview modal rather than stacking them.
+      const buildModalEl = document.getElementById('registerBuildModal');
+      const buildModalInstance = bootstrap.Modal.getInstance(buildModalEl);
+      if (buildModalInstance && buildModalEl.classList.contains('show')) {
+        pendingShowRegisterPreview = true;
+        buildModalInstance.hide();
+      } else {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('registerModal')).show();
+      }
+    }
+
+    function printRegister() {
+      if (!$subject.val()) { setRegisterMessage('Select a subject first.', 'status-err'); return; }
+      const doc = buildRegisterDocument();
+      const w = window.open('', '_blank');
+      if (!w) {
+        setRegisterMessage('Pop-up blocked — please allow pop-ups for this page, or use "Download register" instead.', 'status-err');
+        return;
+      }
+      w.document.open();
+      w.document.write(doc);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 300);
+    }
+
+    function downloadRegisterHtml() {
+      const subj = $subject.val();
+      if (!subj) { setRegisterMessage('Select a subject first.', 'status-err'); return; }
+      const doc = buildRegisterDocument();
+      const title = ($examTitle.val() || 'ClassRegister').replace(/[^\w\-]+/g, '_');
+      const subjSafe = subj.replace(/[^\w\-]+/g, '_');
+      download(`${title}-${subjSafe}-Register.html`, doc, 'text/html;charset=utf-8');
+      setRegisterMessage('Class register downloaded as HTML — open it in a browser and use Print (or Print to PDF) to produce a paper copy.', 'status-ok');
+    }
+
     // ===== Firebase cloud save / list =====
     async function saveToCloud() {
       if (!firebaseReady) {
@@ -751,6 +1130,7 @@
     $('#resetBtn').on('click', resetGrid);
     $('#previewBtn').on('click', previewImage);
     $downloadImgBtn.on('click', downloadImage);
+    $printImgBtn.on('click', printImages);
     $('#downloadJsonBtn').on('click', saveJson);
     $('#cloudSaveBtn').on('click', saveToCloud);
     $('#refreshCloudBtn').on('click', refreshCloudList);
@@ -759,6 +1139,11 @@
       if (this.files && this.files[0]) loadJsonFile(this.files[0]);
       this.value = '';
     });
+    $('#bulkConcessionApplyBtn').on('click', applyBulkConcessions);
+    $('#registerPreviewBtn').on('click', previewRegister);
+    $('#registerPrintBtn').on('click', printRegister);
+    $('#registerDownloadBtn').on('click', downloadRegisterHtml);
+    $('#registerModalPrintBtn').on('click', printRegister);
 
     // ===== Init =====
     loadGrade();
