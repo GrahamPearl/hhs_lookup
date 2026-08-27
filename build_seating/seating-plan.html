@@ -101,7 +101,7 @@
       <div class="card-body">
         <h5 class="card-title mb-3">1. Exam details</h5>
         <div class="row g-3">
-          <div class="col-md-2">
+          <div class="col-md-3">
             <label for="gradeSelect" class="form-label">Grade</label>
             <select id="gradeSelect" class="form-select">
               <option value="10">Grade 10</option>
@@ -109,13 +109,22 @@
               <option value="12" selected>Grade 12</option>
             </select>
           </div>
-          <div class="col-md-4">
-            <label for="subjectSelect" class="form-label">Subject</label>
+          <div class="col-md-5">
+            <label for="subjectSelect" class="form-label">Subject / seating list</label>
             <select id="subjectSelect" class="form-select" disabled>
-              <option value="" selected disabled>Loading subjects…</option>
+              <option value="" selected disabled>Loading…</option>
+            </select>
+            <div class="form-text">Pick a subject, or a "Grade N - Reg" entry to seat a whole registration class.</div>
+          </div>
+          <div class="col-md-4 d-none" id="regClassCol">
+            <label for="regClassSelect" class="form-label">Registration class</label>
+            <select id="regClassSelect" class="form-select" disabled>
+              <option value="" selected disabled>Select registration class…</option>
             </select>
           </div>
-          <div class="col-md-6">
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-12">
             <label for="examTitle" class="form-label">Examination Title</label>
             <input type="text" id="examTitle" class="form-control" placeholder="e.g. Grade 12 Mathematics — November Final Exam" />
           </div>
@@ -128,7 +137,7 @@
     <div class="card card-fixed shadow-sm mb-4">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-          <h5 class="card-title mb-0">2. Students for this subject</h5>
+          <h5 class="card-title mb-0">2. Students in this selection</h5>
           <div class="d-flex align-items-center gap-2">
             <span id="studentCountBadge" class="badge bg-secondary">0 students</span>
             <span id="concessionCountBadge" class="badge bg-warning text-dark">0 concessions</span>
@@ -250,7 +259,8 @@
         <h5 class="card-title mb-3">5. Preview &amp; export</h5>
         <div class="d-flex flex-wrap gap-2 mb-3">
           <button id="previewBtn" type="button" class="btn btn-outline-primary">Preview as image</button>
-          <button id="downloadImgBtn" type="button" class="btn btn-success" disabled>Download image (PNG)</button>
+          <button id="downloadImgBtn" type="button" class="btn btn-success" disabled>Download image(s) (PNG)</button>
+          <button id="printImgBtn" type="button" class="btn btn-outline-success" disabled>Print seating plan</button>
           <button id="downloadJsonBtn" type="button" class="btn btn-secondary">Save seating plan as JSON</button>
           <button id="loadJsonBtn" type="button" class="btn btn-outline-secondary">Load JSON…</button>
           <input type="file" id="loadJsonFile" accept="application/json" class="d-none">
@@ -259,9 +269,13 @@
             Class register
           </button>
         </div>
+        <p class="text-muted small mb-2">
+          Images are generated 5 columns of desks per picture. Layouts wider than 5 columns produce a
+          numbered series of pictures, so each one prints cleanly on its own page.
+        </p>
         <div id="exportMessage" class="small mb-3"></div>
         <div id="imagePreviewWrap" class="border rounded p-2 d-none">
-          <img id="imagePreview" class="img-fluid" alt="Seating plan preview">
+          <div id="imagePreviewPages"></div>
         </div>
       </div>
     </div>
@@ -381,10 +395,16 @@
       "11": "Subjects-Grade11.json",
       "12": "Subjects-Grade12.json"
     };
+    // Registration-class data source (a single file covering all grades) — place
+    // students.json alongside this page, or update the path below.
+    const STUDENTS_JSON_FILE = "students.json";
+    const REG_GRADES = ["8", "9", "10", "11", "12"];
+    const REG_PREFIX = "__REG__";
 
     // ===== State =====
-    let allStudents = [];          // full JSON for current grade
-    let subjectStudents = [];      // filtered by subject
+    let allStudents = [];          // full JSON for current grade (subject-based source)
+    let studentsJsonData = [];     // full JSON from students.json (registration-class source)
+    let subjectStudents = [];      // filtered by subject OR registration class — feeds everything downstream
     let concessionIds = new Set(); // student_number set
     let rows = 6, cols = 8;        // rows = desks per row, cols = number of rows of desks
     let seats = [];                // flat array, length rows*cols, row-major: {row, col, student|null}
@@ -394,6 +414,8 @@
     // ===== DOM refs =====
     const $grade = $('#gradeSelect');
     const $subject = $('#subjectSelect');
+    const $regClassCol = $('#regClassCol');
+    const $regClassSelect = $('#regClassSelect');
     const $examTitle = $('#examTitle');
     const $subjectConfirm = $('#subjectConfirm');
     const $studentTbody = $('#studentTable tbody');
@@ -406,8 +428,9 @@
     const $unassignedPool = $('#unassignedPool');
     const $exportMessage = $('#exportMessage');
     const $imagePreviewWrap = $('#imagePreviewWrap');
-    const $imagePreview = $('#imagePreview');
+    const $imagePreviewPages = $('#imagePreviewPages');
     const $downloadImgBtn = $('#downloadImgBtn');
+    const $printImgBtn = $('#printImgBtn');
     const $cloudPlanList = $('#cloudPlanList');
 
     // ===== Helpers =====
@@ -437,27 +460,126 @@
       URL.revokeObjectURL(url);
     }
 
+    // ===== Registration-class (students.json) helpers =====
+    async function loadStudentsJson() {
+      try {
+        const raw = await fetchJson(STUDENTS_JSON_FILE);
+        studentsJsonData = Array.isArray(raw) ? raw : [];
+      } catch (e) {
+        studentsJsonData = [];
+        console.warn('Could not load ' + STUDENTS_JSON_FILE + ':', e.message);
+      }
+    }
+
+    // Normalizes a students.json record to the same shape used by the
+    // Subjects-GradeXX.json records, so every downstream feature (concessions,
+    // seating grid, register, JSON export, image export) works unchanged.
+    function normalizeRegStudent(s) {
+      const name = [s.lastName, s.firstName].filter(Boolean).join(', ');
+      return {
+        student_number: s.adminNo,
+        name: name || '(unnamed)',
+        gender: s.gender || '',
+        class: s.class || '',
+        subject: s.registrationClass || `Grade ${s.grade} Registration`,
+        line: null,
+        teacher: ''
+      };
+    }
+
+    function isRegSelected() {
+      return String($subject.val() || '').startsWith(REG_PREFIX);
+    }
+    function selectedRegGrade() {
+      return String($subject.val() || '').replace(REG_PREFIX, '');
+    }
+    function hasValidSelection() {
+      const v = $subject.val();
+      if (!v) return false;
+      return isRegSelected() ? !!$regClassSelect.val() : true;
+    }
+    function getSelectedSubjectLabel() {
+      if (!$subject.val()) return '';
+      if (isRegSelected()) {
+        const cls = $regClassSelect.val();
+        return cls ? `Grade ${selectedRegGrade()} - Reg (${cls})` : `Grade ${selectedRegGrade()} - Reg`;
+      }
+      return $subject.val();
+    }
+    function buildRegOptgroupHtml() {
+      const opts = REG_GRADES.map(g => `<option value="${REG_PREFIX}${g}">Grade ${g} - Reg</option>`).join('');
+      return `<optgroup label="Registration classes">${opts}</optgroup>`;
+    }
+
     // ===== Load subjects for selected grade =====
     async function loadGrade() {
       const g = $grade.val();
       const file = gradeFiles[g];
-      $subject.prop('disabled', true).html('<option value="" selected disabled>Loading subjects…</option>');
+      $subject.prop('disabled', true).html('<option value="" selected disabled>Loading…</option>');
       $subjectConfirm.html('');
+      hideRegClassSelect();
+
+      // Clear any previously-loaded student list/seating plan — it belonged to the old grade/subject.
+      subjectStudents = [];
+      concessionIds = new Set();
+      renderStudentTable();
+      resetGrid();
+
       allStudents = [];
+      const regGroupHtml = buildRegOptgroupHtml();
       try {
         allStudents = await fetchJson(file);
         const subjects = Array.from(new Set(allStudents.map(s => s.subject))).sort((a, b) => a.localeCompare(b));
-        $subject.html('<option value="" selected disabled>Select subject…</option>' +
-          subjects.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join(''));
+        $subject.html(
+          '<option value="" selected disabled>Select subject…</option>' +
+          `<optgroup label="Subjects (Grade ${esc(g)})">` +
+          subjects.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('') +
+          '</optgroup>' +
+          regGroupHtml
+        );
         $subject.prop('disabled', false);
       } catch (e) {
-        $subject.html('<option value="" selected disabled>No data file for this grade</option>');
-        $subjectConfirm.html(`<div class="status-err">Could not load ${esc(file)}: ${esc(e.message)}</div>`);
+        $subject.html(
+          '<option value="" selected disabled>No subject data file for this grade</option>' +
+          regGroupHtml
+        );
+        $subject.prop('disabled', false);
+        $subjectConfirm.html(`<div class="status-warn">Could not load ${esc(file)}: ${esc(e.message)}. Registration-class seating is still available below.</div>`);
       }
     }
 
-    // ===== Subject selected: build student table =====
+    function hideRegClassSelect() {
+      $regClassCol.addClass('d-none');
+      $regClassSelect.prop('disabled', true).html('<option value="" selected disabled>Select registration class…</option>');
+    }
+
+    // ===== Subject / registration-class selected: build student table =====
     function onSubjectChange() {
+      if (isRegSelected()) {
+        const g = selectedRegGrade();
+        const classes = Array.from(new Set(
+          studentsJsonData.filter(s => String(s.grade) === g).map(s => s.class)
+        )).sort((a, b) => a.localeCompare(b));
+
+        $regClassCol.removeClass('d-none');
+        $regClassSelect.prop('disabled', classes.length === 0).html(
+          '<option value="" selected disabled>Select registration class…</option>' +
+          classes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
+        );
+
+        subjectStudents = [];
+        concessionIds = new Set();
+        renderStudentTable();
+        resetGrid();
+        $subjectConfirm.html(
+          classes.length
+            ? `<div class="alert alert-info py-2 mb-0">Grade ${esc(g)} - Reg selected — choose a registration class below (e.g. "${esc(classes[0])}").</div>`
+            : `<div class="alert alert-warning py-2 mb-0">No registration classes found for Grade ${esc(g)} in ${esc(STUDENTS_JSON_FILE)}.</div>`
+        );
+        return;
+      }
+
+      hideRegClassSelect();
       const subj = $subject.val();
       subjectStudents = allStudents.filter(s => s.subject === subj);
       concessionIds = new Set();
@@ -466,6 +588,21 @@
         `<div class="alert alert-info py-2 mb-0">Subject selected: <strong>${esc(subj)}</strong> — ${subjectStudents.length} student(s) found.</div>`
       );
       resetGrid(); // clear any previous plan when subject changes
+    }
+
+    function onRegClassChange() {
+      const g = selectedRegGrade();
+      const cls = $regClassSelect.val();
+      if (!cls) return;
+      subjectStudents = studentsJsonData
+        .filter(s => String(s.grade) === g && s.class === cls)
+        .map(normalizeRegStudent);
+      concessionIds = new Set();
+      renderStudentTable();
+      $subjectConfirm.html(
+        `<div class="alert alert-info py-2 mb-0">Registration class selected: <strong>Grade ${esc(g)} - ${esc(cls)}</strong> — ${subjectStudents.length} student(s) found.</div>`
+      );
+      resetGrid();
     }
 
     function renderStudentTable() {
@@ -531,7 +668,7 @@
 
       let html = `<div class="status-ok">Marked ${newlyMarked} student(s) as concession.${alreadyMarked ? ` (${alreadyMarked} were already marked.)` : ''}</div>`;
       if (notFound.length) {
-        html += `<div class="status-warn mt-1">Not found in this subject's list: ${notFound.map(esc).join(', ')}</div>`;
+        html += `<div class="status-warn mt-1">Not found in this selection's list: ${notFound.map(esc).join(', ')}</div>`;
       }
       $('#bulkConcessionResult').html(html);
       $('#bulkAdminNumbers').val('');
@@ -581,8 +718,7 @@
 
     // ===== Generate seating plan =====
     function generatePlan() {
-      const subj = $subject.val();
-      if (!subj) { setPlanMessage('Please select a subject first.', 'status-err'); return; }
+      if (!hasValidSelection()) { setPlanMessage('Please select a subject or registration class first.', 'status-err'); return; }
       rows = Math.max(1, parseInt($rowsInput.val(), 10) || 1);
       cols = Math.max(1, parseInt($colsInput.val(), 10) || 1);
 
@@ -613,7 +749,7 @@
           'status-warn'
         );
       } else if (eligible.length === 0) {
-        setPlanMessage('No eligible (non-concession) students found for this subject.', 'status-warn');
+        setPlanMessage('No eligible (non-concession) students found for this selection.', 'status-warn');
       } else {
         setPlanMessage(`Seating plan generated: ${placedCount} student(s) placed in S-snake order across ${order.length} seats.`, 'status-ok');
       }
@@ -691,48 +827,191 @@
       renderPool();
     });
 
-    // ===== Image preview / export =====
-    let lastCanvas = null;
+    // ===== Image preview / export (5 columns of desks per picture) =====
+    const COLUMNS_PER_IMAGE = 5;
+    let lastImageChunks = []; // [{ label, canvas }]
 
     function hidePreview() {
       $imagePreviewWrap.addClass('d-none');
+      $imagePreviewPages.empty();
       $downloadImgBtn.prop('disabled', true);
-      lastCanvas = null;
+      $printImgBtn.prop('disabled', true);
+      lastImageChunks = [];
+    }
+
+    // Splits the current grid's columns (seat.col, i.e. the "desks per row" axis)
+    // into consecutive groups of COLUMNS_PER_IMAGE, so each picture is at most 5 columns wide.
+    function getColumnChunks() {
+      const totalCols = rows; // "rows" = desks per row = number of visual columns
+      const chunks = [];
+      for (let start = 0; start < totalCols; start += COLUMNS_PER_IMAGE) {
+        const end = Math.min(start + COLUMNS_PER_IMAGE, totalCols) - 1;
+        const colIndices = [];
+        for (let c = start; c <= end; c++) colIndices.push(c);
+        chunks.push({ start, end, colIndices });
+      }
+      return chunks;
+    }
+
+    // Builds a standalone, off-screen copy of the seats for one column chunk so
+    // it can be captured on its own — independent of the live, interactive grid.
+    function buildChunkStage(chunk, pageNum, totalPages, examTitle, subj, totalCols) {
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-10000px';
+      wrapper.style.top = '0';
+      wrapper.style.background = '#ffffff';
+      wrapper.style.padding = '20px';
+      wrapper.style.fontFamily = 'Arial, Helvetica, sans-serif';
+
+      const header = document.createElement('div');
+      header.style.marginBottom = '14px';
+      const rangeText = totalPages > 1
+        ? `Columns ${chunk.start + 1}\u2013${chunk.end + 1} of ${totalCols} (Page ${pageNum} of ${totalPages})`
+        : `${totalCols} column${totalCols === 1 ? '' : 's'}`;
+      header.innerHTML = `
+        <div style="font-size:16px;font-weight:700;">${esc(examTitle)}</div>
+        <div style="font-size:13px;color:#495057;">${esc(subj)} — Seating plan — ${esc(rangeText)}</div>
+      `;
+      wrapper.appendChild(header);
+
+      const grid = document.createElement('div');
+      grid.style.display = 'grid';
+      grid.style.gap = '10px';
+      grid.style.gridTemplateColumns = `repeat(${chunk.colIndices.length}, 128px)`;
+
+      for (let r = 0; r < cols; r++) {
+        chunk.colIndices.forEach(c => {
+          const seat = seatAt(r, c);
+          const div = document.createElement('div');
+          div.className = 'seat ' + (seat && seat.student ? 'filled' : 'empty');
+          if (seat && seat.student) {
+            div.innerHTML = `
+              <div class="seat-admin">${esc(seat.student.student_number)}</div>
+              <div class="seat-name">${esc(seat.student.name)}</div>
+            `;
+          } else {
+            div.innerHTML = `<div class="seat-hint">Empty seat</div>`;
+          }
+          grid.appendChild(div);
+        });
+      }
+      wrapper.appendChild(grid);
+      document.body.appendChild(wrapper);
+      return wrapper;
+    }
+
+    async function generateSeatingImages() {
+      const chunks = getColumnChunks();
+      const examTitle = $examTitle.val() || 'Seating Plan';
+      const subj = getSelectedSubjectLabel();
+      const totalCols = rows;
+      const images = [];
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        const wrapper = buildChunkStage(chunk, i + 1, chunks.length, examTitle, subj, totalCols);
+        try {
+          const canvas = await html2canvas(wrapper, { backgroundColor: '#ffffff', scale: 2 });
+          images.push({
+            label: chunks.length > 1
+              ? `Page ${i + 1} of ${chunks.length} — columns ${chunk.start + 1}\u2013${chunk.end + 1} of ${totalCols}`
+              : `Full seating plan (${totalCols} column${totalCols === 1 ? '' : 's'})`,
+            canvas
+          });
+        } finally {
+          wrapper.remove();
+        }
+      }
+      return images;
+    }
+
+    function renderImagePreview() {
+      $imagePreviewPages.empty();
+      lastImageChunks.forEach(img => {
+        $imagePreviewPages.append(`
+          <div class="mb-3">
+            <div class="small text-muted mb-1">${esc(img.label)}</div>
+            <img src="${img.canvas.toDataURL('image/png')}" class="img-fluid border rounded" alt="${esc(img.label)}">
+          </div>
+        `);
+      });
     }
 
     async function previewImage() {
+      if (!hasValidSelection()) { setExportMessage('Select a subject or registration class first.', 'status-err'); return; }
+      if (!seats.some(s => s.student)) { setExportMessage('Generate a seating plan first.', 'status-err'); return; }
       setExportMessage('Rendering preview…', 'status-warn');
-      const stage = document.getElementById('seatingStage');
-      stage.classList.add('capturing'); // hide "click to remove" / other UI-only hints for the capture
       try {
-        lastCanvas = await html2canvas(stage, { backgroundColor: '#ffffff', scale: 2 });
-        $imagePreview.attr('src', lastCanvas.toDataURL('image/png'));
+        lastImageChunks = await generateSeatingImages();
+        renderImagePreview();
         $imagePreviewWrap.removeClass('d-none');
         $downloadImgBtn.prop('disabled', false);
-        setExportMessage('Preview ready. Review it below, then download when you are happy with it.', 'status-ok');
+        $printImgBtn.prop('disabled', false);
+        const n = lastImageChunks.length;
+        setExportMessage(
+          `Preview ready — ${n} image${n === 1 ? '' : 's'} generated (5 columns per image). Review below, then download or print.`,
+          'status-ok'
+        );
       } catch (e) {
         setExportMessage('Could not render preview: ' + esc(e.message), 'status-err');
-      } finally {
-        stage.classList.remove('capturing');
       }
     }
 
     function downloadImage() {
-      if (!lastCanvas) return;
-      const subj = ($subject.val() || 'Subject').replace(/[^\w\-]+/g, '_');
+      if (!lastImageChunks.length) return;
+      const subj = (getSelectedSubjectLabel() || 'Subject').replace(/[^\w\-]+/g, '_');
       const title = ($examTitle.val() || 'SeatingPlan').replace(/[^\w\-]+/g, '_');
-      const a = document.createElement('a');
-      a.href = lastCanvas.toDataURL('image/png');
-      a.download = `${title}-${subj}.png`;
-      document.body.appendChild(a); a.click(); a.remove();
+      const multi = lastImageChunks.length > 1;
+      lastImageChunks.forEach((img, i) => {
+        const suffix = multi ? `-Page${i + 1}of${lastImageChunks.length}` : '';
+        const a = document.createElement('a');
+        a.href = img.canvas.toDataURL('image/png');
+        a.download = `${title}-${subj}${suffix}.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+      setExportMessage(
+        multi
+          ? `Downloading ${lastImageChunks.length} images — your browser may ask permission to download multiple files.`
+          : 'Image downloaded.',
+        'status-ok'
+      );
+    }
+
+    function printImages() {
+      if (!lastImageChunks.length) { setExportMessage('Preview the seating plan first.', 'status-err'); return; }
+      const w = window.open('', '_blank');
+      if (!w) {
+        setExportMessage('Pop-up blocked — please allow pop-ups for this page, or use "Download image(s)" instead.', 'status-err');
+        return;
+      }
+      const pagesHtml = lastImageChunks.map(img => `
+        <div class="print-page">
+          <img src="${img.canvas.toDataURL('image/png')}">
+        </div>
+      `).join('');
+      const doc = `<!doctype html><html><head><meta charset="utf-8"><title>Seating Plan</title>
+        <style>
+          body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
+          .print-page { page-break-after: always; padding: 16px; text-align: center; }
+          .print-page:last-child { page-break-after: auto; }
+          .print-page img { max-width: 100%; }
+          @media print { @page { margin: 10mm; } }
+        </style>
+      </head><body>${pagesHtml}</body></html>`;
+      w.document.open();
+      w.document.write(doc);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 400);
     }
 
     // ===== JSON save / load =====
     function buildPlanObject() {
       return {
         examTitle: $examTitle.val() || '',
-        subject: $subject.val() || '',
-        grade: $grade.val(),
+        subject: getSelectedSubjectLabel(),
+        source: isRegSelected() ? 'registration' : 'subject',
+        grade: isRegSelected() ? selectedRegGrade() : $grade.val(),
         pattern: 's-snake',
         rowsPerRow: rows,       // desks per row
         numberOfRows: cols,     // number of rows of desks
@@ -754,7 +1033,7 @@
     }
 
     function saveJson() {
-      if (!$subject.val()) { setExportMessage('Select a subject before saving.', 'status-err'); return; }
+      if (!hasValidSelection()) { setExportMessage('Select a subject or registration class before saving.', 'status-err'); return; }
       const plan = buildPlanObject();
       const subj = plan.subject.replace(/[^\w\-]+/g, '_');
       const title = (plan.examTitle || 'SeatingPlan').replace(/[^\w\-]+/g, '_');
@@ -801,8 +1080,8 @@
       reader.onload = function (e) {
         try {
           const plan = JSON.parse(e.target.result);
-          if ($subject.val() !== plan.subject) {
-            setPlanMessage(`Note: loaded plan was for subject "${esc(plan.subject)}". Select that subject first for full name matching.`, 'status-warn');
+          if (getSelectedSubjectLabel() !== plan.subject) {
+            setPlanMessage(`Note: loaded plan was for "${esc(plan.subject)}". Select that same subject or registration class first for full name matching.`, 'status-warn');
           }
           applyLoadedPlan(plan);
         } catch (err) {
@@ -833,7 +1112,7 @@
 
     function buildRegisterDocument() {
       const students = getRegisterStudents();
-      const subj = $subject.val() || '';
+      const subj = getSelectedSubjectLabel();
       const title = $examTitle.val() || 'Class Register';
       const dateStr = new Date().toLocaleDateString();
       return `<!doctype html>
@@ -857,7 +1136,7 @@
 </head>
 <body>
   <h1>${esc(title)}</h1>
-  <h2>Subject: ${esc(subj)}</h2>
+  <h2>${esc(subj)}</h2>
   <div class="meta">Date: ${esc(dateStr)} &bull; Total students: ${students.length}</div>
   <table class="register-table">
     <thead><tr><th>#</th><th>Admin&nbsp;No.</th><th>Name</th><th>Signature</th></tr></thead>
@@ -878,10 +1157,10 @@
     });
 
     function previewRegister() {
-      if (!$subject.val()) { setRegisterMessage('Select a subject first.', 'status-err'); return; }
+      if (!hasValidSelection()) { setRegisterMessage('Select a subject or registration class first.', 'status-err'); return; }
       const students = getRegisterStudents();
       if (!students.length) {
-        setRegisterMessage('No non-concession students found for this subject.', 'status-warn');
+        setRegisterMessage('No non-concession students found for this selection.', 'status-warn');
       } else {
         setRegisterMessage('');
       }
@@ -905,7 +1184,7 @@
     }
 
     function printRegister() {
-      if (!$subject.val()) { setRegisterMessage('Select a subject first.', 'status-err'); return; }
+      if (!hasValidSelection()) { setRegisterMessage('Select a subject or registration class first.', 'status-err'); return; }
       const doc = buildRegisterDocument();
       const w = window.open('', '_blank');
       if (!w) {
@@ -920,8 +1199,8 @@
     }
 
     function downloadRegisterHtml() {
-      const subj = $subject.val();
-      if (!subj) { setRegisterMessage('Select a subject first.', 'status-err'); return; }
+      if (!hasValidSelection()) { setRegisterMessage('Select a subject or registration class first.', 'status-err'); return; }
+      const subj = getSelectedSubjectLabel();
       const doc = buildRegisterDocument();
       const title = ($examTitle.val() || 'ClassRegister').replace(/[^\w\-]+/g, '_');
       const subjSafe = subj.replace(/[^\w\-]+/g, '_');
@@ -935,7 +1214,7 @@
         setExportMessage('Firebase is not configured. Fill in <span class="mono">firebaseConfig</span> in the script to enable cloud save.', 'status-warn');
         return;
       }
-      if (!$subject.val()) { setExportMessage('Select a subject before saving.', 'status-err'); return; }
+      if (!hasValidSelection()) { setExportMessage('Select a subject or registration class before saving.', 'status-err'); return; }
       try {
         const plan = buildPlanObject();
         await db.collection(SEATING_COLLECTION).add(plan);
@@ -978,10 +1257,12 @@
     // ===== Wire up events =====
     $grade.on('change', loadGrade);
     $subject.on('change', onSubjectChange);
+    $regClassSelect.on('change', onRegClassChange);
     $('#generateBtn').on('click', generatePlan);
     $('#resetBtn').on('click', resetGrid);
     $('#previewBtn').on('click', previewImage);
     $downloadImgBtn.on('click', downloadImage);
+    $printImgBtn.on('click', printImages);
     $('#downloadJsonBtn').on('click', saveJson);
     $('#cloudSaveBtn').on('click', saveToCloud);
     $('#refreshCloudBtn').on('click', refreshCloudList);
@@ -997,7 +1278,7 @@
     $('#registerModalPrintBtn').on('click', printRegister);
 
     // ===== Init =====
-    loadGrade();
+    loadStudentsJson().then(loadGrade);
     refreshCloudList();
   })();
   </script>
