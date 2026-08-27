@@ -260,6 +260,7 @@
         <div class="d-flex flex-wrap gap-2 mb-3">
           <button id="previewBtn" type="button" class="btn btn-outline-primary">Preview as image</button>
           <button id="downloadImgBtn" type="button" class="btn btn-success" disabled>Download image(s) (PNG)</button>
+          <button id="downloadSingleImgBtn" type="button" class="btn btn-outline-success">Download single image (PNG)</button>
           <button id="printImgBtn" type="button" class="btn btn-outline-success" disabled>Print seating plan</button>
           <button id="downloadJsonBtn" type="button" class="btn btn-secondary">Save seating plan as JSON</button>
           <button id="loadJsonBtn" type="button" class="btn btn-outline-secondary">Load JSON…</button>
@@ -270,8 +271,10 @@
           </button>
         </div>
         <p class="text-muted small mb-2">
-          Images are generated 5 columns of desks per picture. Layouts wider than 5 columns produce a
-          numbered series of pictures, so each one prints cleanly on its own page.
+          "Preview as image" and "Download image(s) (PNG)" split wide layouts into a numbered series
+          of pictures, 5 columns of desks per picture, so each one prints cleanly on its own page.
+          "Download single image (PNG)" instead produces one picture with every column of the seating
+          plan, however wide it is.
         </p>
         <div id="exportMessage" class="small mb-3"></div>
         <div id="imagePreviewWrap" class="border rounded p-2 d-none">
@@ -430,6 +433,7 @@
     const $imagePreviewWrap = $('#imagePreviewWrap');
     const $imagePreviewPages = $('#imagePreviewPages');
     const $downloadImgBtn = $('#downloadImgBtn');
+    const $downloadSingleImgBtn = $('#downloadSingleImgBtn');
     const $printImgBtn = $('#printImgBtn');
     const $cloudPlanList = $('#cloudPlanList');
 
@@ -925,6 +929,25 @@
       return images;
     }
 
+    // Renders every column of the current grid into ONE canvas — no 5-column
+    // split — for people who'd rather have a single (potentially wide) picture.
+    async function generateFullSeatingImage() {
+      const examTitle = $examTitle.val() || 'Seating Plan';
+      const subj = getSelectedSubjectLabel();
+      const totalCols = rows;
+      const fullChunk = {
+        start: 0,
+        end: totalCols - 1,
+        colIndices: Array.from({ length: totalCols }, (_, i) => i)
+      };
+      const wrapper = buildChunkStage(fullChunk, 1, 1, examTitle, subj, totalCols);
+      try {
+        return await html2canvas(wrapper, { backgroundColor: '#ffffff', scale: 2 });
+      } finally {
+        wrapper.remove();
+      }
+    }
+
     function renderImagePreview() {
       $imagePreviewPages.empty();
       lastImageChunks.forEach(img => {
@@ -975,6 +998,26 @@
           : 'Image downloaded.',
         'status-ok'
       );
+    }
+
+    // Single, unsplit image of the whole grid — independent of Preview/lastImageChunks,
+    // so it can be used on its own without generating the paginated set first.
+    async function downloadSingleImage() {
+      if (!hasValidSelection()) { setExportMessage('Select a subject or registration class first.', 'status-err'); return; }
+      if (!seats.some(s => s.student)) { setExportMessage('Generate a seating plan first.', 'status-err'); return; }
+      setExportMessage('Rendering single image…', 'status-warn');
+      try {
+        const canvas = await generateFullSeatingImage();
+        const subj = (getSelectedSubjectLabel() || 'Subject').replace(/[^\w\-]+/g, '_');
+        const title = ($examTitle.val() || 'SeatingPlan').replace(/[^\w\-]+/g, '_');
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `${title}-${subj}-Full.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setExportMessage('Single image downloaded — all columns, no split.', 'status-ok');
+      } catch (e) {
+        setExportMessage('Could not render single image: ' + esc(e.message), 'status-err');
+      }
     }
 
     function printImages() {
@@ -1262,6 +1305,7 @@
     $('#resetBtn').on('click', resetGrid);
     $('#previewBtn').on('click', previewImage);
     $downloadImgBtn.on('click', downloadImage);
+    $downloadSingleImgBtn.on('click', downloadSingleImage);
     $printImgBtn.on('click', printImages);
     $('#downloadJsonBtn').on('click', saveJson);
     $('#cloudSaveBtn').on('click', saveToCloud);
