@@ -300,18 +300,6 @@
     "photo": "15592.webp"
   },
   {
-    "adminNo": "15683",
-    "firstName": "Chad",
-    "lastName": "Van Den Heuvel",
-    "grade": "8",
-    "class": "8ES",
-    "gender": "M",
-    "agegroup": "Under 15",
-    "birthdate": "2011-02-24",
-    "registrationClass": "GRADE 8 8ES",
-    "photo": "15683.webp"
-  },
-  {
     "adminNo": "15469",
     "firstName": "Kiara-May",
     "lastName": "Whittle",
@@ -684,18 +672,6 @@
     "photo": "15612.webp"
   },
   {
-    "adminNo": "15568",
-    "firstName": "Simingezwi",
-    "lastName": "Khuzwayo",
-    "grade": "8",
-    "class": "8JU",
-    "gender": "M",
-    "agegroup": "Under 14",
-    "birthdate": "2012-11-27",
-    "registrationClass": "GRADE 8 8JU",
-    "photo": "15568.webp"
-  },
-  {
     "adminNo": "15549",
     "firstName": "Lwandile",
     "lastName": "Mahlangu",
@@ -805,7 +781,7 @@
   },
   {
     "adminNo": "15611",
-    "firstName": "Samkelo",
+    "firstName": "Samkelo Lulonke",
     "lastName": "Mthembu",
     "grade": "8",
     "class": "8JU",
@@ -1632,18 +1608,6 @@
     "photo": "15559.webp"
   },
   {
-    "adminNo": "15438",
-    "firstName": "Michaela",
-    "lastName": "Mukwenya",
-    "grade": "8",
-    "class": "8MM",
-    "gender": "F",
-    "agegroup": "Under 14",
-    "birthdate": "2012-05-18",
-    "registrationClass": "GRADE 8 8MM",
-    "photo": "15438.webp"
-  },
-  {
     "adminNo": "15461",
     "firstName": "Nixon",
     "lastName": "Oosthuizen",
@@ -2088,6 +2052,18 @@
     "photo": "15480.webp"
   },
   {
+    "adminNo": "15696",
+    "firstName": "Isenathi",
+    "lastName": "Khuzwayo",
+    "grade": "8",
+    "class": "8SP",
+    "gender": "F",
+    "agegroup": "Under 14",
+    "birthdate": "2012-11-15",
+    "registrationClass": "GRADE 8 8SP",
+    "photo": "15696.webp"
+  },
+  {
     "adminNo": "15313",
     "firstName": "Liyema",
     "lastName": "Malunga",
@@ -2338,18 +2314,6 @@
     "birthdate": "2011-10-24",
     "registrationClass": "GRADE 8 8ST",
     "photo": "15530.webp"
-  },
-  {
-    "adminNo": "15516",
-    "firstName": "Kate",
-    "lastName": "Meyer",
-    "grade": "8",
-    "class": "8ST",
-    "gender": "F",
-    "agegroup": "Under 14",
-    "birthdate": "2012-04-30",
-    "registrationClass": "GRADE 8 8ST",
-    "photo": "15516.webp"
   },
   {
     "adminNo": "15527",
@@ -3084,18 +3048,6 @@
     "photo": "15100.webp"
   },
   {
-    "adminNo": "15114",
-    "firstName": "Christiaan",
-    "lastName": "Venter",
-    "grade": "9",
-    "class": "9BA",
-    "gender": "M",
-    "agegroup": "Under 15",
-    "birthdate": "2011-06-03",
-    "registrationClass": "GRADE 9 9BA",
-    "photo": "15114.webp"
-  },
-  {
     "adminNo": "15294",
     "firstName": "Mvelo",
     "lastName": "Xaba",
@@ -3564,18 +3516,6 @@
     "photo": "15107.webp"
   },
   {
-    "adminNo": "15087",
-    "firstName": "Pooja",
-    "lastName": "Maharaj",
-    "grade": "9",
-    "class": "9CN",
-    "gender": "F",
-    "agegroup": "Under 15",
-    "birthdate": "2011-04-26",
-    "registrationClass": "GRADE 9 9CN",
-    "photo": "15087.webp"
-  },
-  {
     "adminNo": "15179",
     "firstName": "Jade",
     "lastName": "Martin",
@@ -3682,6 +3622,18 @@
     "birthdate": "2012-07-10",
     "registrationClass": "GRADE 9 9CN",
     "photo": "15288.webp"
+  },
+  {
+    "adminNo": "15692",
+    "firstName": "Lubanzi",
+    "lastName": "Ngwenya",
+    "grade": "9",
+    "class": "9CN",
+    "gender": "F",
+    "agegroup": "Under 15",
+    "birthdate": "2011-04-26",
+    "registrationClass": "GRADE 9 9CN",
+    "photo": "15692.webp"
   },
   {
     "adminNo": "15166",
@@ -4152,6 +4104,18 @@
     "photo": "15405.webp"
   },
   {
+    "adminNo": "15076",
+    "firstName": "Ethan",
+    "lastName": "Diedericks",
+    "grade": "9",
+    "class": "9LP",
+    "gender": "M",
+    "agegroup": "Under 16",
+    "birthdate": "2010-05-06",
+    "registrationClass": "GRADE 9 9LP",
+    "photo": "15076.webp"
+  },
+  {
     "adminNo": "15131",
     "firstName": "Yasmeen",
     "lastName": "Ismail",
@@ -4308,18 +4272,6 @@
     "photo": "15282.webp"
   },
   {
-    "adminNo": "15091",
-    "firstName": "Lukhanyo",
-    "lastName": "Ndlovu",
-    "grade": "9",
-    "class": "9LP",
-    "gender": "M",
-    "agegroup": "Under 15",
-    "birthdate": "2011-09-14",
-    "registrationClass": "GRADE 9 9LP",
-    "photo": "15091.webp"
-  },
-  {
     "adminNo": "15291",
     "firstName": "Ziphozonke",
     "lastName": "Ngwane",
@@ -4390,18 +4342,6 @@
     "birthdate": "2011-04-06",
     "registrationClass": "GRADE 9 9LP",
     "photo": "15204.webp"
-  },
-  {
-    "adminNo": "15144",
-    "firstName": "Zoë",
-    "lastName": "Terblanche",
-    "grade": "9",
-    "class": "9LP",
-    "gender": "F",
-    "agegroup": "Under 15",
-    "birthdate": "2011-08-29",
-    "registrationClass": "GRADE 9 9LP",
-    "photo": "15144.webp"
   },
   {
     "adminNo": "15347",
@@ -5172,18 +5112,6 @@
     "photo": "15202.webp"
   },
   {
-    "adminNo": "15139",
-    "firstName": "Timoth",
-    "lastName": "Gundani",
-    "grade": "9",
-    "class": "9TA",
-    "gender": "M",
-    "agegroup": "Under 15",
-    "birthdate": "2011-04-19",
-    "registrationClass": "GRADE 9 9TA",
-    "photo": "15139.webp"
-  },
-  {
     "adminNo": "15251",
     "firstName": "Naledi",
     "lastName": "Hadebe",
@@ -5458,6 +5386,18 @@
     "birthdate": "2012-01-20",
     "registrationClass": "GRADE 9 9TA",
     "photo": "15245.webp"
+  },
+  {
+    "adminNo": "15693",
+    "firstName": "Peyton",
+    "lastName": "Williams",
+    "grade": "9",
+    "class": "9TA",
+    "gender": "F",
+    "agegroup": "Under 15",
+    "birthdate": "2011-04-28",
+    "registrationClass": "GRADE 9 9TA",
+    "photo": "15693.webp"
   },
   {
     "adminNo": "15681",
@@ -5832,6 +5772,18 @@
     "photo": "15027.webp"
   },
   {
+    "adminNo": "15695",
+    "firstName": "Kwandemtimande",
+    "lastName": "Ngwenya",
+    "grade": "10",
+    "class": "10CM",
+    "gender": "F",
+    "agegroup": "Under 16",
+    "birthdate": "2010-05-12",
+    "registrationClass": "GRADE 10 10CM",
+    "photo": "15695.webp"
+  },
+  {
     "adminNo": "14928",
     "firstName": "Azania",
     "lastName": "Ntshangase",
@@ -5950,6 +5902,18 @@
     "birthdate": "2010-08-27",
     "registrationClass": "GRADE 10 10CM",
     "photo": "14798.webp"
+  },
+  {
+    "adminNo": "15694",
+    "firstName": "Paige",
+    "lastName": "Venter",
+    "grade": "10",
+    "class": "10CM",
+    "gender": "F",
+    "agegroup": "Under 16",
+    "birthdate": "2010-09-16",
+    "registrationClass": "GRADE 10 10CM",
+    "photo": "15694.webp"
   },
   {
     "adminNo": "15669",
@@ -6828,18 +6792,6 @@
     "photo": "14767.webp"
   },
   {
-    "adminNo": "14454",
-    "firstName": "Sienna",
-    "lastName": "Korb",
-    "grade": "10",
-    "class": "10MA",
-    "gender": "F",
-    "agegroup": "Under 18",
-    "birthdate": "2008-10-05",
-    "registrationClass": "GRADE 10 10MA",
-    "photo": "14454.webp"
-  },
-  {
     "adminNo": "14860",
     "firstName": "Bradley",
     "lastName": "Leppan",
@@ -6960,18 +6912,6 @@
     "photo": "15023.webp"
   },
   {
-    "adminNo": "15014",
-    "firstName": "Yamkela",
-    "lastName": "Ndaba",
-    "grade": "10",
-    "class": "10MA",
-    "gender": "F",
-    "agegroup": "Under 16",
-    "birthdate": "2010-01-31",
-    "registrationClass": "GRADE 10 10MA",
-    "photo": "15014.webp"
-  },
-  {
     "adminNo": "15630",
     "firstName": "Teagan",
     "lastName": "Norris",
@@ -7006,6 +6946,18 @@
     "birthdate": "2010-06-14",
     "registrationClass": "GRADE 10 10MA",
     "photo": "15024.webp"
+  },
+  {
+    "adminNo": "15391",
+    "firstName": "Owami",
+    "lastName": "Radebe",
+    "grade": "10",
+    "class": "10MA",
+    "gender": "M",
+    "agegroup": "Under 18",
+    "birthdate": "2008-06-13",
+    "registrationClass": "GRADE 10 10MA",
+    "photo": "15391.webp"
   },
   {
     "adminNo": "15320",
@@ -7296,18 +7248,6 @@
     "photo": "14929.webp"
   },
   {
-    "adminNo": "14919",
-    "firstName": "Sibusiso",
-    "lastName": "Mzizi",
-    "grade": "10",
-    "class": "10ML",
-    "gender": "M",
-    "agegroup": "Under 16",
-    "birthdate": "2010-03-31",
-    "registrationClass": "GRADE 10 10ML",
-    "photo": "14919.webp"
-  },
-  {
     "adminNo": "14966",
     "firstName": "Bandile",
     "lastName": "Ndlela",
@@ -7342,18 +7282,6 @@
     "birthdate": "2010-11-25",
     "registrationClass": "GRADE 10 10ML",
     "photo": "14883.webp"
-  },
-  {
-    "adminNo": "15391",
-    "firstName": "Owami",
-    "lastName": "Radebe",
-    "grade": "10",
-    "class": "10ML",
-    "gender": "M",
-    "agegroup": "Under 18",
-    "birthdate": "2008-06-13",
-    "registrationClass": "GRADE 10 10ML",
-    "photo": "15391.webp"
   },
   {
     "adminNo": "14796",
@@ -12754,18 +12682,6 @@
     "birthdate": "2007-02-19",
     "registrationClass": "GRADE 12 12LT",
     "photo": "14376.webp"
-  },
-  {
-    "adminNo": "15003",
-    "firstName": "Lusanda",
-    "lastName": "Mzimela",
-    "grade": "12",
-    "class": "12LT",
-    "gender": "F",
-    "agegroup": "Under 17",
-    "birthdate": "2009-06-10",
-    "registrationClass": "GRADE 12 12LT",
-    "photo": "15003.webp"
   },
   {
     "adminNo": "14149",
