@@ -870,12 +870,12 @@ function applyAppState(data) {
   scheduleRenderGrid();
 }
   */
- function applyAppState(data) {
+function applyAppState(data) {
   // ✅ MUTATE existing arrays/objects instead of reassigning
-  
+
   // 1. Sync global state variables
   if (data.coverDate) coverDate = data.coverDate;
-  
+
   // 2. Mutate absentTeachers array (don't reassign)
   absentTeachers.length = 0; // Clear without losing reference
   if (data.absentTeachers) {
@@ -925,7 +925,7 @@ function applyAppState(data) {
 
   // ✅ Refresh teacher dropdown
   refreshTeachers();
-  
+
   // ✅ Render absent teachers table IMMEDIATELY
   renderAbsentTeachersTable();
 }
@@ -933,13 +933,13 @@ function applyAppState(data) {
 function syncAndRenderNow() {
   // ✅ Called after state is fully loaded from cloud
   // ✅ No requestAnimationFrame — render immediately
-  
+
   // 1. Update week display
   updateWeekDisplay();
-  
+
   // 2. Render the grid immediately
   renderGrid();
-  
+
   // 3. Update dashboard
   updateDashboardStats();
   updateDashboardSummary();
@@ -1504,10 +1504,19 @@ function autoAssignCoverTeachers() {
   alert(msg);
 }
 
+// ── Filename helper: "Cover-MM-DD" from the selected cover date ───
+function getCoverFilenameStub() {
+  const d = new Date(coverDate + "T00:00:00");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `Cover-${mm}-${dd}`;
+}
+
 // ── Week display & date picker ─────────────────────────────────
 function updateWeekDisplay() {
   document.getElementById("weekDisplay").textContent = getWeekNumber(coverDate);
 }
+
 function initializeDatePicker() {
   document.getElementById("coverDate").value = coverDate;
   updateWeekDisplay();
@@ -1792,13 +1801,9 @@ function openCoverPrintPreview(action = null) {
                 });
                 const pdfW = pdf.internal.pageSize.getWidth();
                 const pdfH = pdf.internal.pageSize.getHeight();
-
-                // Fit to page width; let height flow across as many pages as needed.
                 const ratio = pdfW / canvas.width;
                 const pageCanvasHeight = pdfH / ratio;
 
-                // Never split a teacher's block across two pages — build page
-                // breakpoints (in canvas px) that land on teacher-block boundaries.
                 const blocks = Array.from(
                   content.querySelectorAll(".teacher-block"),
                 );
@@ -1808,7 +1813,10 @@ function openCoverPrintPreview(action = null) {
                   const top = block.offsetTop * RENDER_SCALE;
                   const bottom =
                     (block.offsetTop + block.offsetHeight) * RENDER_SCALE;
-                  if (bottom - pageStart > pageCanvasHeight && top > pageStart) {
+                  if (
+                    bottom - pageStart > pageCanvasHeight &&
+                    top > pageStart
+                  ) {
                     breakpoints.push(top);
                     pageStart = top;
                   }
@@ -1849,7 +1857,8 @@ function openCoverPrintPreview(action = null) {
                   );
                 }
 
-                pdf.save(`cover_plan_day_${day + 1}.pdf`);
+                // ✅ renamed from cover_plan_day_${day + 1}.pdf
+                pdf.save(`${getCoverFilenameStub()}.pdf`);
               })
               .catch((err) => {
                 console.error("pdf generation failed", err);
@@ -1866,7 +1875,8 @@ function openCoverPrintPreview(action = null) {
               .html2canvas(doc.querySelector(".container"), { scale: 2 })
               .then((canvas) => {
                 const link = doc.createElement("a");
-                link.download = `cover_plan_day_${day + 1}.png`;
+                // ✅ renamed from cover_plan_day_${day + 1}.png
+                link.download = `${getCoverFilenameStub()}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
               })
@@ -1877,6 +1887,7 @@ function openCoverPrintPreview(action = null) {
           })
           .catch((err) => alert("Failed to load image libraries: " + err));
       };
+
       doc.getElementById("emailExportBtn").onclick = () => {
         const subject = encodeURIComponent(
           `Absent Teachers Cover Plan - Day ${day + 1}`,
@@ -3668,7 +3679,7 @@ async function cloudReadFrom() {
       btn.textContent = "📥 Read From";
     }
   }
-}  
+}
 
 // ── Firebase: UI visibility ────────────────────────────────────
 function initCloudUI() {
