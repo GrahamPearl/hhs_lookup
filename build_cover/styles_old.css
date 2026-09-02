@@ -3,28 +3,6 @@ body {
     margin: 0
 }
 
-:root {
-    --ind-heat-low: #4aca8e;
-    --ind-heat-medium: #ffc107;
-    --ind-heat-high: #dc3545;
-    --ind-badge-lastfree: #ffc107;
-    --ind-badge-meeting: #0dcaf0;
-    --ind-badge-regular: #0d6efd;
-    --ind-badge-dnd: #dc3545;
-    --ind-badge-lastresort: #ffc107;
-    --ind-border-overloaded: #dc3545;
-    --ind-border-coveredprior: #0dcaf0;
-}
-
-.ind-badge-lastfree   { background-color: var(--ind-badge-lastfree) !important; color:#000 }
-.ind-badge-meeting    { background-color: var(--ind-badge-meeting) !important; color:#000 }
-.ind-badge-regular    { background-color: var(--ind-badge-regular) !important; color:#fff }
-.ind-badge-dnd        { background-color: var(--ind-badge-dnd) !important; color:#fff }
-.ind-badge-lastresort { background-color: var(--ind-badge-lastresort) !important; color:#000 }
-.ind-border-overloaded    { border-color: var(--ind-border-overloaded) !important; }
-.ind-border-coveredprior  { border-color: var(--ind-border-coveredprior) !important; }
-.ind-border-meeting       { border-color: var(--ind-badge-meeting) !important; }
-
 .sidebar-hover-trigger {
     position: fixed;
     left: 0;
@@ -436,17 +414,17 @@ body {
 
 
 .heat-low {
-  background-color: var(--ind-heat-low) !important;
+  background-color: #4aca8e !important; /* green  #198754  */
   color: white;
 }
 
 .heat-medium {
-  background-color: var(--ind-heat-medium) !important;
+  background-color: #ffc107 !important; /* yellow */
   color: black;
 }
 
 .heat-high {
-  background-color: var(--ind-heat-high) !important;
+  background-color: #dc3545 !important; /* red */
   color: white;
 }
 

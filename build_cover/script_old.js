@@ -174,151 +174,6 @@ function removeAbsenceReason(reason) {
   return false;
 }
 
-// ── Indicator Colour Settings ───────────────────────────────────
-const INDICATOR_COLOURS_KEY = "indicatorColours";
-
-// key → { label, purpose, cssVar, default }
-const INDICATOR_COLOUR_DEFS = [
-  {
-    key: "heatLow",
-    cssVar: "--ind-heat-low",
-    default: "#4aca8e",
-    label: "Low Cover Load",
-    purpose: "Heatmap colour for teachers with a light cover load.",
-  },
-  {
-    key: "heatMedium",
-    cssVar: "--ind-heat-medium",
-    default: "#ffc107",
-    label: "Medium Cover Load",
-    purpose: "Heatmap colour for teachers with a moderate cover load.",
-  },
-  {
-    key: "heatHigh",
-    cssVar: "--ind-heat-high",
-    default: "#dc3545",
-    label: "High Cover Load",
-    purpose: "Heatmap colour for teachers with a heavy cover load.",
-  },
-  {
-    key: "badgeLastFree",
-    cssVar: "--ind-badge-lastfree",
-    default: "#ffc107",
-    label: "Last Free Period",
-    purpose:
-      "Badge colour when this is the teacher's only remaining free period today.",
-  },
-  {
-    key: "badgeMeeting",
-    cssVar: "--ind-badge-meeting",
-    default: "#0dcaf0",
-    label: "Meeting Period",
-    purpose:
-      "Badge/border colour for teachers available only via a meeting slot.",
-  },
-  {
-    key: "badgeRegular",
-    cssVar: "--ind-badge-regular",
-    default: "#0d6efd",
-    label: "Regular Availability",
-    purpose: "Default badge colour for a normally available teacher.",
-  },
-  {
-    key: "badgeDnd",
-    cssVar: "--ind-badge-dnd",
-    default: "#dc3545",
-    label: "Do Not Disturb",
-    purpose: "Badge colour marking a teacher flagged Do Not Disturb (⛔).",
-  },
-  {
-    key: "badgeLastResort",
-    cssVar: "--ind-badge-lastresort",
-    default: "#ffc107",
-    label: "Last Resort",
-    purpose: "Badge colour marking a teacher tagged as Last Resort (🆘).",
-  },
-  {
-    key: "borderOverloaded",
-    cssVar: "--ind-border-overloaded",
-    default: "#dc3545",
-    label: "Overloaded (Border)",
-    purpose: "Border colour when a teacher has done more than 5 total covers.",
-  },
-  {
-    key: "borderCoveredPrior",
-    cssVar: "--ind-border-coveredprior",
-    default: "#0dcaf0",
-    label: "Covered Yesterday (Border)",
-    purpose:
-      "Border colour when a teacher also covered on the prior calendar day.",
-  },
-];
-
-function loadIndicatorColours() {
-  const stored = localStorage.getItem(INDICATOR_COLOURS_KEY);
-  const saved = stored ? JSON.parse(stored) : {};
-  const merged = {};
-  INDICATOR_COLOUR_DEFS.forEach((d) => {
-    merged[d.key] = saved[d.key] || d.default;
-  });
-  return merged;
-}
-
-function saveIndicatorColours(colours) {
-  localStorage.setItem(INDICATOR_COLOURS_KEY, JSON.stringify(colours));
-}
-
-function applyIndicatorColours(colours) {
-  const root = document.documentElement.style;
-  INDICATOR_COLOUR_DEFS.forEach((d) => {
-    root.setProperty(d.cssVar, colours[d.key] || d.default);
-  });
-}
-
-function populateIndicatorColourFields() {
-  const tbody = document.getElementById("indicatorColourRows");
-  if (!tbody) return;
-  const colours = loadIndicatorColours();
-  tbody.innerHTML = INDICATOR_COLOUR_DEFS.map(
-    (d) => `
-    <tr>
-      <td>
-        <input type="color" class="form-control form-control-color"
-               id="indColour_${d.key}" value="${colours[d.key]}" title="${d.label}">
-      </td>
-      <td><strong>${d.label}</strong></td>
-      <td><small class="text-muted">${d.purpose}</small></td>
-    </tr>`,
-  ).join("");
-}
-
-document
-  .getElementById("saveIndicatorColoursBtn")
-  ?.addEventListener("click", () => {
-    const colours = {};
-    INDICATOR_COLOUR_DEFS.forEach((d) => {
-      const el = document.getElementById(`indColour_${d.key}`);
-      colours[d.key] = el ? el.value : d.default;
-    });
-    saveIndicatorColours(colours);
-    applyIndicatorColours(colours);
-    addToHistoryLog("INDICATOR_COLOURS_UPDATED", colours);
-    alert("✓ Indicator colours saved!");
-  });
-
-document
-  .getElementById("resetIndicatorColoursBtn")
-  ?.addEventListener("click", () => {
-    if (!confirm("Reset all indicator colours to defaults?")) return;
-    const defaults = {};
-    INDICATOR_COLOUR_DEFS.forEach((d) => (defaults[d.key] = d.default));
-    saveIndicatorColours(defaults);
-    applyIndicatorColours(defaults);
-    populateIndicatorColourFields();
-    addToHistoryLog("INDICATOR_COLOURS_RESET", defaults);
-    alert("✓ Indicator colours reset to defaults!");
-  });
-
 // ── Indexed teacher entry lookup ───────────────────────────────
 const _entryIndex = {};
 function _buildEntryIndex(name, data) {
@@ -988,7 +843,34 @@ function getAppState() {
   };
 }
 
- function applyAppState(data) {
+/*
+function applyAppState(data) {
+  // Global variables
+  if (data.coverDate) coverDate = data.coverDate;
+  if (data.absentTeachers) absentTeachers = [...data.absentTeachers];
+  if (data.partialAbsentTeachers)
+    partialAbsentTeachers = { ...data.partialAbsentTeachers };
+  if (data.absentTeacherReasons)
+    absentTeacherReasons = { ...data.absentTeacherReasons };
+  if (data.coverAssignments)
+    Object.assign(coverAssignments, data.coverAssignments);
+  if (data.noCoverNeeded) Object.assign(noCoverNeeded, data.noCoverNeeded);
+
+  // Sync date inputs
+  if (data.coverDate) {
+    document.getElementById("coverDate").value = data.coverDate;
+    updateWeekDisplay();
+  }
+  if (data.day !== undefined)
+    document.getElementById("absenceDaySelect").value = String(data.day);
+
+  // Render sequence
+  refreshTeachers();
+  renderAbsentTeachersTable();
+  scheduleRenderGrid();
+}
+  */
+function applyAppState(data) {
   // ✅ MUTATE existing arrays/objects instead of reassigning
 
   // 1. Sync global state variables
@@ -1417,21 +1299,21 @@ function renderGrid() {
               const isLastResort = teacher.isLastResort;
               const isMeeting = teacher.type === "meeting";
 
-              // ✅ Badge colour (base) — driven by admin-configurable indicator colours
+              // ✅ Badge color (base)
               const badgeColor = lastFree
-                ? "ind-badge-lastfree"
+                ? "bg-warning text-dark"
                 : isMeeting
-                  ? "ind-badge-meeting"
-                  : "ind-badge-regular";
+                  ? "bg-info text-dark"
+                  : "bg-primary";
 
-              // ✅ Border priority (consistent hierarchy) — admin-configurable
+              // ✅ Border priority (consistent hierarchy)
               let borderClass = "";
               if (overloaded) {
-                borderClass = "border border-2 ind-border-overloaded";
+                borderClass = "border border-danger border-2";
               } else if (coveredPrior) {
-                borderClass = "border border-2 ind-border-coveredprior";
+                borderClass = "border border-info border-2";
               } else if (isMeeting) {
-                borderClass = "border border-2 ind-border-meeting";
+                borderClass = "border border-warning border-2";
               }
 
               // ✅ ICON SYSTEM
@@ -1444,11 +1326,11 @@ function renderGrid() {
                 .filter(Boolean)
                 .join(" ");
 
-              // ✅ Mini badges — admin-configurable
+              // ✅ Mini badges
               const extraBadges = `
     ${isMeeting ? `<span class="badge bg-dark ms-1">MEET</span>` : ""}
-    ${isDnd ? `<span class="badge ind-badge-dnd ms-1">DND</span>` : ""}
-    ${isLastResort ? `<span class="badge ind-badge-lastresort ms-1">LR</span>` : ""}
+    ${isDnd ? `<span class="badge bg-danger ms-1">DND</span>` : ""}
+    ${isLastResort ? `<span class="badge bg-warning text-dark ms-1">LR</span>` : ""}
   `;
 
               const heatClass = getHeatmapClass(teacher);
@@ -1622,21 +1504,22 @@ function autoAssignCoverTeachers() {
   alert(msg);
 }
 
-// ── Week display & date picker ─────────────────────────────────
-function updateWeekDisplay() {
-  document.getElementById("weekDisplay").textContent = getWeekNumber(coverDate);
-}
-function initializeDatePicker() {
-  document.getElementById("coverDate").value = coverDate;
-  updateWeekDisplay();
-}
-
 // ── Filename helper: "Cover-MM-DD" from the selected cover date ───
 function getCoverFilenameStub() {
   const d = new Date(coverDate + "T00:00:00");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `Cover-${mm}-${dd}`;
+}
+
+// ── Week display & date picker ─────────────────────────────────
+function updateWeekDisplay() {
+  document.getElementById("weekDisplay").textContent = getWeekNumber(coverDate);
+}
+
+function initializeDatePicker() {
+  document.getElementById("coverDate").value = coverDate;
+  updateWeekDisplay();
 }
 
 // ── Period modal ───────────────────────────────────────────────
@@ -1918,13 +1801,9 @@ function openCoverPrintPreview(action = null) {
                 });
                 const pdfW = pdf.internal.pageSize.getWidth();
                 const pdfH = pdf.internal.pageSize.getHeight();
-
-                // Fit to page width; let height flow across as many pages as needed.
                 const ratio = pdfW / canvas.width;
                 const pageCanvasHeight = pdfH / ratio;
 
-                // Never split a teacher's block across two pages — build page
-                // breakpoints (in canvas px) that land on teacher-block boundaries.
                 const blocks = Array.from(
                   content.querySelectorAll(".teacher-block"),
                 );
@@ -1934,7 +1813,10 @@ function openCoverPrintPreview(action = null) {
                   const top = block.offsetTop * RENDER_SCALE;
                   const bottom =
                     (block.offsetTop + block.offsetHeight) * RENDER_SCALE;
-                  if (bottom - pageStart > pageCanvasHeight && top > pageStart) {
+                  if (
+                    bottom - pageStart > pageCanvasHeight &&
+                    top > pageStart
+                  ) {
                     breakpoints.push(top);
                     pageStart = top;
                   }
@@ -1975,6 +1857,7 @@ function openCoverPrintPreview(action = null) {
                   );
                 }
 
+                // ✅ renamed from cover_plan_day_${day + 1}.pdf
                 pdf.save(`${getCoverFilenameStub()}.pdf`);
               })
               .catch((err) => {
@@ -1992,6 +1875,7 @@ function openCoverPrintPreview(action = null) {
               .html2canvas(doc.querySelector(".container"), { scale: 2 })
               .then((canvas) => {
                 const link = doc.createElement("a");
+                // ✅ renamed from cover_plan_day_${day + 1}.png
                 link.download = `${getCoverFilenameStub()}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
@@ -2003,6 +1887,7 @@ function openCoverPrintPreview(action = null) {
           })
           .catch((err) => alert("Failed to load image libraries: " + err));
       };
+
       doc.getElementById("emailExportBtn").onclick = () => {
         const subject = encodeURIComponent(
           `Absent Teachers Cover Plan - Day ${day + 1}`,
@@ -2765,6 +2650,14 @@ document.getElementById("clearAllBtn").onclick = () => {
 document.getElementById("exportBtn").onclick = () => {
   backupCoverHistory();
   const data = {
+    /*
+    coverAssignments,
+    noCoverNeeded,
+    metrics: loadMetrics(),
+    history: loadCoverHistory(),
+    tenWeekStart: getCachedTenWeekStart(),
+    */
+
     ...getAppState(), // ✅ includes partial + reasons + date + day
     metrics: loadMetrics(),
     history: loadCoverHistory(),
@@ -3188,7 +3081,6 @@ populateAbsenceReasonsList();
 initializeDatePicker();
 initializeTenWeekPeriod();
 autoPruneOldEntries();
-applyIndicatorColours(loadIndicatorColours());
 
 document.getElementById("autoAssignStrategy").value = getLastStrategy();
 document
@@ -3216,7 +3108,6 @@ document.addEventListener("show.bs.modal", (e) => {
     document.getElementById("maxCoversPerWeek2").value = s.maxCoversPerWeek;
     document.getElementById("useLastResortSwitch2").checked = s.useLastResort;
     populateAbsenceReasonsList2();
-    populateIndicatorColourFields();
     const tenWeekStart = localStorage.getItem(TEN_WEEK_START);
     if (tenWeekStart)
       document.getElementById("tenWeekStartDate2").value = tenWeekStart;
@@ -3588,6 +3479,97 @@ async function cloudSaveTo() {
 }
 
 // ── Firebase: Cloud Read ───────────────────────────────────────
+/*
+async function cloudReadFrom() {
+  const btn = document.getElementById("cloudReadBtn");
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "⏳ Reading…";
+    }
+    const data = await FirebaseAdapter.readFrom(coverDate);
+
+    // 1. Extract date and day from source
+    const srcDate =
+      data.allocation?.coverDate || data.allocation?.date || coverDate;
+    const srcDay =
+      data.allocation?.day ??
+      parseInt(document.getElementById("absenceDaySelect").value);
+    const fmtDate = new Date(srcDate + "T00:00:00").toLocaleDateString(
+      undefined,
+      { weekday: "long", year: "numeric", month: "long", day: "numeric" },
+    );
+
+    // 2. Confirm
+    if (
+      !confirm(
+        `Load cloud data?\n\nDate : ${fmtDate}\nDay  : Day ${srcDay + 1}\n\nThis will merge with current local data.`,
+      )
+    )
+      return;
+
+    // ✅ FULL RESET BEFORE APPLY
+    coverAssignments = {};
+    noCoverNeeded = {};
+    absentTeachers = [];
+    partialAbsentTeachers = {};
+    absentTeacherReasons = {};
+
+    // 3. Apply session state via unified pattern
+    if (data.allocation)
+      applyAppState({ ...data.allocation, coverDate: srcDate, day: srcDay });
+
+    // 4. Merge history
+    if (data.history?.length) {
+      const existing = loadCoverHistory();
+      const existingKeys = new Set(
+        existing.map(
+          (h) => `${h.date}_${h.coveredTeacher}_P${h.period}_${h.coverTeacher}`,
+        ),
+      );
+      saveCoverHistory([
+        ...existing,
+        ...data.history.filter(
+          (h) =>
+            !existingKeys.has(
+              `${h.date}_${h.coveredTeacher}_P${h.period}_${h.coverTeacher}`,
+            ),
+        ),
+      ]);
+    }
+
+    // 5. Merge metrics — local wins
+    if (data.metrics && Object.keys(data.metrics).length)
+      saveMetrics(Object.assign({}, data.metrics, loadMetrics()));
+
+    // 6. Apply settings
+    if (data.settings?.fairnessSettings)
+      saveFairnessSettings(data.settings.fairnessSettings);
+    if (data.settings?.tenWeekStart)
+      setCachedTenWeekStart(data.settings.tenWeekStart);
+    if (data.settings?.absenceReasons) {
+      saveAbsenceReasons(data.settings.absenceReasons);
+      populateAbsenceReasonDropdown();
+    }
+
+    addToHistoryLog("CLOUD_READ", {
+      date: srcDate,
+      schoolId: FirebaseAdapter.getStoredSchoolId(),
+    });
+    syncUiWithState();
+    if (data.settings?.absenceReasons) populateAbsenceReasonDropdown();
+    alert("✅ Cloud data loaded successfully.");
+  } catch (e) {
+    alert("❌ Cloud read failed:\n" + e.message);
+    console.error("cloudReadFrom:", e);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "📥 Read From";
+    }
+  }
+}
+*/
 async function cloudReadFrom() {
   const btn = document.getElementById("cloudReadBtn");
   try {

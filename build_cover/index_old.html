@@ -625,9 +625,6 @@
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#periodTab">Period Management</button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#indicatorColoursTab">Indicator Colours</button>
-            </li>
-            <li class="nav-item">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#firebaseTab">Firebase Storage</button>
             </li>
           </ul>
@@ -755,40 +752,6 @@
                 History)</button>
               <div class="alert alert-warning mt-3">
                 <strong>⚠️ Warning:</strong> Resetting the period will clear all cover history and fairness data.
-              </div>
-            </div>
-
-            <!-- Indicator Colours Tab -->
-            <div class="tab-pane fade" id="indicatorColoursTab">
-              <h6 class="border-bottom pb-2">Available Cover Teacher — Indicator Colours</h6>
-              <p class="text-muted small">
-                These colours control how teachers are highlighted in the
-                <strong>👥 Available Cover Teachers</strong> panel and cover badges.
-                Each key below controls one indicator.
-              </p>
-
-              <div class="table-responsive">
-                <table class="table table-sm align-middle">
-                  <thead class="table-light">
-                    <tr>
-                      <th style="width:70px">Colour</th>
-                      <th>Key</th>
-                      <th>Purpose</th>
-                    </tr>
-                  </thead>
-                  <tbody id="indicatorColourRows">
-                    <!-- Populated by script.js: populateIndicatorColourFields() -->
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="d-flex gap-2 mt-2">
-                <button class="btn btn-primary" id="saveIndicatorColoursBtn">💾 Save Colours</button>
-                <button class="btn btn-outline-secondary" id="resetIndicatorColoursBtn">↺ Reset to Defaults</button>
-              </div>
-
-              <div class="alert alert-info small mt-3 mb-0">
-                <strong>Tip:</strong> Colour changes apply immediately across the dashboard, including badges already on screen.
               </div>
             </div>
           </div>
