@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hillcrest High • Grade 12 Exam Seating Plan Generator</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="../css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/subjects.css">
+
+  <style>
+    .card-fixed { border-radius: .75rem; }
+    .status-ok   { color: #198754; }
+    .status-warn { color: #fd7e14; }
+    .status-err  { color: #dc3545; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    /* ---- Candidate picker tables ---- */
+    .candidate-table-wrap { max-height: 320px; overflow-y: auto; }
+    .candidate-table-wrap thead th { position: sticky; top: 0; background: #f8f9fa; z-index: 1; }
+    tr.is-unselected { opacity: .5; }
+
+    /* ---- Unassigned pool ---- */
+    #unassignedPool { max-height: 260px; overflow-y: auto; }
+    .pool-chip {
+      display: inline-flex; align-items: center; gap: .35rem;
+      border: 1px solid #ced4da; border-radius: .5rem;
+      padding: .25rem .5rem; margin: .2rem; font-size: .8rem; cursor: pointer;
+      background: #fff; user-select: none;
+    }
+    .pool-chip.selected { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+    .pool-chip small { opacity: .75; }
+    .pool-chip .ext-tag {
+      font-size: .6rem; font-weight: 700; color: #b35900; background: #fff3cd;
+      border: 1px solid #fd7e14; border-radius: .25rem; padding: 0 .25rem;
+    }
+
+    /* ---- Seating grid ---- */
+    #seatingStage {
+      background: #ffffff;
+      border: 1px solid #dee2e6;
+      border-radius: .5rem;
+      padding: 1.25rem;
+    }
+    #seatGrid {
+      display: grid;
+      gap: 10px;
+      justify-content: start;
+    }
+    .seat {
+      width: 128px;
+      height: 84px;
+      border: 2px solid #495057;
+      border-radius: .4rem;
+      background: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: .7rem;
+      line-height: 1.1;
+      padding: 4px;
+      cursor: pointer;
+      transition: background-color .15s, border-color .15s;
+      overflow: hidden;
+      position: relative;
+    }
+    .seat.empty {
+      border-style: dashed;
+      color: #adb5bd;
+      background: #ffffff;
+    }
+    .seat.filled {
+      background: #e7f1ff;
+      border-color: #0d6efd;
+    }
+    .seat.filled:hover {
+      background: #ffe3e3;
+      border-color: #dc3545;
+    }
+    /* External-candidate seats get a distinct orange/amber treatment (never confused with internal) */
+    .seat.filled.external {
+      background: #fff3cd;
+      border: 1px solid #fd7e14;
+    }
+    .seat.filled.external:hover {
+      background: #ffe3e3;
+      border-color: #dc3545;
+    }
+    .seat-ext-badge {
+      font-size: .6rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      color: #b35900;
+    }
+    .seat .seat-no { position: absolute; margin-top: -70px; align-self: flex-start; font-size: .65rem; color: #6c757d; }
+    .seat .seat-admin { font-weight: 700; }
+    .seat .seat-name  { font-weight: 500; }
+    .seat .seat-hint  { font-size: .65rem; }
+    /* Hidden only while html2canvas is capturing the stage, so UI-only hints never end up in the exported image.
+       Note: the EXT badge and orange styling are NOT hidden here — they must appear in exported images too. */
+    #seatingStage.capturing .capture-hide { visibility: hidden; }
+
+    .legend-swatch { display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:4px; vertical-align:middle; }
+  </style>
+</head>
+<body class="bg-light">
+
+  <header class="hhs-header py-4 mb-4">
+    <div class="container">
+      <h1 class="hhs-title mb-0 text-center">Hillcrest High School — Grade 12 Exam Seating Plan Generator</h1>
+    </div>
+  </header>
+
+  <div class="container pb-5">
+
+    <!-- STEP 1: Subject + Exam details -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">1. Exam details</h5>
+        <p class="text-muted small mb-3">Only Grade 12 candidates (internal and external) participate in exam seating.</p>
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label for="subjectSelect" class="form-label">Subject</label>
+            <select id="subjectSelect" class="form-select" disabled>
+              <option value="" selected disabled>Loading…</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="concessionFilter" class="form-label">Concession filter</label>
+            <select id="concessionFilter" class="form-select">
+              <option value="all" selected>All</option>
+              <option value="concessionOnly">Concessions Only</option>
+              <option value="noConcession">No Concessions</option>
+            </select>
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-12">
+            <label for="examTitle" class="form-label">Examination Title</label>
+            <input type="text" id="examTitle" class="form-control" placeholder="e.g. Grade 12 Mathematics — November Final Exam" />
+          </div>
+        </div>
+        <div id="subjectConfirm" class="mt-3"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Candidate selection -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">2. Candidates for this exam</h5>
+        <p class="text-muted small mb-3">
+          Tick the candidates who will write this exam in this venue. Only ticked candidates are included
+          when the seating plan is generated. Internal and external candidates are kept in separate lists and
+          are never mixed in the same seating column.
+        </p>
+
+        <!-- Internal candidates -->
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <h6 class="mb-0">Internal candidates</h6>
+          <div class="d-flex align-items-center gap-2">
+            <span id="internalCountBadge" class="badge bg-secondary">0 candidates</span>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="internalSelectAllBtn">Select All</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="internalSelectNoneBtn">Select None</button>
+          </div>
+        </div>
+        <div class="candidate-table-wrap border rounded mb-4">
+          <table class="table table-sm mb-0" id="internalCandidateTable">
+            <thead>
+              <tr>
+                <th style="width:50px;">Sel.</th>
+                <th>Exam No.</th>
+                <th>Name</th>
+                <th style="width:120px;">Concession</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- External candidates -->
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <h6 class="mb-0">External candidates</h6>
+          <div class="d-flex align-items-center gap-2">
+            <span id="externalCountBadge" class="badge bg-secondary">0 candidates</span>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="externalSelectAllBtn">Select All</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="externalSelectNoneBtn">Select None</button>
+          </div>
+        </div>
+        <div class="candidate-table-wrap border rounded">
+          <table class="table table-sm mb-0" id="externalCandidateTable">
+            <thead>
+              <tr>
+                <th style="width:50px;">Sel.</th>
+                <th>Exam No.</th>
+                <th>Name</th>
+                <th style="width:120px;">Concession</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Layout + generate -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">3. Seating layout (S-snake pattern)</h5>
+        <div class="row g-3 align-items-end">
+          <div class="col-md-2">
+            <label for="rowsInput" class="form-label">Desks per row</label>
+            <input type="number" id="rowsInput" class="form-control" min="1" max="30" value="6">
+          </div>
+          <div class="col-md-2">
+            <label for="colsInput" class="form-label">Number of rows (columns of desks)</label>
+            <input type="number" id="colsInput" class="form-control" min="1" max="30" value="8">
+          </div>
+          <div class="col-md-3 d-grid">
+            <button id="generateBtn" type="button" class="btn btn-primary">Generate seating plan</button>
+          </div>
+          <div class="col-md-3 d-grid">
+            <button id="resetBtn" type="button" class="btn btn-outline-secondary">Reset grid</button>
+          </div>
+        </div>
+        <p class="text-muted small mt-2 mb-0">
+          Internal candidates are seated first, filling whole columns in S-snake order. External candidates
+          always start at the front/top of a brand-new column — they are never added to a partially-used
+          internal column.
+        </p>
+        <div id="planMessage" class="mt-3 small"></div>
+      </div>
+    </div>
+
+    <!-- STEP 4: Grid -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <h5 class="card-title mb-0">4. Seating grid</h5>
+          <div class="small text-muted d-flex align-items-center flex-wrap gap-2">
+            <span><span class="legend-swatch" style="background:#e7f1ff;border:2px solid #0d6efd;"></span>Internal (click to remove)</span>
+            <span><span class="legend-swatch" style="background:#fff3cd;border:2px solid #fd7e14;"></span>External (click to remove)</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#unassignedModal">
+              Unassigned candidates <span id="unassignedBadge" class="badge bg-secondary ms-1">0</span>
+            </button>
+            <span><span class="legend-swatch" style="background:#fff;border:2px dashed #adb5bd;"></span>Empty (select a name, then click to place)</span>
+          </div>
+        </div>
+        <div id="seatingStage">
+          <div id="seatGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unassigned candidates modal -->
+    <div class="modal fade" id="unassignedModal" tabindex="-1" aria-labelledby="unassignedModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="unassignedModalLabel">Unassigned candidates</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small mb-2">Click a name to select it, close this window, then click an empty seat to place them. This is a manual override — the internal/external column rule is not enforced here.</p>
+            <div id="unassignedPool" class="border rounded p-2"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: Preview / export -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">5. Preview &amp; export</h5>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <button id="previewBtn" type="button" class="btn btn-outline-primary">Preview as image</button>
+          <button id="downloadImgBtn" type="button" class="btn btn-success" disabled>Download image(s) (PNG)</button>
+          <button id="downloadSingleImgBtn" type="button" class="btn btn-outline-success">Download single image (PNG)</button>
+          <button id="printImgBtn" type="button" class="btn btn-outline-success" disabled>Print seating plan</button>
+          <button id="downloadJsonBtn" type="button" class="btn btn-secondary">Save seating plan as JSON</button>
+          <button id="loadJsonBtn" type="button" class="btn btn-outline-secondary">Load JSON…</button>
+          <input type="file" id="loadJsonFile" accept="application/json" class="d-none">
+          <button id="cloudSaveBtn" type="button" class="btn btn-outline-info">Save to Firebase</button>
+          <button id="openRegisterBuildBtn" type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#registerBuildModal">
+            Class register
+          </button>
+        </div>
+        <p class="text-muted small mb-2">
+          "Preview as image" and "Download image(s) (PNG)" split wide layouts into a numbered series
+          of pictures, 5 columns of desks per picture, so each one prints cleanly on its own page.
+          "Download single image (PNG)" instead produces one picture with every column of the seating
+          plan, however wide it is. External candidates are always shown with the amber "EXT" marker,
+          in exports as well as on screen.
+        </p>
+        <div id="exportMessage" class="small mb-3"></div>
+        <div id="imagePreviewWrap" class="border rounded p-2 d-none">
+          <div id="imagePreviewPages"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Class register build modal (centered) -->
+    <div class="modal fade" id="registerBuildModal" tabindex="-1" aria-labelledby="registerBuildModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="registerBuildModalLabel">Class register</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small mb-3">
+              A signable list of every candidate currently seated in this venue (exam number, name, type
+              and a space to sign), sorted alphabetically by surname.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <button id="registerPreviewBtn" type="button" class="btn btn-outline-dark">Preview class register</button>
+              <button id="registerPrintBtn" type="button" class="btn btn-dark">Print class register</button>
+              <button id="registerDownloadBtn" type="button" class="btn btn-outline-secondary">Download register (HTML)</button>
+            </div>
+            <div id="registerMessage" class="small mt-3"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Class register preview modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="registerModalLabel">Class register preview</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="registerPreviewBody"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" id="registerModalPrintBtn" class="btn btn-dark">Print</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6 (optional): Cloud plans -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <h5 class="card-title mb-0">Saved plans in Firebase</h5>
+          <button id="refreshCloudBtn" type="button" class="btn btn-sm btn-outline-secondary">Refresh</button>
+        </div>
+        <p class="text-muted small mb-2">
+          To enable cloud storage, fill in <span class="mono">firebaseConfig</span> near the top of the
+          <span class="mono">&lt;script&gt;</span> block in this file with your own Firebase project credentials.
+        </p>
+        <ul id="cloudPlanList" class="list-group small"></ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- jQuery / Bootstrap (matches rest of site) -->
+  <script src="../js/jquery-4.0.0.min.js"></script>
+  <script src="../js/bootstrap.bundle.min.js"></script>
+
+  <!-- Image export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Firebase (compat build — optional, only used if firebaseConfig below is filled in) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // =========================================================
+    // FIREBASE CONFIG — replace with your own project's values.
+    // Leave as-is to run the page in "local only" mode: JSON
+    // save/load and image export still work without Firebase.
+    // =========================================================
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    const SEATING_COLLECTION = "seatingPlans";
+
+    let db = null;
+    let firebaseReady = false;
+    function initFirebase() {
+      try {
+        if (typeof firebase === 'undefined') return;
+        if (firebaseConfig.apiKey === "YOUR_API_KEY") return; // not configured
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        firebaseReady = true;
+      } catch (e) {
+        console.warn('Firebase not initialised:', e);
+      }
+    }
+    initFirebase();
+
+    // ===== Config: data sources =====
+    const STUDENTS_JSON_FILE = "students.json";   // internal Grade 12 candidates
+    const EXTERNAL_JSON_FILE = "external.json";   // external Grade 12 candidates
+    const SUBJECTS_JSON_FILE = "subjects.json";   // { "Subject Name": ["adminNo", ...], ... }
+
+    // Option B fallback: if subjects.json is missing/unreachable, this embedded
+    // object is used instead. Leave empty to rely purely on subjects.json.
+    const SUBJECTS_FALLBACK = {};
+
+    // ===== State =====
+    let internalAll = [];        // normalized candidate objects, all Grade 12 internal
+    let externalAll = [];        // normalized candidate objects, all Grade 12 external
+    let subjectsData = {};       // subject name -> Set of adminNo strings
+
+    let internalFiltered = [];   // internalAll filtered by subject + concession filter
+    let externalFiltered = [];   // externalAll filtered by subject + concession filter
+    let selectedInternalIds = new Set(); // adminNo strings currently ticked (internal)
+    let selectedExternalIds = new Set(); // adminNo strings currently ticked (external)
+
+    let rows = 6, cols = 8;      // rows = desks per row, cols = number of rows of desks
+    let seats = [];              // flat array, length rows*cols: {row, col, student|null}
+    let unassigned = [];         // candidates not yet placed (mix of internal/external)
+    let selectedPoolId = null;   // currently selected adminNo in the unassigned pool
+
+    // ===== DOM refs =====
+    const $subject = $('#subjectSelect');
+    const $concessionFilter = $('#concessionFilter');
+    const $examTitle = $('#examTitle');
+    const $subjectConfirm = $('#subjectConfirm');
+    const $internalTbody = $('#internalCandidateTable tbody');
+    const $externalTbody = $('#externalCandidateTable tbody');
+    const $internalCountBadge = $('#internalCountBadge');
+    const $externalCountBadge = $('#externalCountBadge');
+    const $rowsInput = $('#rowsInput');
+    const $colsInput = $('#colsInput');
+    const $planMessage = $('#planMessage');
+    const $seatGrid = $('#seatGrid');
+    const $unassignedPool = $('#unassignedPool');
+    const $exportMessage = $('#exportMessage');
+    const $imagePreviewWrap = $('#imagePreviewWrap');
+    const $imagePreviewPages = $('#imagePreviewPages');
+    const $downloadImgBtn = $('#downloadImgBtn');
+    const $downloadSingleImgBtn = $('#downloadSingleImgBtn');
+    const $printImgBtn = $('#printImgBtn');
+    const $cloudPlanList = $('#cloudPlanList');
+
+    // ===== Generic helpers =====
+    function esc(s) {
+      if (s == null) return '';
+      return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    }
+    function setPlanMessage(html, cls) {
+      $planMessage.removeClass('status-ok status-warn status-err').addClass(cls || '').html(html || '');
+    }
+    function setExportMessage(html, cls) {
+      $exportMessage.removeClass('status-ok status-warn status-err').addClass(cls || '').html(html || '');
+    }
+    async function fetchJson(url) {
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error(`${url} (${resp.status})`);
+      return resp.json();
+    }
+    function download(filename, content, mime) {
+      const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // ===== Candidate model helpers =====
+    // Single shared candidate shape used everywhere downstream:
+    // { adminNo, examNo, firstName, lastName, concession, external }
+    function normalizeCandidate(raw, isExternal) {
+      return {
+        adminNo: String(raw.adminNo != null ? raw.adminNo : ''),
+        examNo: raw.ExamNo || raw.examNo || '',
+        firstName: raw.firstName || '',
+        lastName: raw.lastName || '',
+        concession: raw.Concession === 'True' || raw.concession === true,
+        external: !!isExternal
+      };
+    }
+    // Display priority: ExamNo first (primary line), then Surname, Firstname (secondary line).
+    function candNumberLine(c) {
+      return c.examNo || c.adminNo || '';
+    }
+    function candNameLine(c) {
+      const sur = (c.lastName || '').toString().toUpperCase();
+      const first = c.firstName || '';
+      return sur ? `${sur}, ${first}` : (first || '(unnamed)');
+    }
+    function candSortKey(c) {
+      return `${(c.lastName || '').toUpperCase()}, ${(c.firstName || '').toUpperCase()}`;
+    }
+    function sortByName(list) {
+      return [...list].sort((a, b) => candSortKey(a).localeCompare(candSortKey(b)));
+    }
+
+    // ===== Load internal / external candidates + subjects =====
+    async function loadData() {
+      $subject.prop('disabled', true).html('<option value="" selected disabled>Loading…</option>');
+      $subjectConfirm.html('');
+
+      let studentsRaw = [], externalRaw = [], subjectsRaw = null;
+      try {
+        studentsRaw = await fetchJson(STUDENTS_JSON_FILE);
+      } catch (e) {
+        console.warn('Could not load ' + STUDENTS_JSON_FILE + ':', e.message);
+      }
+      try {
+        externalRaw = await fetchJson(EXTERNAL_JSON_FILE);
+      } catch (e) {
+        console.warn('Could not load ' + EXTERNAL_JSON_FILE + ':', e.message);
+      }
+      try {
+        subjectsRaw = await fetchJson(SUBJECTS_JSON_FILE);
+      } catch (e) {
+        console.warn('Could not load ' + SUBJECTS_JSON_FILE + ', using embedded fallback:', e.message);
+        subjectsRaw = SUBJECTS_FALLBACK;
+      }
+
+      internalAll = (Array.isArray(studentsRaw) ? studentsRaw : [])
+        .filter(s => String(s.grade) === '12')
+        .map(s => normalizeCandidate(s, false));
+
+      externalAll = (Array.isArray(externalRaw) ? externalRaw : [])
+        .map(s => normalizeCandidate(s, true));
+
+      subjectsData = {};
+      if (subjectsRaw && typeof subjectsRaw === 'object') {
+        Object.keys(subjectsRaw).forEach(subj => {
+          subjectsData[subj] = new Set((subjectsRaw[subj] || []).map(String));
+        });
+      }
+
+      buildSubjectOptions();
+      filterAndRenderCandidates();
+    }
+
+    function buildSubjectOptions() {
+      const names = Object.keys(subjectsData).sort((a, b) => a.localeCompare(b));
+      if (!names.length) {
+        $subject.html('<option value="" selected disabled>No subjects.json entries found</option>');
+        $subject.prop('disabled', false);
+        $subjectConfirm.html(`<div class="status-warn">Could not find any subjects in ${esc(SUBJECTS_JSON_FILE)}. Every Grade 12 candidate is currently shown below (no subject filter applied).</div>`);
+        return;
+      }
+      $subject.html(
+        '<option value="" selected>All subjects (no filter)</option>' +
+        names.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('')
+      );
+      $subject.prop('disabled', false);
+    }
+
+    // ===== Filters =====
+    function getSubjectAdminSet() {
+      const subj = $subject.val();
+      if (!subj) return null; // no subject chosen -> no subject filtering
+      return subjectsData[subj] || new Set();
+    }
+    function passesConcessionFilter(c) {
+      const f = $concessionFilter.val();
+      if (f === 'concessionOnly') return c.concession === true;
+      if (f === 'noConcession') return c.concession !== true;
+      return true; // 'all'
+    }
+    function hasValidSelection() {
+      // A "valid selection" now just means at least one candidate list has been loaded/filtered.
+      return internalAll.length > 0 || externalAll.length > 0;
+    }
+
+    function filterAndRenderCandidates() {
+      const subjSet = getSubjectAdminSet();
+      internalFiltered = internalAll.filter(c => (!subjSet || subjSet.has(c.adminNo)) && passesConcessionFilter(c));
+      externalFiltered = externalAll.filter(c => (!subjSet || subjSet.has(c.adminNo)) && passesConcessionFilter(c));
+
+      // Fresh filter -> default to "everyone selected"; the person can then deselect individuals.
+      selectedInternalIds = new Set(internalFiltered.map(c => c.adminNo));
+      selectedExternalIds = new Set(externalFiltered.map(c => c.adminNo));
+
+      renderCandidateTable($internalTbody, sortByName(internalFiltered), selectedInternalIds);
+      renderCandidateTable($externalTbody, sortByName(externalFiltered), selectedExternalIds);
+      updateCandidateCounts();
+
+      const subj = $subject.val();
+      $subjectConfirm.html(
+        `<div class="alert alert-info py-2 mb-0">` +
+        (subj ? `Subject selected: <strong>${esc(subj)}</strong>. ` : `No subject filter applied — showing all Grade 12 candidates. `) +
+        `${internalFiltered.length} internal, ${externalFiltered.length} external candidate(s) match the current filters.` +
+        `</div>`
+      );
+      resetGrid();
+    }
+
+    function renderCandidateTable($tbody, list, selectedSet) {
+      $tbody.empty();
+      list.forEach(c => {
+        const checked = selectedSet.has(c.adminNo) ? 'checked' : '';
+        const tr = $(`
+          <tr data-id="${esc(c.adminNo)}" class="${checked ? '' : 'is-unselected'}">
+            <td class="text-center"><input type="checkbox" class="form-check-input cand-check" ${checked}></td>
+            <td>${esc(candNumberLine(c))}</td>
+            <td>${esc(candNameLine(c))}</td>
+            <td class="text-center">${c.concession ? '<span class="badge bg-warning text-dark">Concession</span>' : ''}</td>
+          </tr>
+        `);
+        $tbody.append(tr);
+      });
+    }
+
+    function updateCandidateCounts() {
+      $internalCountBadge.text(`${internalFiltered.length} candidates (${selectedInternalIds.size} selected)`);
+      $externalCountBadge.text(`${externalFiltered.length} candidates (${selectedExternalIds.size} selected)`);
+    }
+
+    $internalTbody.on('change', '.cand-check', function () {
+      const id = String($(this).closest('tr').data('id'));
+      if (this.checked) selectedInternalIds.add(id); else selectedInternalIds.delete(id);
+      $(this).closest('tr').toggleClass('is-unselected', !this.checked);
+      updateCandidateCounts();
+    });
+    $externalTbody.on('change', '.cand-check', function () {
+      const id = String($(this).closest('tr').data('id'));
+      if (this.checked) selectedExternalIds.add(id); else selectedExternalIds.delete(id);
+      $(this).closest('tr').toggleClass('is-unselected', !this.checked);
+      updateCandidateCounts();
+    });
+
+    $('#internalSelectAllBtn').on('click', () => {
+      selectedInternalIds = new Set(internalFiltered.map(c => c.adminNo));
+      renderCandidateTable($internalTbody, sortByName(internalFiltered), selectedInternalIds);
+      updateCandidateCounts();
+    });
+    $('#internalSelectNoneBtn').on('click', () => {
+      selectedInternalIds = new Set();
+      renderCandidateTable($internalTbody, sortByName(internalFiltered), selectedInternalIds);
+      updateCandidateCounts();
+    });
+    $('#externalSelectAllBtn').on('click', () => {
+      selectedExternalIds = new Set(externalFiltered.map(c => c.adminNo));
+      renderCandidateTable($externalTbody, sortByName(externalFiltered), selectedExternalIds);
+      updateCandidateCounts();
+    });
+    $('#externalSelectNoneBtn').on('click', () => {
+      selectedExternalIds = new Set();
+      renderCandidateTable($externalTbody, sortByName(externalFiltered), selectedExternalIds);
+      updateCandidateCounts();
+    });
+
+    function getSelectedCandidates() {
+      const internalSel = sortByName(internalFiltered.filter(c => selectedInternalIds.has(c.adminNo)));
+      const externalSel = sortByName(externalFiltered.filter(c => selectedExternalIds.has(c.adminNo)));
+      return { internalSel, externalSel };
+    }
+
+    // ===== S-snake seat order =====
+    // Fills down each column first (top-to-bottom, then bottom-to-top on the
+    // next column, and so on). "nRows" here = desks per row (i.e. number of
+    // visual columns); "nCols" = number of rows of desks (seats per column).
+    // The order array is built one whole column at a time, so every
+    // contiguous block of `nCols` entries corresponds to exactly one column —
+    // this is what lets us cleanly start external candidates on a new column.
+    function computeSnakeOrder(nRows, nCols) {
+      const order = [];
+      for (let c = 0; c < nRows; c++) {
+        if (c % 2 === 0) {
+          for (let r = 0; r < nCols; r++) order.push({ row: r, col: c }); // top to bottom
+        } else {
+          for (let r = nCols - 1; r >= 0; r--) order.push({ row: r, col: c }); // bottom to top
+        }
+      }
+      return order;
+    }
+
+    function buildEmptySeats() {
+      const s = [];
+      for (let r = 0; r < cols; r++) {
+        for (let c = 0; c < rows; c++) {
+          s.push({ row: r, col: c, student: null });
+        }
+      }
+      return s;
+    }
+
+    function resetGrid() {
+      rows = parseInt($rowsInput.val(), 10) || 1;
+      cols = parseInt($colsInput.val(), 10) || 1;
+      seats = buildEmptySeats();
+      unassigned = [];
+      selectedPoolId = null;
+      renderGrid();
+      renderPool();
+      setPlanMessage('');
+      hidePreview();
+    }
+
+    function seatAt(r, c) {
+      return seats.find(s => s.row === r && s.col === c);
+    }
+
+    // ===== Generate seating plan =====
+    // Internal candidates are placed first, filling whole S-snake columns.
+    // External candidates always begin at the top of the NEXT column, even if
+    // that leaves empty seats at the bottom of the internal group's last
+    // column — external candidates are never mixed into a partially-used
+    // internal column.
+    function generatePlan() {
+      if (!hasValidSelection()) { setPlanMessage('No candidate data is loaded yet.', 'status-err'); return; }
+      rows = Math.max(1, parseInt($rowsInput.val(), 10) || 1);
+      cols = Math.max(1, parseInt($colsInput.val(), 10) || 1);
+
+      const { internalSel, externalSel } = getSelectedCandidates();
+      const order = computeSnakeOrder(rows, cols);
+      seats = buildEmptySeats();
+
+      let placedInternal = 0;
+      for (; placedInternal < order.length && placedInternal < internalSel.length; placedInternal++) {
+        const pos = order[placedInternal];
+        seatAt(pos.row, pos.col).student = internalSel[placedInternal];
+      }
+
+      // Round up to the next full column boundary so external candidates
+      // never land in a column that already has internal candidates in it.
+      const columnsUsedByInternal = Math.ceil(internalSel.length / cols);
+      const externalStartIdx = columnsUsedByInternal * cols;
+
+      let placedExternal = 0;
+      for (let i = externalStartIdx; i < order.length && placedExternal < externalSel.length; i++, placedExternal++) {
+        const pos = order[i];
+        seatAt(pos.row, pos.col).student = externalSel[placedExternal];
+      }
+
+      unassigned = [];
+      if (placedInternal < internalSel.length) unassigned = unassigned.concat(internalSel.slice(placedInternal));
+      if (placedExternal < externalSel.length) unassigned = unassigned.concat(externalSel.slice(placedExternal));
+      unassigned = sortByName(unassigned);
+      selectedPoolId = null;
+
+      renderGrid();
+      renderPool();
+
+      const totalSelected = internalSel.length + externalSel.length;
+      const totalPlaced = placedInternal + placedExternal;
+      if (totalSelected === 0) {
+        setPlanMessage('No candidates are ticked for this selection — nothing to seat.', 'status-warn');
+      } else if (unassigned.length > 0) {
+        setPlanMessage(
+          `Generated plan with ${order.length} seats. Placed ${totalPlaced} of ${totalSelected} candidate(s) ` +
+          `(${placedInternal} internal, ${placedExternal} external). ${unassigned.length} candidate(s) remain ` +
+          `unassigned — increase rows/columns or add another venue.`,
+          'status-warn'
+        );
+      } else {
+        setPlanMessage(
+          `Seating plan generated: ${placedInternal} internal + ${placedExternal} external candidate(s) placed ` +
+          `in S-snake order across ${order.length} seats.`,
+          'status-ok'
+        );
+      }
+      hidePreview();
+    }
+
+    function renderGrid() {
+      $seatGrid.css('grid-template-columns', `repeat(${rows}, 128px)`);
+      $seatGrid.empty();
+      seats.forEach(seat => {
+        const filled = !!seat.student;
+        const ext = filled && seat.student.external;
+        const cls = 'seat ' + (filled ? (ext ? 'filled external' : 'filled') : 'empty');
+        const div = $(`<div class="${cls}" data-row="${seat.row}" data-col="${seat.col}"></div>`);
+        if (filled) {
+          div.html(`
+            ${ext ? '<div class="seat-ext-badge">EXT</div>' : ''}
+            <div class="seat-admin">${esc(candNumberLine(seat.student))}</div>
+            <div class="seat-name">${esc(candNameLine(seat.student))}</div>
+            <div class="seat-hint text-muted capture-hide">click to remove</div>
+          `);
+        } else {
+          div.html(`<div class="seat-hint">Empty seat</div>`);
+        }
+        $seatGrid.append(div);
+      });
+    }
+
+    $seatGrid.on('click', '.seat', function () {
+      const r = parseInt($(this).data('row'), 10);
+      const c = parseInt($(this).data('col'), 10);
+      const seat = seatAt(r, c);
+      if (!seat) return;
+
+      if (seat.student) {
+        // remove placement -> back to unassigned pool (manual edit; no column-boundary rule enforced here)
+        unassigned.push(seat.student);
+        unassigned = sortByName(unassigned);
+        seat.student = null;
+        renderGrid();
+        renderPool();
+        hidePreview();
+      } else if (selectedPoolId) {
+        const idx = unassigned.findIndex(s => String(s.adminNo) === String(selectedPoolId));
+        if (idx > -1) {
+          seat.student = unassigned[idx];
+          unassigned.splice(idx, 1);
+          selectedPoolId = null;
+          renderGrid();
+          renderPool();
+          hidePreview();
+        }
+      } else {
+        setPlanMessage('Select a candidate from the "Unassigned candidates" panel first, then click an empty seat to place them.', 'status-warn');
+      }
+    });
+
+    function renderPool() {
+      $('#unassignedBadge').text(unassigned.length);
+      $unassignedPool.empty();
+      if (!unassigned.length) {
+        $unassignedPool.html('<span class="text-muted small">No unassigned candidates.</span>');
+        return;
+      }
+      unassigned.forEach(s => {
+        const chip = $(`
+          <span class="pool-chip ${String(s.adminNo) === String(selectedPoolId) ? 'selected' : ''}" data-id="${esc(s.adminNo)}">
+            ${s.external ? '<span class="ext-tag">EXT</span>' : ''}
+            ${esc(candNameLine(s))} <small>(${esc(candNumberLine(s))})</small>
+          </span>
+        `);
+        $unassignedPool.append(chip);
+      });
+    }
+
+    $unassignedPool.on('click', '.pool-chip', function () {
+      const id = $(this).data('id');
+      selectedPoolId = (String(selectedPoolId) === String(id)) ? null : String(id);
+      renderPool();
+    });
+
+    // ===== Image preview / export (5 columns of desks per picture) =====
+    const COLUMNS_PER_IMAGE = 5;
+    let lastImageChunks = []; // [{ label, canvas }]
+
+    function hidePreview() {
+      $imagePreviewWrap.addClass('d-none');
+      $imagePreviewPages.empty();
+      $downloadImgBtn.prop('disabled', true);
+      $printImgBtn.prop('disabled', true);
+      lastImageChunks = [];
+    }
+
+    function getSubjectLabel() {
+      return $subject.val() || 'All subjects';
+    }
+
+    // Splits the current grid's columns (seat.col, i.e. the "desks per row" axis)
+    // into consecutive groups of COLUMNS_PER_IMAGE, so each picture is at most 5 columns wide.
+    function getColumnChunks() {
+      const totalCols = rows; // "rows" = desks per row = number of visual columns
+      const chunks = [];
+      for (let start = 0; start < totalCols; start += COLUMNS_PER_IMAGE) {
+        const end = Math.min(start + COLUMNS_PER_IMAGE, totalCols) - 1;
+        const colIndices = [];
+        for (let c = start; c <= end; c++) colIndices.push(c);
+        chunks.push({ start, end, colIndices });
+      }
+      return chunks;
+    }
+
+    // Builds a standalone, off-screen copy of the seats for one column chunk so
+    // it can be captured on its own — independent of the live, interactive grid.
+    function buildChunkStage(chunk, pageNum, totalPages, examTitle, subj, totalCols) {
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-10000px';
+      wrapper.style.top = '0';
+      wrapper.style.background = '#ffffff';
+      wrapper.style.padding = '20px';
+      wrapper.style.fontFamily = 'Arial, Helvetica, sans-serif';
+
+      const header = document.createElement('div');
+      header.style.marginBottom = '14px';
+      const rangeText = totalPages > 1
+        ? `Columns ${chunk.start + 1}\u2013${chunk.end + 1} of ${totalCols} (Page ${pageNum} of ${totalPages})`
+        : `${totalCols} column${totalCols === 1 ? '' : 's'}`;
+      header.innerHTML = `
+        <div style="font-size:16px;font-weight:700;">${esc(examTitle)}</div>
+        <div style="font-size:13px;color:#495057;">${esc(subj)} — Seating plan — ${esc(rangeText)}</div>
+      `;
+      wrapper.appendChild(header);
+
+      const grid = document.createElement('div');
+      grid.style.display = 'grid';
+      grid.style.gap = '10px';
+      grid.style.gridTemplateColumns = `repeat(${chunk.colIndices.length}, 128px)`;
+
+      for (let r = 0; r < cols; r++) {
+        chunk.colIndices.forEach(c => {
+          const seat = seatAt(r, c);
+          const ext = seat && seat.student && seat.student.external;
+          const div = document.createElement('div');
+          div.className = 'seat ' + (seat && seat.student ? (ext ? 'filled external' : 'filled') : 'empty');
+          if (seat && seat.student) {
+            div.innerHTML = `
+              ${ext ? '<div class="seat-ext-badge">EXT</div>' : ''}
+              <div class="seat-admin">${esc(candNumberLine(seat.student))}</div>
+              <div class="seat-name">${esc(candNameLine(seat.student))}</div>
+            `;
+          } else {
+            div.innerHTML = `<div class="seat-hint">Empty seat</div>`;
+          }
+          grid.appendChild(div);
+        });
+      }
+      wrapper.appendChild(grid);
+      document.body.appendChild(wrapper);
+      return wrapper;
+    }
+
+    async function generateSeatingImages() {
+      const chunks = getColumnChunks();
+      const examTitle = $examTitle.val() || 'Seating Plan';
+      const subj = getSubjectLabel();
+      const totalCols = rows;
+      const images = [];
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        const wrapper = buildChunkStage(chunk, i + 1, chunks.length, examTitle, subj, totalCols);
+        try {
+          const canvas = await html2canvas(wrapper, { backgroundColor: '#ffffff', scale: 2 });
+          images.push({
+            label: chunks.length > 1
+              ? `Page ${i + 1} of ${chunks.length} — columns ${chunk.start + 1}\u2013${chunk.end + 1} of ${totalCols}`
+              : `Full seating plan (${totalCols} column${totalCols === 1 ? '' : 's'})`,
+            canvas
+          });
+        } finally {
+          wrapper.remove();
+        }
+      }
+      return images;
+    }
+
+    // Renders every column of the current grid into ONE canvas — no 5-column
+    // split — for people who'd rather have a single (potentially wide) picture.
+    async function generateFullSeatingImage() {
+      const examTitle = $examTitle.val() || 'Seating Plan';
+      const subj = getSubjectLabel();
+      const totalCols = rows;
+      const fullChunk = {
+        start: 0,
+        end: totalCols - 1,
+        colIndices: Array.from({ length: totalCols }, (_, i) => i)
+      };
+      const wrapper = buildChunkStage(fullChunk, 1, 1, examTitle, subj, totalCols);
+      try {
+        return await html2canvas(wrapper, { backgroundColor: '#ffffff', scale: 2 });
+      } finally {
+        wrapper.remove();
+      }
+    }
+
+    function renderImagePreview() {
+      $imagePreviewPages.empty();
+      lastImageChunks.forEach(img => {
+        $imagePreviewPages.append(`
+          <div class="mb-3">
+            <div class="small text-muted mb-1">${esc(img.label)}</div>
+            <img src="${img.canvas.toDataURL('image/png')}" class="img-fluid border rounded" alt="${esc(img.label)}">
+          </div>
+        `);
+      });
+    }
+
+    async function previewImage() {
+      if (!hasValidSelection()) { setExportMessage('No candidate data is loaded yet.', 'status-err'); return; }
+      if (!seats.some(s => s.student)) { setExportMessage('Generate a seating plan first.', 'status-err'); return; }
+      setExportMessage('Rendering preview…', 'status-warn');
+      try {
+        lastImageChunks = await generateSeatingImages();
+        renderImagePreview();
+        $imagePreviewWrap.removeClass('d-none');
+        $downloadImgBtn.prop('disabled', false);
+        $printImgBtn.prop('disabled', false);
+        const n = lastImageChunks.length;
+        setExportMessage(
+          `Preview ready — ${n} image${n === 1 ? '' : 's'} generated (5 columns per image). Review below, then download or print.`,
+          'status-ok'
+        );
+      } catch (e) {
+        setExportMessage('Could not render preview: ' + esc(e.message), 'status-err');
+      }
+    }
+
+    function downloadImage() {
+      if (!lastImageChunks.length) return;
+      const subj = (getSubjectLabel() || 'Subject').replace(/[^\w\-]+/g, '_');
+      const title = ($examTitle.val() || 'SeatingPlan').replace(/[^\w\-]+/g, '_');
+      const multi = lastImageChunks.length > 1;
+      lastImageChunks.forEach((img, i) => {
+        const suffix = multi ? `-Page${i + 1}of${lastImageChunks.length}` : '';
+        const a = document.createElement('a');
+        a.href = img.canvas.toDataURL('image/png');
+        a.download = `${title}-${subj}${suffix}.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+      setExportMessage(
+        multi
+          ? `Downloading ${lastImageChunks.length} images — your browser may ask permission to download multiple files.`
+          : 'Image downloaded.',
+        'status-ok'
+      );
+    }
+
+    // Single, unsplit image of the whole grid — independent of Preview/lastImageChunks,
+    // so it can be used on its own without generating the paginated set first.
+    async function downloadSingleImage() {
+      if (!hasValidSelection()) { setExportMessage('No candidate data is loaded yet.', 'status-err'); return; }
+      if (!seats.some(s => s.student)) { setExportMessage('Generate a seating plan first.', 'status-err'); return; }
+      setExportMessage('Rendering single image…', 'status-warn');
+      try {
+        const canvas = await generateFullSeatingImage();
+        const subj = (getSubjectLabel() || 'Subject').replace(/[^\w\-]+/g, '_');
+        const title = ($examTitle.val() || 'SeatingPlan').replace(/[^\w\-]+/g, '_');
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `${title}-${subj}-Full.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setExportMessage('Single image downloaded — all columns, no split.', 'status-ok');
+      } catch (e) {
+        setExportMessage('Could not render single image: ' + esc(e.message), 'status-err');
+      }
+    }
+
+    function printImages() {
+      if (!lastImageChunks.length) { setExportMessage('Preview the seating plan first.', 'status-err'); return; }
+      const w = window.open('', '_blank');
+      if (!w) {
+        setExportMessage('Pop-up blocked — please allow pop-ups for this page, or use "Download image(s)" instead.', 'status-err');
+        return;
+      }
+      const pagesHtml = lastImageChunks.map(img => `
+        <div class="print-page">
+          <img src="${img.canvas.toDataURL('image/png')}">
+        </div>
+      `).join('');
+      const doc = `<!doctype html><html><head><meta charset="utf-8"><title>Seating Plan</title>
+        <style>
+          body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
+          .print-page { page-break-after: always; padding: 16px; text-align: center; }
+          .print-page:last-child { page-break-after: auto; }
+          .print-page img { max-width: 100%; }
+          @media print { @page { margin: 10mm; } }
+        </style>
+      </head><body>${pagesHtml}</body></html>`;
+      w.document.open();
+      w.document.write(doc);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 400);
+    }
+
+    // ===== JSON save / load =====
+    // A candidate "ref" is the shared candidate model, trimmed to what's needed to
+    // re-match against freshly-loaded internal/external lists on load.
+    function candidateRef(c) {
+      return {
+        adminNo: c.adminNo,
+        examNo: c.examNo,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        concession: !!c.concession,
+        external: !!c.external
+      };
+    }
+
+    function buildPlanObject() {
+      return {
+        examTitle: $examTitle.val() || '',
+        subject: $subject.val() || '',
+        concessionFilter: $concessionFilter.val() || 'all',
+        pattern: 's-snake',
+        rowsPerRow: rows,       // desks per row
+        numberOfRows: cols,     // number of rows of desks
+        generatedAt: new Date().toISOString(),
+        internalStudents: internalFiltered
+          .filter(c => selectedInternalIds.has(c.adminNo))
+          .map(candidateRef),
+        externalStudents: externalFiltered
+          .filter(c => selectedExternalIds.has(c.adminNo))
+          .map(candidateRef),
+        seats: seats.map(s => ({
+          row: s.row,
+          col: s.col,
+          student: s.student ? candidateRef(s.student) : null
+        })),
+        unassigned: unassigned.map(candidateRef)
+      };
+    }
+
+    function saveJson() {
+      if (!hasValidSelection()) { setExportMessage('No candidate data is loaded yet.', 'status-err'); return; }
+      const plan = buildPlanObject();
+      const subj = (plan.subject || 'AllSubjects').replace(/[^\w\-]+/g, '_');
+      const title = (plan.examTitle || 'SeatingPlan').replace(/[^\w\-]+/g, '_');
+      download(`${title}-${subj}.json`, JSON.stringify(plan, null, 2), 'application/json;charset=utf-8');
+      setExportMessage('Seating plan JSON downloaded.', 'status-ok');
+    }
+
+    // Re-matches a stored candidate ref against the live internal/external pools
+    // by adminNo, falling back to the stored ref itself if not found (e.g. the
+    // candidate has since been removed from students.json/external.json).
+    function resolveCandidateRef(ref) {
+      if (!ref) return null;
+      const pool = ref.external ? externalAll : internalAll;
+      return pool.find(c => c.adminNo === String(ref.adminNo)) || normalizeCandidate({
+        adminNo: ref.adminNo, ExamNo: ref.examNo, firstName: ref.firstName,
+        lastName: ref.lastName, Concession: ref.concession ? 'True' : 'False'
+      }, !!ref.external);
+    }
+
+    function applyLoadedPlan(plan) {
+      $examTitle.val(plan.examTitle || '');
+      if (plan.subject !== undefined) $subject.val(plan.subject);
+      if (plan.concessionFilter) $concessionFilter.val(plan.concessionFilter);
+
+      // Re-run filtering for the restored subject/concession combination, then
+      // override the selection sets with exactly what was saved.
+      filterAndRenderCandidates();
+
+      selectedInternalIds = new Set((plan.internalStudents || []).map(s => String(s.adminNo)));
+      selectedExternalIds = new Set((plan.externalStudents || []).map(s => String(s.adminNo)));
+      renderCandidateTable($internalTbody, sortByName(internalFiltered), selectedInternalIds);
+      renderCandidateTable($externalTbody, sortByName(externalFiltered), selectedExternalIds);
+      updateCandidateCounts();
+
+      rows = plan.rowsPerRow || rows;
+      cols = plan.numberOfRows || cols;
+      $rowsInput.val(rows);
+      $colsInput.val(cols);
+
+      seats = (plan.seats || []).map(s => ({
+        row: s.row,
+        col: s.col,
+        student: resolveCandidateRef(s.student)
+      }));
+      unassigned = (plan.unassigned || []).map(resolveCandidateRef).filter(Boolean);
+      selectedPoolId = null;
+      renderGrid();
+      renderPool();
+      setPlanMessage('Loaded seating plan from JSON.', 'status-ok');
+      hidePreview();
+    }
+
+    function loadJsonFile(file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const plan = JSON.parse(e.target.result);
+          applyLoadedPlan(plan);
+        } catch (err) {
+          setPlanMessage('Could not read JSON file: ' + esc(err.message), 'status-err');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ===== Class register =====
+    function setRegisterMessage(html, cls) {
+      $('#registerMessage').removeClass('status-ok status-warn status-err').addClass(cls || '').html(html || '');
+    }
+
+    // The register reflects candidates who are actually SEATED in the current plan.
+    function getRegisterCandidates() {
+      return sortByName(seats.filter(s => s.student).map(s => s.student));
+    }
+
+    function buildRegisterRowsHtml(candidates) {
+      return candidates.map((c, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${esc(candNumberLine(c))}</td>
+          <td>${esc(candNameLine(c))}</td>
+          <td>${c.external ? 'External' : 'Internal'}</td>
+          <td class="reg-sign-cell">&nbsp;</td>
+        </tr>`).join('');
+    }
+
+    function buildRegisterDocument() {
+      const candidates = getRegisterCandidates();
+      const subj = getSubjectLabel();
+      const title = $examTitle.val() || 'Class Register';
+      const dateStr = new Date().toLocaleDateString();
+      return `<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Class Register - ${esc(subj)}</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 24px; color: #212529; }
+  h1 { font-size: 1.25rem; margin: 0 0 .1rem 0; }
+  h2 { font-size: 1rem; font-weight: 400; margin: 0 0 .75rem 0; color: #495057; }
+  .meta { margin-bottom: 1rem; font-size: .85rem; color: #495057; }
+  table.register-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table.register-table th, table.register-table td { border: 1px solid #495057; padding: 8px 10px; }
+  table.register-table th { background: #f1f3f5; text-align: left; }
+  table.register-table td:first-child, table.register-table th:first-child { width: 40px; text-align: center; }
+  table.register-table td:nth-child(2), table.register-table th:nth-child(2) { width: 130px; }
+  table.register-table td:nth-child(4), table.register-table th:nth-child(4) { width: 90px; }
+  td.reg-sign-cell { width: 200px; }
+  @media print {
+    @page { margin: 14mm; }
+  }
+</style>
+</head>
+<body>
+  <h1>${esc(title)}</h1>
+  <h2>${esc(subj)}</h2>
+  <div class="meta">Date: ${esc(dateStr)} &bull; Total seated candidates: ${candidates.length}</div>
+  <table class="register-table">
+    <thead><tr><th>#</th><th>Exam&nbsp;No.</th><th>Surname, Name</th><th>Type</th><th>Signature</th></tr></thead>
+    <tbody>${buildRegisterRowsHtml(candidates)}</tbody>
+  </table>
+</body></html>`;
+    }
+
+    let pendingShowRegisterPreview = false;
+    $('#registerBuildModal').on('show.bs.modal', function () {
+      setRegisterMessage('');
+    });
+    $('#registerBuildModal').on('hidden.bs.modal', function () {
+      if (pendingShowRegisterPreview) {
+        pendingShowRegisterPreview = false;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('registerModal')).show();
+      }
+    });
+
+    function previewRegister() {
+      const candidates = getRegisterCandidates();
+      if (!candidates.length) {
+        setRegisterMessage('No candidates are currently seated — generate a seating plan first.', 'status-warn');
+      } else {
+        setRegisterMessage('');
+      }
+      $('#registerPreviewBody').html(`
+        <table class="table table-sm table-bordered align-middle mb-0">
+          <thead>
+            <tr><th style="width:40px;">#</th><th style="width:130px;">Exam&nbsp;No.</th><th>Surname, Name</th><th style="width:90px;">Type</th><th style="width:180px;">Signature</th></tr>
+          </thead>
+          <tbody>${buildRegisterRowsHtml(candidates)}</tbody>
+        </table>
+      `);
+      // Hand off from the build modal to the preview modal rather than stacking them.
+      const buildModalEl = document.getElementById('registerBuildModal');
+      const buildModalInstance = bootstrap.Modal.getInstance(buildModalEl);
+      if (buildModalInstance && buildModalEl.classList.contains('show')) {
+        pendingShowRegisterPreview = true;
+        buildModalInstance.hide();
+      } else {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('registerModal')).show();
+      }
+    }
+
+    function printRegister() {
+      const doc = buildRegisterDocument();
+      const w = window.open('', '_blank');
+      if (!w) {
+        setRegisterMessage('Pop-up blocked — please allow pop-ups for this page, or use "Download register" instead.', 'status-err');
+        return;
+      }
+      w.document.open();
+      w.document.write(doc);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 300);
+    }
+
+    function downloadRegisterHtml() {
+      const subj = getSubjectLabel();
+      const doc = buildRegisterDocument();
+      const title = ($examTitle.val() || 'ClassRegister').replace(/[^\w\-]+/g, '_');
+      const subjSafe = subj.replace(/[^\w\-]+/g, '_');
+      download(`${title}-${subjSafe}-Register.html`, doc, 'text/html;charset=utf-8');
+      setRegisterMessage('Class register downloaded as HTML — open it in a browser and use Print (or Print to PDF) to produce a paper copy.', 'status-ok');
+    }
+
+    // ===== Firebase cloud save / list =====
+    async function saveToCloud() {
+      if (!firebaseReady) {
+        setExportMessage('Firebase is not configured. Fill in <span class="mono">firebaseConfig</span> in the script to enable cloud save.', 'status-warn');
+        return;
+      }
+      if (!hasValidSelection()) { setExportMessage('No candidate data is loaded yet.', 'status-err'); return; }
+      try {
+        const plan = buildPlanObject();
+        await db.collection(SEATING_COLLECTION).add(plan);
+        setExportMessage('Seating plan saved to Firebase.', 'status-ok');
+        refreshCloudList();
+      } catch (e) {
+        setExportMessage('Firebase save failed: ' + esc(e.message), 'status-err');
+      }
+    }
+
+    async function refreshCloudList() {
+      $cloudPlanList.empty();
+      if (!firebaseReady) {
+        $cloudPlanList.html('<li class="list-group-item text-muted">Firebase not configured.</li>');
+        return;
+      }
+      try {
+        let query = db.collection(SEATING_COLLECTION).orderBy('generatedAt', 'desc').limit(15);
+        const snap = await query.get();
+        if (snap.empty) {
+          $cloudPlanList.html('<li class="list-group-item text-muted">No saved plans yet.</li>');
+          return;
+        }
+        snap.forEach(doc => {
+          const d = doc.data();
+          const li = $(`
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>${esc(d.examTitle || '(untitled)')} — ${esc(d.subject || 'All subjects')} <span class="text-muted">(${esc((d.generatedAt || '').slice(0, 10))})</span></span>
+              <button class="btn btn-sm btn-outline-primary" data-doc="${doc.id}">Load</button>
+            </li>
+          `);
+          li.find('button').on('click', () => applyLoadedPlan(d));
+          $cloudPlanList.append(li);
+        });
+      } catch (e) {
+        $cloudPlanList.html(`<li class="list-group-item status-err">Could not load: ${esc(e.message)}</li>`);
+      }
+    }
+
+    // ===== Wire up events =====
+    $subject.on('change', filterAndRenderCandidates);
+    $concessionFilter.on('change', filterAndRenderCandidates);
+    $('#generateBtn').on('click', generatePlan);
+    $('#resetBtn').on('click', resetGrid);
+    $('#previewBtn').on('click', previewImage);
+    $downloadImgBtn.on('click', downloadImage);
+    $downloadSingleImgBtn.on('click', downloadSingleImage);
+    $printImgBtn.on('click', printImages);
+    $('#downloadJsonBtn').on('click', saveJson);
+    $('#cloudSaveBtn').on('click', saveToCloud);
+    $('#refreshCloudBtn').on('click', refreshCloudList);
+    $('#loadJsonBtn').on('click', () => document.getElementById('loadJsonFile').click());
+    $('#loadJsonFile').on('change', function (e) {
+      if (this.files && this.files[0]) loadJsonFile(this.files[0]);
+      this.value = '';
+    });
+    $('#registerPreviewBtn').on('click', previewRegister);
+    $('#registerPrintBtn').on('click', printRegister);
+    $('#registerDownloadBtn').on('click', downloadRegisterHtml);
+    $('#registerModalPrintBtn').on('click', printRegister);
+
+    // ===== Init =====
+    loadData();
+    refreshCloudList();
+  })();
+  </script>
+</body>
+</html>
