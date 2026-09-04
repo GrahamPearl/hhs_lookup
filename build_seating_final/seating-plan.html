@@ -414,18 +414,16 @@
     initFirebase();
 
     // ===== Config: data sources =====
-    const STUDENTS_JSON_FILE = "students.json";   // internal Grade 12 candidates
-    const EXTERNAL_JSON_FILE = "external.json";   // external Grade 12 candidates
-    const SUBJECTS_JSON_FILE = "subjects.json";   // { "Subject Name": ["adminNo", ...], ... }
-
-    // Option B fallback: if subjects.json is missing/unreachable, this embedded
-    // object is used instead. Leave empty to rely purely on subjects.json.
-    const SUBJECTS_FALLBACK = {};
+    const STUDENTS_JSON_FILE = "students.json";           // internal Grade 12 candidates
+    const EXTERNAL_JSON_FILE = "external.json";            // external Grade 12 candidates
+    const LIST_OF_SUBJECTS_FILE = "list_of_subjects.txt";  // plain text, one subject name per line -> drives the dropdown
+    const SUBJECT_ROSTER_FILE = "Subjects-Grade12.json";    // per-subject roster records: { student_number, subject, ... } -> drives which candidates match a subject
 
     // ===== State =====
     let internalAll = [];        // normalized candidate objects, all Grade 12 internal
     let externalAll = [];        // normalized candidate objects, all Grade 12 external
-    let subjectsData = {};       // subject name -> Set of adminNo strings
+    let subjectNames = [];       // ordered list of subject names, from list_of_subjects.txt (dropdown source)
+    let subjectsData = {};       // normalized subject key -> Set of student_number/adminNo strings, from Subjects-Grade12.json
 
     let internalFiltered = [];   // internalAll filtered by subject + concession filter
     let externalFiltered = [];   // externalAll filtered by subject + concession filter
@@ -475,6 +473,18 @@
       if (!resp.ok) throw new Error(`${url} (${resp.status})`);
       return resp.json();
     }
+    async function fetchText(url) {
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error(`${url} (${resp.status})`);
+      return resp.text();
+    }
+    // Subject names in list_of_subjects.txt and Subjects-Grade12.json don't always
+    // agree on plural/singular ("Physical Science" vs "Physical Sciences"), so
+    // matching is done on a normalized key (trimmed, lowercased, trailing "s"
+    // dropped) rather than an exact string match.
+    function normalizeSubjectKey(s) {
+      return String(s || '').trim().toLowerCase().replace(/s$/, '');
+    }
     function download(filename, content, mime) {
       const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -517,7 +527,7 @@
       $subject.prop('disabled', true).html('<option value="" selected disabled>Loading…</option>');
       $subjectConfirm.html('');
 
-      let studentsRaw = [], externalRaw = [], subjectsRaw = null;
+      let studentsRaw = [], externalRaw = [], subjectListRaw = '', rosterRaw = [];
       try {
         studentsRaw = await fetchJson(STUDENTS_JSON_FILE);
       } catch (e) {
@@ -529,10 +539,14 @@
         console.warn('Could not load ' + EXTERNAL_JSON_FILE + ':', e.message);
       }
       try {
-        subjectsRaw = await fetchJson(SUBJECTS_JSON_FILE);
+        subjectListRaw = await fetchText(LIST_OF_SUBJECTS_FILE);
       } catch (e) {
-        console.warn('Could not load ' + SUBJECTS_JSON_FILE + ', using embedded fallback:', e.message);
-        subjectsRaw = SUBJECTS_FALLBACK;
+        console.warn('Could not load ' + LIST_OF_SUBJECTS_FILE + ':', e.message);
+      }
+      try {
+        rosterRaw = await fetchJson(SUBJECT_ROSTER_FILE);
+      } catch (e) {
+        console.warn('Could not load ' + SUBJECT_ROSTER_FILE + ':', e.message);
       }
 
       internalAll = (Array.isArray(studentsRaw) ? studentsRaw : [])
@@ -542,28 +556,39 @@
       externalAll = (Array.isArray(externalRaw) ? externalRaw : [])
         .map(s => normalizeCandidate(s, true));
 
+      // Dropdown labels come straight from list_of_subjects.txt, in file order,
+      // one subject name per non-blank line.
+      subjectNames = subjectListRaw
+        .split(/\r?\n/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      // Which candidates belong to which subject comes from Subjects-Grade12.json
+      // (an array of { student_number, subject, ... } roster rows). Keyed by a
+      // normalized subject name so minor wording differences between the two
+      // files (e.g. "Physical Science" vs "Physical Sciences") still match.
       subjectsData = {};
-      if (subjectsRaw && typeof subjectsRaw === 'object') {
-        Object.keys(subjectsRaw).forEach(subj => {
-          subjectsData[subj] = new Set((subjectsRaw[subj] || []).map(String));
-        });
-      }
+      (Array.isArray(rosterRaw) ? rosterRaw : []).forEach(rec => {
+        if (!rec || !rec.subject) return;
+        const key = normalizeSubjectKey(rec.subject);
+        if (!subjectsData[key]) subjectsData[key] = new Set();
+        if (rec.student_number != null) subjectsData[key].add(String(rec.student_number));
+      });
 
       buildSubjectOptions();
       filterAndRenderCandidates();
     }
 
     function buildSubjectOptions() {
-      const names = Object.keys(subjectsData).sort((a, b) => a.localeCompare(b));
-      if (!names.length) {
-        $subject.html('<option value="" selected disabled>No subjects.json entries found</option>');
+      if (!subjectNames.length) {
+        $subject.html('<option value="" selected disabled>No entries found in list_of_subjects.txt</option>');
         $subject.prop('disabled', false);
-        $subjectConfirm.html(`<div class="status-warn">Could not find any subjects in ${esc(SUBJECTS_JSON_FILE)}. Every Grade 12 candidate is currently shown below (no subject filter applied).</div>`);
+        $subjectConfirm.html(`<div class="status-warn">Could not find any subjects in ${esc(LIST_OF_SUBJECTS_FILE)}. Every Grade 12 candidate is currently shown below (no subject filter applied).</div>`);
         return;
       }
       $subject.html(
         '<option value="" selected>All subjects (no filter)</option>' +
-        names.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('')
+        subjectNames.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('')
       );
       $subject.prop('disabled', false);
     }
@@ -572,7 +597,7 @@
     function getSubjectAdminSet() {
       const subj = $subject.val();
       if (!subj) return null; // no subject chosen -> no subject filtering
-      return subjectsData[subj] || new Set();
+      return subjectsData[normalizeSubjectKey(subj)] || new Set();
     }
     function passesConcessionFilter(c) {
       const f = $concessionFilter.val();

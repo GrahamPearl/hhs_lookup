@@ -1,0 +1,100 @@
+/* seating-plan.css
+   Custom styles for the Grade 12 exam seating plan generator.
+   Bootstrap / site-wide styles (bootstrap.min.css, style.css, subjects.css)
+   are still loaded separately by seating-plan.html — this file only holds
+   the styling specific to this tool. */
+
+.card-fixed { border-radius: .75rem; }
+.status-ok   { color: #198754; }
+.status-warn { color: #fd7e14; }
+.status-err  { color: #dc3545; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+/* ---- Candidate picker tables ---- */
+.candidate-table-wrap { max-height: 320px; overflow-y: auto; }
+.candidate-table-wrap thead th { position: sticky; top: 0; background: #f8f9fa; z-index: 1; }
+tr.is-unselected { opacity: .5; }
+
+/* ---- Unassigned pool ---- */
+#unassignedPool { max-height: 260px; overflow-y: auto; }
+.pool-chip {
+  display: inline-flex; align-items: center; gap: .35rem;
+  border: 1px solid #ced4da; border-radius: .5rem;
+  padding: .25rem .5rem; margin: .2rem; font-size: .8rem; cursor: pointer;
+  background: #fff; user-select: none;
+}
+.pool-chip.selected { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+.pool-chip small { opacity: .75; }
+.pool-chip .ext-tag {
+  font-size: .6rem; font-weight: 700; color: #b35900; background: #fff3cd;
+  border: 1px solid #fd7e14; border-radius: .25rem; padding: 0 .25rem;
+}
+
+/* ---- Seating grid ---- */
+#seatingStage {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: .5rem;
+  padding: 1.25rem;
+}
+#seatGrid {
+  display: grid;
+  gap: 10px;
+  justify-content: start;
+}
+.seat {
+  width: 128px;
+  height: 84px;
+  border: 2px solid #495057;
+  border-radius: .4rem;
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: .7rem;
+  line-height: 1.1;
+  padding: 4px;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+  overflow: hidden;
+  position: relative;
+}
+.seat.empty {
+  border-style: dashed;
+  color: #adb5bd;
+  background: #ffffff;
+}
+.seat.filled {
+  background: #e7f1ff;
+  border-color: #0d6efd;
+}
+.seat.filled:hover {
+  background: #ffe3e3;
+  border-color: #dc3545;
+}
+/* External-candidate seats get a distinct orange/amber treatment (never confused with internal) */
+.seat.filled.external {
+  background: #fff3cd;
+  border: 1px solid #fd7e14;
+}
+.seat.filled.external:hover {
+  background: #ffe3e3;
+  border-color: #dc3545;
+}
+.seat-ext-badge {
+  font-size: .6rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  color: #b35900;
+}
+.seat .seat-no { position: absolute; margin-top: -70px; align-self: flex-start; font-size: .65rem; color: #6c757d; }
+.seat .seat-admin { font-weight: 700; }
+.seat .seat-name  { font-weight: 500; }
+.seat .seat-hint  { font-size: .65rem; }
+/* Hidden only while html2canvas is capturing the stage, so UI-only hints never end up in the exported image.
+   Note: the EXT badge and orange styling are NOT hidden here — they must appear in exported images too. */
+#seatingStage.capturing .capture-hide { visibility: hidden; }
+
+.legend-swatch { display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:4px; vertical-align:middle; }
