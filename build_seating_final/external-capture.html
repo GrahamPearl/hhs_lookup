@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hillcrest High • External Candidate Capture</title>
+
+  <link href="../css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/subjects.css">
+
+  <style>
+    .card-fixed { border-radius: .75rem; }
+    .status-ok   { color: #198754; }
+    .status-warn { color: #fd7e14; }
+    .status-err  { color: #dc3545; }
+    .subject-check-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: .35rem .75rem;
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+      border-radius: .5rem;
+      padding: .75rem;
+    }
+    .subject-check-grid .form-check { margin-bottom: 0; }
+    .table-wrap { max-height: 420px; overflow-y: auto; }
+    .table-wrap thead th { position: sticky; top: 0; background: #f8f9fa; z-index: 1; }
+    .subj-badge { font-size: .7rem; margin: .1rem; }
+  </style>
+</head>
+<body class="bg-light">
+
+  <header class="hhs-header py-4 mb-4">
+    <div class="container">
+      <h1 class="hhs-title mb-0 text-center">Hillcrest High School — External Candidate Capture</h1>
+    </div>
+  </header>
+
+  <div class="container pb-5">
+
+    <!-- STEP 1: Add candidate -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">1. Capture a candidate</h5>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label for="examNoInput" class="form-label">Exam Number</label>
+            <input type="text" id="examNoInput" class="form-control" placeholder="e.g. 5264121090300">
+          </div>
+          <div class="col-md-8">
+            <label for="nameInput" class="form-label">Full Name</label>
+            <input type="text" id="nameInput" class="form-control" placeholder="Surname, Firstname">
+            <div class="form-text">Format: <span class="mono">Surname, Firstname</span> — split automatically on the comma.</div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label d-flex justify-content-between align-items-center">
+            <span>Subjects</span>
+            <span>
+              <button type="button" class="btn btn-sm btn-outline-secondary me-1" id="subjSelectAllBtn">Select All</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="subjSelectNoneBtn">Select None</button>
+            </span>
+          </label>
+          <div id="subjectCheckGrid" class="subject-check-grid">
+            <span class="text-muted small">Loading subjects…</span>
+          </div>
+        </div>
+
+        <div class="mt-3 d-flex align-items-center gap-2">
+          <button type="button" id="addCandidateBtn" class="btn btn-primary">Add candidate</button>
+          <span id="captureMessage" class="small"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Captured list -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="card-title mb-0">2. Captured external candidates</h5>
+          <span id="countBadge" class="badge bg-secondary">0 candidates</span>
+        </div>
+        <p class="text-muted small mb-2">Loaded from the existing <span class="mono">external.json</span> (if reachable) plus anything you add above.</p>
+        <div class="table-wrap border rounded">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th style="width:140px;">Exam No.</th>
+                <th>Surname, Firstname</th>
+                <th>Subjects</th>
+                <th style="width:90px;">Remove</th>
+              </tr>
+            </thead>
+            <tbody id="candidateTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Save -->
+    <div class="card card-fixed shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">3. Save</h5>
+        <button type="button" id="downloadBtn" class="btn btn-success">Download external.json</button>
+        <p class="text-muted small mt-2 mb-0">
+          Downloads the full candidate list (existing + newly captured) as <span class="mono">external.json</span>.
+          Upload/replace that file alongside <span class="mono">seating-plan.html</span> on your server.
+        </p>
+        <div id="saveMessage" class="small mt-2"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../js/jquery-4.0.0.min.js"></script>
+  <script src="../js/bootstrap.bundle.min.js"></script>
+
+  <script>
+  (function () {
+    'use strict';
+
+    const LIST_OF_SUBJECTS_FILE = "list_of_subjects.txt";
+    const EXTERNAL_JSON_FILE = "external.json";
+
+    let subjectNames = [];   // from list_of_subjects.txt
+    let candidates = [];     // working list: existing external.json entries + newly captured
+
+    const $examNo = $('#examNoInput');
+    const $name = $('#nameInput');
+    const $subjectGrid = $('#subjectCheckGrid');
+    const $captureMessage = $('#captureMessage');
+    const $saveMessage = $('#saveMessage');
+    const $tbody = $('#candidateTbody');
+    const $countBadge = $('#countBadge');
+
+    function esc(s) {
+      if (s == null) return '';
+      return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    }
+    function setMsg($el, html, cls) {
+      $el.removeClass('status-ok status-warn status-err').addClass(cls || '').html(html || '');
+    }
+    async function fetchText(url) {
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error(`${url} (${resp.status})`);
+      return resp.text();
+    }
+    async function fetchJson(url) {
+      const resp = await fetch(url, { cache: 'no-store' });
+      if (!resp.ok) throw new Error(`${url} (${resp.status})`);
+      return resp.json();
+    }
+
+    // ===== Load subject list for the checkbox grid =====
+    async function loadSubjects() {
+      try {
+        const raw = await fetchText(LIST_OF_SUBJECTS_FILE);
+        subjectNames = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      } catch (e) {
+        console.warn('Could not load ' + LIST_OF_SUBJECTS_FILE + ':', e.message);
+        subjectNames = [];
+      }
+      if (!subjectNames.length) {
+        $subjectGrid.html('<span class="status-err small">Could not load list_of_subjects.txt — place this tool alongside that file.</span>');
+        return;
+      }
+      $subjectGrid.html(subjectNames.map((s, i) => `
+        <div class="form-check">
+          <input class="form-check-input subj-check" type="checkbox" value="${esc(s)}" id="subj_${i}">
+          <label class="form-check-label" for="subj_${i}">${esc(s)}</label>
+        </div>
+      `).join(''));
+    }
+
+    $('#subjSelectAllBtn').on('click', () => $('.subj-check').prop('checked', true));
+    $('#subjSelectNoneBtn').on('click', () => $('.subj-check').prop('checked', false));
+
+    // ===== Load any existing external.json so this tool can add to it =====
+    async function loadExisting() {
+      try {
+        const raw = await fetchJson(EXTERNAL_JSON_FILE);
+        candidates = (Array.isArray(raw) ? raw : []).map(r => ({
+          adminNo: String(r.adminNo != null ? r.adminNo : (r.ExamNo || r.examNo || '')),
+          firstName: r.firstName || '',
+          lastName: r.lastName || '',
+          grade: r.grade || '12',
+          ExamNo: r.ExamNo || r.examNo || '',
+          subjects: Array.isArray(r.subjects) ? r.subjects : []
+        }));
+      } catch (e) {
+        console.warn('Could not load existing ' + EXTERNAL_JSON_FILE + ' (starting empty):', e.message);
+        candidates = [];
+      }
+      renderTable();
+    }
+
+    // ===== Render captured table =====
+    function renderTable() {
+      $tbody.empty();
+      candidates.forEach((c, idx) => {
+        const subjBadges = (c.subjects || []).map(s => `<span class="badge bg-light text-dark border subj-badge">${esc(s)}</span>`).join(' ') || '<span class="text-muted small">—</span>';
+        const tr = $(`
+          <tr>
+            <td>${esc(c.ExamNo)}</td>
+            <td>${esc((c.lastName || '').toUpperCase())}${c.lastName ? ', ' : ''}${esc(c.firstName)}</td>
+            <td>${subjBadges}</td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger remove-btn" data-idx="${idx}">Remove</button></td>
+          </tr>
+        `);
+        $tbody.append(tr);
+      });
+      $countBadge.text(`${candidates.length} candidate${candidates.length === 1 ? '' : 's'}`);
+    }
+
+    $tbody.on('click', '.remove-btn', function () {
+      const idx = parseInt($(this).data('idx'), 10);
+      candidates.splice(idx, 1);
+      renderTable();
+    });
+
+    // ===== Add candidate =====
+    function addCandidate() {
+      const examNo = $examNo.val().trim();
+      const nameRaw = $name.val().trim();
+      const selectedSubjects = $('.subj-check:checked').map(function () { return this.value; }).get();
+
+      if (!examNo) { setMsg($captureMessage, 'Exam number is required.', 'status-err'); return; }
+      if (candidates.some(c => String(c.ExamNo) === examNo)) {
+        setMsg($captureMessage, 'A candidate with this exam number is already in the list.', 'status-err');
+        return;
+      }
+      if (!nameRaw) { setMsg($captureMessage, 'Full name is required.', 'status-err'); return; }
+
+      let lastName = '', firstName = '';
+      if (nameRaw.includes(',')) {
+        const parts = nameRaw.split(',');
+        lastName = parts[0].trim();
+        firstName = parts.slice(1).join(',').trim();
+      } else {
+        lastName = nameRaw; // no comma given -> stored as-is in lastName
+      }
+
+      candidates.push({
+        adminNo: examNo,
+        firstName,
+        lastName,
+        grade: '12',
+        ExamNo: examNo,
+        subjects: selectedSubjects
+      });
+
+      $examNo.val('');
+      $name.val('');
+      $('.subj-check').prop('checked', false);
+      renderTable();
+
+      setMsg($captureMessage,
+        selectedSubjects.length ? 'Candidate added.' : 'Candidate added — no subjects were ticked.',
+        selectedSubjects.length ? 'status-ok' : 'status-warn'
+      );
+    }
+    $('#addCandidateBtn').on('click', addCandidate);
+
+    // ===== Download merged external.json =====
+    function downloadJson() {
+      if (!candidates.length) {
+        setMsg($saveMessage, 'Nothing to save yet — capture at least one candidate.', 'status-err');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(candidates, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'external.json'; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      setMsg($saveMessage, `Downloaded external.json with ${candidates.length} candidate(s). Upload it alongside seating-plan.html.`, 'status-ok');
+    }
+    $('#downloadBtn').on('click', downloadJson);
+
+    // ===== Init =====
+    loadSubjects();
+    loadExisting();
+  })();
+  </script>
+</body>
+</html>
