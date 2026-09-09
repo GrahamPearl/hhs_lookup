@@ -43,7 +43,10 @@
     <!-- STEP 1: Add candidate -->
     <div class="card card-fixed shadow-sm mb-4">
       <div class="card-body">
-        <h5 class="card-title mb-3">1. Capture a candidate</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title mb-0">1. Capture a candidate</h5>
+          <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#manualModal">Manual</button>
+        </div>
         <div class="row g-3">
           <div class="col-md-4">
             <label for="examNoInput" class="form-label">Exam Number</label>
@@ -113,6 +116,31 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- Manual bulk-entry modal -->
+  <div class="modal fade" id="manualModal" tabindex="-1" aria-labelledby="manualModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="manualModalLabel">Manual bulk entry</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-2">
+            One candidate per line, exam number and full name separated by a single comma:<br>
+            <span class="mono">ExamNo, Full Name</span>
+          </p>
+          <textarea id="manualTextarea" class="form-control" rows="10" placeholder="5264121090301, John Smith&#10;5264121090302, Priya Naidoo"></textarea>
+          <p class="text-muted small mt-2 mb-0">Subjects aren't captured this way — add them individually afterwards if needed. No concession is applied by default.</p>
+          <div id="manualMessage" class="small mt-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" id="manualAddBtn" class="btn btn-primary">Add all</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="../js/jquery-4.0.0.min.js"></script>
@@ -188,6 +216,7 @@
           lastName: r.lastName || '',
           grade: r.grade || '12',
           ExamNo: r.ExamNo || r.examNo || '',
+          Concession: r.Concession === 'True' ? 'True' : 'False',
           subjects: Array.isArray(r.subjects) ? r.subjects : []
         }));
       } catch (e) {
@@ -198,6 +227,10 @@
     }
 
     // ===== Render captured table =====
+    function nameLine(c) {
+      const sur = (c.lastName || '').toUpperCase();
+      return c.firstName ? `${sur}, ${c.firstName}` : sur;
+    }
     function renderTable() {
       $tbody.empty();
       candidates.forEach((c, idx) => {
@@ -205,7 +238,7 @@
         const tr = $(`
           <tr>
             <td>${esc(c.ExamNo)}</td>
-            <td>${esc((c.lastName || '').toUpperCase())}${c.lastName ? ', ' : ''}${esc(c.firstName)}</td>
+            <td>${esc(nameLine(c))}</td>
             <td>${subjBadges}</td>
             <td><button type="button" class="btn btn-sm btn-outline-danger remove-btn" data-idx="${idx}">Remove</button></td>
           </tr>
@@ -249,6 +282,7 @@
         lastName,
         grade: '12',
         ExamNo: examNo,
+        Concession: 'False', // no external candidate has a concession by default
         subjects: selectedSubjects
       });
 
@@ -263,6 +297,52 @@
       );
     }
     $('#addCandidateBtn').on('click', addCandidate);
+
+    // ===== Manual bulk entry: "ExamNo, Full Name" per line =====
+    // Only the first comma splits ExamNo from the name — the name itself is
+    // stored whole in lastName (same fallback used above when no comma is
+    // given), since a plain "Full Name" here isn't guaranteed to be in
+    // Surname/Firstname order. No subjects and no concession are captured
+    // this way; concession defaults to none per the site's external-candidate rule.
+    function parseManualLine(line) {
+      const commaIdx = line.indexOf(',');
+      if (commaIdx === -1) return null;
+      const examNo = line.slice(0, commaIdx).trim();
+      const fullName = line.slice(commaIdx + 1).trim();
+      if (!examNo || !fullName) return null;
+      return { examNo, fullName };
+    }
+
+    function addManualBulk() {
+      const lines = $('#manualTextarea').val().split(/\r?\n/);
+      let added = 0, skippedDup = 0, badLines = [];
+
+      lines.forEach((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const parsed = parseManualLine(trimmed);
+        if (!parsed) { badLines.push(i + 1); return; }
+        if (candidates.some(c => String(c.ExamNo) === parsed.examNo)) { skippedDup++; return; }
+        candidates.push({
+          adminNo: parsed.examNo,
+          firstName: '',
+          lastName: parsed.fullName,
+          grade: '12',
+          ExamNo: parsed.examNo,
+          Concession: 'False',
+          subjects: []
+        });
+        added++;
+      });
+
+      renderTable();
+      let msg = `Added ${added} candidate(s).`;
+      if (skippedDup) msg += ` Skipped ${skippedDup} duplicate exam number(s).`;
+      if (badLines.length) msg += ` Could not parse line(s): ${badLines.join(', ')} (expected "ExamNo, Full Name").`;
+      setMsg($('#manualMessage'), msg, badLines.length ? 'status-warn' : 'status-ok');
+      if (added > 0) $('#manualTextarea').val('');
+    }
+    $('#manualAddBtn').on('click', addManualBulk);
 
     // ===== Download merged external.json =====
     function downloadJson() {
