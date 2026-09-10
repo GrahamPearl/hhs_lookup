@@ -8,50 +8,23 @@
   <link href="../css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/subjects.css">
+  <link rel="stylesheet" href="../css/nav.css">
   <style>
-    .toolbar { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+    .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap }
     .toolbar .badge { font-size: .85rem; }
-    .card-fixed { border-radius: .75rem; }
-
-    /* Print & PDF styling optimizations */
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #resultArea, #resultArea * {
-        visibility: visible;
-      }
-      #resultArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100% !important;
-      }
-      img {
-        max-width: 150px !important;
-        height: auto !important;
-        page-break-inside: avoid;
-      }
-      .print-layout-1col {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-      }
-      .print-layout-table {
-        display: table;
-        width: 100%;
-        border-collapse: collapse;
-      }
-      .print-layout-table tr, .print-layout-table td {
-        page-break-inside: avoid;
-        border: 1px solid #dee2e6;
-        padding: 8px;
-        text-align: center;
-      }
-    }
   </style>
 </head>
 <body class="bg-light">
+  <nav class="app-nav">
+    <div class="app-nav-inner">
+      <span class="app-nav-brand">Hillcrest High</span>
+      <div class="app-nav-links">
+        <a class="app-nav-link active" href="index.html">Student Lookup</a>
+        <a class="app-nav-link" href="subjects.html">Subjects by Grade</a>
+      </div>
+    </div>
+  </nav>
+
   <header class="hhs-header py-4 mb-4">
     <div class="container">
       <h1 class="hhs-title mb-0 text-center">Hillcrest High School — Student Lookup</h1>
@@ -59,199 +32,91 @@
   </header>
 
   <div class="container pb-5">
-    <!-- Main Control Card -->
+    <!-- Search Card -->
     <div class="card card-fixed shadow-sm mb-4">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <!-- Button to trigger Search Modal -->
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#searchModal">
-            Open Search Form
-          </button>
+        <form id="searchForm" novalidate>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+              <label for="field" class="form-label">Search field</label>
+              <select id="field" name="field" class="form-select">
+                <option value="auto" selected>Auto (student_number · name · subject · line · teacher · subject+line)</option>
+                <option value="student_number">Student Number</option>
+                <option value="name">Name</option>
+                <option value="subject">Subject</option>
+                <option value="line">Line</option>
+                <option value="teacher">Teacher</option>
+                <option value="subject_line">Subject + Line</option>
+              </select>
+            </div>
 
-          <div class="toolbar">
-            <span id="status" class="badge bg-secondary">Ready</span>
-            <button type="button" id="exportBtn" class="btn btn-sm btn-outline-primary" disabled>Export CSV</button>
-            <!-- Button to trigger Print Layout Options Modal -->
-            <button type="button" id="printModalBtn" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#printOptionsModal" disabled>
-              Print / PDF Layout
-            </button>
+            <div class="col-md-3">
+              <label for="gradeSelect" class="form-label">Grade</label>
+              <select id="gradeSelect" class="form-select" aria-label="Select grade filter">
+                <option value="" selected>All grades</option>
+                <option value="10">Grade 10</option>
+                <option value="11">Grade 11</option>
+                <option value="12">Grade 12</option>
+              </select>
+              <div class="form-text">Required for <strong>Subject + Line</strong>.</div>
+            </div>
+
+            <div class="col-md-3">
+              <label for="subjectSelect" class="form-label">Subject</label>
+              <!-- Options below are populated from the loaded data at runtime
+                   (see js/subject-lookup.js) so this list can never drift out
+                   of sync with what's actually in the JSON files. -->
+              <select id="subjectSelect" class="form-select" aria-label="Select subject">
+                <option value="" selected>All subjects</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label for="lineSelect" class="form-label">Line</label>
+              <select id="lineSelect" class="form-select" aria-label="Select line">
+                <option value="" selected>All lines</option>
+                <option value="1">Line 1</option>
+                <option value="2">Line 2</option>
+                <option value="3">Line 3</option>
+                <option value="4">Line 4</option>
+                <option value="5">Line 5</option>
+                <option value="6">Line 6</option>
+                <option value="7">Line 7</option>
+                <option value="8">Line 8</option>
+              </select>
+            </div>
           </div>
+
+          <div class="row g-3 align-items-end mt-1">
+            <div class="col-md-10">
+              <label for="query" class="form-label">Search term</label>
+              <input type="text" class="form-control" id="query" name="query"
+                     placeholder="Type a name, student number, subject, line, teacher, or ‘Subject line N’…" />
+              <div class="form-text" id="helpText">Use the dropdowns above and/or a search term. Auto searches across all fields and all grades.</div>
+            </div>
+            <div class="col-md-2 d-grid d-md-flex">
+              <button type="submit" class="btn btn-primary me-md-2 mb-2 mb-md-0">Search</button>
+              <button type="button" id="resetBtn" class="btn btn-outline-secondary">Clear</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="toolbar mt-3">
+          <span id="status" class="badge bg-secondary">Ready</span>
+          <button type="button" id="exportBtn" class="btn btn-sm btn-outline-primary" disabled>Export CSV</button>
+          <!-- Live filter input and rows-per-page select are injected here
+               at runtime by js/subject-lookup.js (injectToolbarExtras). -->
         </div>
 
         <div id="messageArea" class="mt-3"></div>
       </div>
     </div>
 
-    <!-- Results Area -->
     <div id="resultArea"></div>
   </div>
 
-  <!-- Search Form Modal (Restoring original searchForm functionality from source) -->
-  <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="searchModalLabel">Student Search Lookup</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="searchForm" novalidate>
-            <div class="row g-3 align-items-end">
-              <div class="col-md-3">
-                <label for="field" class="form-label">Search field</label>
-                <select id="field" name="field" class="form-select">
-                  <option value="auto" selected>Auto (student_number · name · subject · line · teacher · subject+line)</option>
-                  <option value="student_number">Student Number</option>
-                  <option value="name">Name</option>
-                  <option value="subject">Subject</option>
-                  <option value="line">Line</option>
-                  <option value="teacher">Teacher</option>
-                  <option value="subject_line">Subject + Line</option>
-                </select>
-              </div>
-
-              <div class="col-md-3">
-                <label for="gradeSelect" class="form-label">Grade</label>
-                <select id="gradeSelect" class="form-select" aria-label="Select grade filter">
-                  <option value="" selected>All grades</option>
-                  <option value="10">Grade 10</option>
-                  <option value="11">Grade 11</option>
-                  <option value="12">Grade 12</option>
-                </select>
-                <div class="form-text">Required for <strong>Subject + Line</strong>.</div>
-              </div>
-
-              <div class="col-md-3">
-                <label for="subjectSelect" class="form-label">Subject</label>
-                <select id="subjectSelect" class="form-select" aria-label="Select subject">
-                  <option value="" selected>All subjects</option>
-                  <option value="Accounting">Accounting</option>
-                  <option value="Afrikaans First Additional Language">Afrikaans First Additional Language</option>
-                  <option value="Business Studies">Business Studies</option>
-                  <option value="Consumer Studies">Consumer Studies</option>
-                  <option value="Dramatic Arts">Dramatic Arts</option>
-                  <option value="Economics">Economics</option>
-                  <option value="English Home Language">English Home Language</option>
-                  <option value="Further Studies Mathematics">Further Studies Mathematics</option>
-                  <option value="Geography">Geography</option>
-                  <option value="German First Additional Language">German First Additional Language</option>
-                  <option value="History">History</option>
-                  <option value="IsiZulu First Additional Language">IsiZulu First Additional Language</option>
-                  <option value="Information Technology">Information Technology</option>
-                  <option value="Life Orientation">Life Orientation</option>
-                  <option value="Life Sciences">Life Sciences</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Mathematical Literacy">Mathematical Literacy</option>
-                  <option value="Physical Sciences">Physical Sciences</option>
-                  <option value="Tourism">Tourism</option>
-                  <option value="Visual Arts">Visual Arts</option>
-                </select>
-              </div>
-
-              <div class="col-md-3">
-                <label for="lineSelect" class="form-label">Line</label>
-                <select id="lineSelect" class="form-select" aria-label="Select line">
-                  <option value="" selected>All lines</option>
-                  <option value="1">Line 1</option>
-                  <option value="2">Line 2</option>
-                  <option value="3">Line 3</option>
-                  <option value="4">Line 4</option>
-                  <option value="5">Line 5</option>
-                  <option value="6">Line 6</option>
-                  <option value="7">Line 7</option>
-                  <option value="8">Line 8</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="row g-3 align-items-end mt-1">
-              <div class="col-md-10">
-                <label for="query" class="form-label">Search term</label>
-                <input type="text" class="form-control" id="query" name="query"
-                       placeholder="Type a name, student number, subject, line, teacher, or ‘Subject line N’…" />
-                <div class="form-text" id="helpText">Use the dropdowns above and/or a search term. Auto searches across all fields.</div>
-              </div>
-              <div class="col-md-2 d-grid d-md-flex">
-                <button type="submit" class="btn btn-primary me-md-2 mb-2 mb-md-0" data-bs-dismiss="modal">Search</button>
-                <button type="button" id="resetBtn" class="btn btn-outline-secondary">Clear</button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Print & PDF Layout Options Modal -->
-  <div class="modal fade" id="printOptionsModal" tabindex="-1" aria-labelledby="printOptionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="printOptionsModalLabel">Print / PDF Layout Options</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label fw-bold">Select Rendering Layout for Print:</label>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="printLayoutOption" id="opt1Col" value="1col" checked>
-              <label class="form-check-label" for="opt1Col">
-                1 x Column of Profiles
-              </label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="printLayoutOption" id="optTable" value="table">
-              <label class="form-check-label" for="optTable">
-                Picture Profiles Table (ADMIN NO & Name below pictures)
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" id="executePrintBtn" class="btn btn-primary">Print / Save as PDF</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scripts -->
   <script src="../js/jquery-4.0.0.min.js"></script>
   <script src="../js/bootstrap.bundle.min.js"></script>
   <script src="../js/subject-lookup.js"></script>
-  <script>
-    // Enable print button when results populate in #resultArea
-    $(document).ajaxComplete(function() {
-      if ($('#resultArea').children().length > 0) {
-        $('#printModalBtn').prop('disabled', false);
-      }
-    });
-    // Also monitor DOM mutations or script updates if subject-lookup.js manipulates resultArea directly
-    const observer = new MutationObserver(function() {
-      if ($('#resultArea').children().length > 0) {
-        $('#printModalBtn').prop('disabled', false);
-      }
-    });
-    observer.observe(document.getElementById('resultArea'), { childList: true, subtree: true });
-
-    // Handle print layout formatting and execution
-    $('#executePrintBtn').on('click', function() {
-      const layoutType = $('input[name="printLayoutOption"]:checked').val();
-      const $resultArea = $('#resultArea');
-      
-      $resultArea.removeClass('print-layout-1col print-layout-table');
-
-      if (layoutType === '1col') {
-        $resultArea.addClass('print-layout-1col');
-      } else if (layoutType === 'table') {
-        $resultArea.addClass('print-layout-table');
-      }
-
-      $('#printOptionsModal').modal('hide');
-      setTimeout(() => {
-        window.print();
-      }, 300);
-    });
-  </script>
 </body>
 </html>

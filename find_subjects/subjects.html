@@ -9,6 +9,7 @@
   <link href="../css/bootstrap.min.css" rel="stylesheet">
   <!-- Hillcrest theme overrides -->
   <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/nav.css">
   <style>
     /* Small page-specific polish (non-invasive) */
     .card-fixed { border-radius: .75rem; }
@@ -21,6 +22,16 @@
 </head>
 <body class="bg-light">
 
+  <nav class="app-nav">
+    <div class="app-nav-inner">
+      <span class="app-nav-brand">Hillcrest High</span>
+      <div class="app-nav-links">
+        <a class="app-nav-link" href="index.html">Student Lookup</a>
+        <a class="app-nav-link active" href="subjects.html">Subjects by Grade</a>
+      </div>
+    </div>
+  </nav>
+
   <!-- Themed header -->
   <header class="hhs-header py-4 mb-4">
     <div class="container">
@@ -29,6 +40,20 @@
   </header>
 
   <div class="container pb-5">
+
+    <!--
+      KNOWN ISSUE (tracked for Phase 2, not fixed in this pass):
+      normalizeSubjects() below expects either
+        { subjects: [{ name, students: [...] }, ...] }
+      or
+        { "SubjectName": [ ...students ], ... }
+      but Subjects-Grade10/11/12.json are flat arrays of individual
+      student-subject records, e.g. [{ student_number, name, subject,
+      line, teacher, ... }, ...]. Neither branch matches that shape, so
+      the Subject dropdown currently never populates. Phase 2 will
+      rewrite normalizeSubjects() to group the flat array by `subject`
+      first. Left as-is here since Phase 1 scope is index.html.
+    -->
 
     <!-- Filter Card -->
     <div class="card card-fixed shadow-sm mb-4">
@@ -119,7 +144,7 @@
     function setMessage(html) { $msg.html(html || ''); }
     function updateCount(arr) {
       const n = Array.isArray(arr) ? arr.length : 0;
-      $count.text(\`\${n} student\${n === 1 ? '' : 's'}\`);
+      $count.text(`${n} student${n === 1 ? '' : 's'}`);
       $count.toggleClass('bg-secondary', n === 0).toggleClass('bg-success', n > 0);
     }
     function clearSelect($sel, placeholder, { disabled = false } = {}) {
@@ -134,7 +159,7 @@
     }
     async function fetchJson(url) {
       const resp = await fetch(url, { cache: 'no-store' });
-      if (!resp.ok) throw new Error(\`\${url} (\${resp.status})\`);
+      if (!resp.ok) throw new Error(`${url} (${resp.status})`);
       return resp.json();
     }
     function normalizeSubjects(data) {
@@ -195,9 +220,9 @@
         return;
       }
       const cols = deriveColumns(rows);
-      const thead = '<thead><tr>' + cols.map(c=>\`<th scope="col">\${esc(c)}</th>\`).join('') + '</tr></thead>';
+      const thead = '<thead><tr>' + cols.map(c=>`<th scope="col">${esc(c)}</th>`).join('') + '</tr></thead>';
       const tbody = '<tbody>' + rows.map(r =>
-        '<tr>' + cols.map(c => \`<td>\${esc(stringifyCell(r?.[c]))}</td>\`).join('') + '</tr>'
+        '<tr>' + cols.map(c => `<td>${esc(stringifyCell(r?.[c]))}</td>`).join('') + '</tr>'
       ).join('') + '</tbody>';
       $result.html(
         '<div class="table-responsive">' +
@@ -244,16 +269,16 @@
         subjectsMap = normalizeSubjects(data);
         if (subjectsMap.size === 0) {
           setStatus('Loaded, but no subjects found in the file.', 'status-warn');
-          setMessage(\`Check the structure of <code>\${file}</code>.\`);
+          setMessage(`Check the structure of <code>${file}</code>.`);
           renderTable([]); return;
         }
         const subjects = Array.from(subjectsMap.keys()).sort((a,b)=>a.localeCompare(b));
         addOptions($subject, subjects.map(s => ({ value: s, label: s })));
         $subject.prop('disabled', false);
-        setStatus(\`Loaded \${subjects.length} subject\${subjects.length===1?'':'s'} for Grade \${g}.\`, 'status-ok');
+        setStatus(`Loaded ${subjects.length} subject${subjects.length===1?'':'s'} for Grade ${g}.`, 'status-ok');
       } catch (e) {
         setStatus('Failed to load grade file.', 'status-err');
-        setMessage(\`<span class="text-danger">Error:</span> \${e.message}. Ensure the file exists and you’re not opening this page via <code>file://</code>.\`);
+        setMessage(`<span class="text-danger">Error:</span> ${e.message}. Ensure the file exists and you’re not opening this page via <code>file://</code>.`);
         renderTable([]);
       }
     });
@@ -271,7 +296,7 @@
       renderTable(filteredStudents);
       updateCount(filteredStudents);
       $export.prop('disabled', filteredStudents.length === 0);
-      setStatus(\`Showing “\${currentSubject}” (\${filteredStudents.length} record\${filteredStudents.length===1?'':'s'}).\`, 'status-ok');
+      setStatus(`Showing “${currentSubject}” (${filteredStudents.length} record${filteredStudents.length===1?'':'s'}).`, 'status-ok');
     });
 
     $line.on('change', function() {
@@ -282,7 +307,7 @@
       renderTable(filteredStudents);
       updateCount(filteredStudents);
       $export.prop('disabled', filteredStudents.length === 0);
-      setStatus(\`Filter: \${v==='__ALL__' ? 'All lines' : 'Line = '+v}. \${filteredStudents.length} record\${filteredStudents.length===1?'':'s'}.\`, 'status-ok');
+      setStatus(`Filter: ${v==='__ALL__' ? 'All lines' : 'Line = '+v}. ${filteredStudents.length} record${filteredStudents.length===1?'':'s'}.`, 'status-ok');
     });
 
     $('#exportBtn').on('click', function() {
@@ -291,7 +316,7 @@
       const subjSafe = (currentSubject || 'Subject').replace(/[^\w\-]+/g, '_');
       const line = ($line.val() && $line.val() !== '__ALL__') ? $line.val() : 'All';
       const csv = toCSV(filteredStudents);
-      download(\`Grade\${g}-\${subjSafe}-Line_\${line}.csv\`, csv, 'text/csv;charset=utf-8');
+      download(`Grade${g}-${subjSafe}-Line_${line}.csv`, csv, 'text/csv;charset=utf-8');
     });
 
     // HTML5 validation (non-blocking)
