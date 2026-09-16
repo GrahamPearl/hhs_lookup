@@ -1906,15 +1906,18 @@ function openCoverPrintPreview(action = null) {
             const { jsPDF } = win.jspdf;
             const content = doc.querySelector(".container");
             if (!content) return;
-            const RENDER_SCALE = 2;
+            
+            // Reduced scale factor to lower excessive resolution/file size
+            const RENDER_SCALE = 1.5;
 
             win
-              .html2canvas(content, { scale: RENDER_SCALE })
+              .html2canvas(content, { scale: RENDER_SCALE, useCORS: true, logging: false })
               .then((canvas) => {
                 const pdf = new jsPDF({
                   orientation: "portrait",
                   unit: "pt",
                   format: "a4",
+                  compress: true // Enables internal object stream compression
                 });
                 const pdfW = pdf.internal.pageSize.getWidth();
                 const pdfH = pdf.internal.pageSize.getHeight();
@@ -1965,9 +1968,11 @@ function openCoverPrintPreview(action = null) {
                     );
 
                   if (i > 0) pdf.addPage();
+                  
+                  // Converted slice output from PNG to JPEG with 80% quality compression
                   pdf.addImage(
-                    pageCanvas.toDataURL("image/png"),
-                    "PNG",
+                    pageCanvas.toDataURL("image/jpeg", 0.8),
+                    "JPEG",
                     0,
                     0,
                     pdfW,
@@ -1989,7 +1994,7 @@ function openCoverPrintPreview(action = null) {
         ensureLibs()
           .then(() => {
             win
-              .html2canvas(doc.querySelector(".container"), { scale: 2 })
+              .html2canvas(doc.querySelector(".container"), { scale: 1.5, useCORS: true, logging: false })
               .then((canvas) => {
                 const link = doc.createElement("a");
                 link.download = `${getCoverFilenameStub()}.png`;
@@ -3493,7 +3498,10 @@ async function generatePDF() {
       return;
     }
     const { jsPDF } = window.jspdf,
-      doc = new jsPDF({ orientation: "landscape" });
+      doc = new jsPDF({ 
+            orientation: "landscape",
+            compress: true
+       });
     const day = parseInt(document.getElementById("absenceDaySelect").value) + 1;
     let y = 15;
     doc.setFontSize(16);
