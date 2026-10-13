@@ -5001,8 +5001,7 @@
     "agegroup": "Under 15",
     "birthdate": "2011-11-15",
     "registrationClass": "GRADE 9 9SJ",
-    "photo": "15125.webp",
-    "Concession": "True"
+    "photo": "15125.webp"
   },
   {
     "adminNo": "15200",
@@ -12624,7 +12623,8 @@
     "birthdate": "2008-03-11",
     "registrationClass": "GRADE 12 12LM",
     "photo": "14195.webp",
-    "ExamNo": "5264121090201"
+    "ExamNo": "5264121090201",
+    "Concession": "True"
   },
   {
     "adminNo": "14162",
