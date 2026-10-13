@@ -1,2 +1,180 @@
-{
-}
+[
+  {
+    "adminNo": "5264121096001",
+    "firstName": "Anele Enjoy",
+    "lastName": "DLADLA",
+    "grade": "12",
+    "ExamNo": "5264121096001",
+    "Concession": "False",
+    "subjects": [
+      "English Home Language",
+      "History",
+      "Mathematics"
+    ]
+  },
+  {
+    "adminNo": "5264121096002",
+    "firstName": "Luhle",
+    "lastName": "DLAMINI",
+    "grade": "12",
+    "ExamNo": "5264121096002",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics"
+    ]
+  },
+  {
+    "adminNo": "5264121096003",
+    "firstName": "Owethu Zamaswazi",
+    "lastName": "DLAMINI",
+    "grade": "12",
+    "ExamNo": "5264121096003",
+    "Concession": "False",
+    "subjects": [
+      "English Home Language",
+      "Mathematics",
+      "Physical Science"
+    ]
+  },
+  {
+    "adminNo": "5264121096004",
+    "firstName": "Khayelihle Earl",
+    "lastName": "GUMEDE",
+    "grade": "12",
+    "ExamNo": "5264121096004",
+    "Concession": "False",
+    "subjects": [
+      "Business Studies",
+      "English Home Language"
+    ]
+  },
+  {
+    "adminNo": "5264121096005",
+    "firstName": "Amahle Sinethemba",
+    "lastName": "HLENGWA",
+    "grade": "12",
+    "ExamNo": "5264121096005",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics"
+    ]
+  },
+  {
+    "adminNo": "5264121096010",
+    "firstName": "Siphelele Busisiwe",
+    "lastName": "MTHETHWA",
+    "grade": "12",
+    "ExamNo": "5264121096010",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics",
+      "Physical Science"
+    ]
+  },
+  {
+    "adminNo": "5264121096011",
+    "firstName": "Obedingwa Liyema",
+    "lastName": "NGIDI",
+    "grade": "12",
+    "ExamNo": "5264121096011",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics"
+    ]
+  },
+  {
+    "adminNo": "5264121096012",
+    "firstName": "Akhona Amandla",
+    "lastName": "NGONGOMA",
+    "grade": "12",
+    "ExamNo": "5264121096012",
+    "Concession": "False",
+    "subjects": [
+      "Business Studies",
+      "Economics",
+      "Mathematical Literacy"
+    ]
+  },
+  {
+    "adminNo": "5264121096013",
+    "firstName": "Sinomcebo Ntombizekhethelo",
+    "lastName": "NKOSI",
+    "grade": "12",
+    "ExamNo": "5264121096013",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics",
+      "Physical Science"
+    ]
+  },
+  {
+    "adminNo": "5264121096014",
+    "firstName": "Siphokazi",
+    "lastName": "NSELE",
+    "grade": "12",
+    "ExamNo": "5264121096014",
+    "Concession": "False",
+    "subjects": [
+      "Accounting",
+      "Mathematics"
+    ]
+  },
+  {
+    "adminNo": "5264121096015",
+    "firstName": "Ntonhle Osimthandayo",
+    "lastName": "NTSHALINTSHALI",
+    "grade": "12",
+    "ExamNo": "5264121096015",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics"
+    ]
+  },
+  {
+    "adminNo": "5264121096016",
+    "firstName": "Iyana",
+    "lastName": "NTSHANGASE",
+    "grade": "12",
+    "ExamNo": "5264121096016",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics"
+    ]
+  },
+  {
+    "adminNo": "5264121096017",
+    "firstName": "Senzelweumusa Zothile",
+    "lastName": "SIBISI",
+    "grade": "12",
+    "ExamNo": "5264121096017",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics",
+      "Physical Science"
+    ]
+  },
+  {
+    "adminNo": "5264121096018",
+    "firstName": "Andiswa Mpilonhle",
+    "lastName": "VUKEKA",
+    "grade": "12",
+    "ExamNo": "5264121096018",
+    "Concession": "False",
+    "subjects": [
+      "Accounting",
+      "Business Studies",
+      "Life Science"
+    ]
+  },
+  {
+    "adminNo": "5264121096019",
+    "firstName": "Joshua David",
+    "lastName": "WHITTLE",
+    "grade": "12",
+    "ExamNo": "5264121096019",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics"
+    ]
+  }
+]
