@@ -1,4 +1,15 @@
 [
+{
+    "adminNo": "5264121096009",
+    "firstName": "EM",
+    "lastName": "MAPANZA",
+    "grade": "12",
+    "ExamNo": "5264121096009",
+    "Concession": "False",
+    "subjects": [
+      "Economics"
+    ]
+  },
   {
     "adminNo": "5264121096001",
     "firstName": "Anele Enjoy",
