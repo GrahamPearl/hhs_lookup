@@ -11830,7 +11830,7 @@
     "registrationClass": "GRADE 12 12LH",
     "photo": "14355.webp",
     "ExamNo": "5264121090003",
-    "Concession": "True"
+    cker
   },
   {
     "adminNo": "15231",
@@ -13288,8 +13288,7 @@
     "birthdate": "2009-05-20",
     "registrationClass": "GRADE 12 12SD",
     "photo": "14970.webp",
-    "ExamNo": "5264121090029",
-    "Concession": "True"
+    "ExamNo": "5264121090029"
   },
   {
     "adminNo": "14131",
@@ -14053,7 +14052,8 @@
     "birthdate": "2008-06-02",
     "registrationClass": "GRADE 12 12SO",
     "photo": "15368.webp",
-    "ExamNo": "5264121090136"
+    "ExamNo": "5264121090136",sder
+    "Concession": "True"
   },
   {
     "adminNo": "14266",
