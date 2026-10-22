@@ -1,5 +1,16 @@
 [
 {
+    "adminNo": "5264121096008",
+    "firstName": "A",
+    "lastName": "MNGADI",
+    "grade": "12",
+    "ExamNo": "5264121096008",
+    "Concession": "False",
+    "subjects": [
+      "Mathematics"
+    ]
+},
+{
     "adminNo": "5264121096009",
     "firstName": "EM",
     "lastName": "MAPANZA",
