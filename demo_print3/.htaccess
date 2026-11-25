@@ -1,0 +1,24 @@
+# Teacher Print Queue — Apache config
+# Place this in the project root alongside index.html
+
+# Deny direct access to the data directory
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to /api/data/
+    RewriteRule ^api/data/ - [F,L]
+</IfModule>
+
+# Deny directory listing
+Options -Indexes
+
+# Protect data files directly
+<FilesMatch "\.(json|tmp)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>

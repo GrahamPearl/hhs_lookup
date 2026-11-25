@@ -1,0 +1,34 @@
+
+/* Vertical form layout: label above component, stacked downward */
+#searchForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;            /* spacing between blocks */
+  width: 100%;
+  padding: 10px;        /* requested inner margin */
+  box-sizing: border-box;
+}
+/* Neutralize Bootstrap column widths inside the form so each block becomes full-width */
+#searchForm .col-md-2,
+#searchForm .col-md-3,
+#searchForm .col-md-4,
+#searchForm .col-md-5,
+#searchForm .col-md-6,
+#searchForm .col-md-8,
+#searchForm .col-md-12 {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: none !important;
+}
+#searchForm .form-label { display:block; font-weight:600; margin-bottom:4px; }
+#searchForm .form-control,
+#searchForm .form-select { width:100%; box-sizing:border-box; }
+
+/* Keep table sticky headers if you already had them */
+.sticky-head thead th { position: sticky; top: 0; z-index: 1; background: #f8f9fa; }
+
+.student-photo-container {
+  display: grid;
+  place-items: center; /* Centers both horizontally and vertically */
+  height: 300px;         /* Set a height for the container */
+}

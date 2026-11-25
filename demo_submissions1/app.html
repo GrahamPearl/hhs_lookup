@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assessment Portal</title>
+  <style>
+    :root{--primary:#1a3a5c;--primary-lt:#2563a8;--accent:#e8a020;--ok:#16a34a;--err:#dc2626;--warn:#d97706;--bg:#f0f4f8;--card:#fff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--r:12px;--sh:0 2px 12px rgba(0,0,0,.08)}*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}nav{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}.brand{font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px}.nav-right{display:flex;align-items:center;gap:10px;font-size:.85rem}.role-badge{background:var(--accent);color:#fff;padding:2px 10px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase}.btn-logout{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:.82rem}.btn-logout:hover{background:rgba(255,255,255,.25)}.a-bar{background:var(--primary-lt);color:#fff;padding:8px 24px;font-size:.82rem;display:none;align-items:center;gap:6px}.a-bar.show{display:flex}.a-bar button{background:rgba(255,255,255,.2);border:none;color:#fff;padding:2px 10px;border-radius:12px;cursor:pointer;font-size:.78rem}.view{display:none}.view.active{display:block}#view-login.active{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--primary),var(--primary-lt))}.login-card{background:#fff;border-radius:16px;padding:48px 40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}.login-logo{font-size:3rem;margin-bottom:10px}.login-card h1{color:var(--primary);font-size:1.5rem;margin-bottom:6px}.login-card>p{color:var(--muted);font-size:.88rem;margin-bottom:28px}label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;text-align:left}.inp{width:100%;padding:11px 15px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;outline:none;transition:border-color .2s}.inp:focus{border-color:var(--primary-lt)}.fg{margin-bottom:14px}.btn-primary{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:6px}.btn-primary:hover{background:var(--primary-lt)}.btn-primary:disabled{opacity:.6;cursor:not-allowed}.err-msg{background:#fee2e2;color:var(--err);padding:10px 14px;border-radius:6px;font-size:.83rem;margin-top:10px;display:none}.main{max-width:1100px;margin:0 auto;padding:28px 24px}.pg-title{font-size:1.4rem;font-weight:700;color:var(--primary);margin-bottom:20px;display:flex;align-items:center;gap:10px}.card{background:var(--card);border-radius:var(--r);padding:22px 24px;box-shadow:var(--sh);margin-bottom:20px}.card h2{font-size:1rem;font-weight:600;color:var(--primary);margin-bottom:14px;display:flex;align-items:center;gap:8px}.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:all .18s}.btn-sm{padding:5px 11px;font-size:.75rem}.btn-xs{padding:3px 8px;font-size:.72rem}.btn-blue{background:var(--primary-lt);color:#fff}.btn-blue:hover{background:var(--primary)}.btn-green{background:var(--ok);color:#fff}.btn-green:hover{background:#15803d}.btn-warn{background:var(--warn);color:#fff}.btn-warn:hover{background:#b45309}.btn-red{background:var(--err);color:#fff}.btn-red:hover{background:#b91c1c}.btn-out{background:transparent;border:2px solid var(--border);color:var(--text)}.btn-out:hover{border-color:var(--primary-lt);color:var(--primary-lt)}.btn:disabled{opacity:.5;cursor:not-allowed}.drop-zone{border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}.drop-zone:hover:not(.locked){border-color:var(--primary-lt);background:#f0f7ff}.drop-zone.locked{opacity:.5;cursor:not-allowed;background:#f8fafc}.drop-zone .dz-icon{font-size:2rem;margin-bottom:6px}.drop-zone strong{display:block;margin-bottom:3px;font-size:.9rem}.drop-zone p{color:var(--muted);font-size:.8rem}input[type="file"]{display:none}.banner{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;margin-bottom:14px;border:1px solid}.banner-warn{background:#fef3c7;border-color:#f59e0b}.banner-ok{background:#dcfce7;border-color:#86efac}.banner-info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}.banner-err{background:#fee2e2;border-color:#fca5a5;color:#991b1b}.banner .timer{font-size:1.2rem;font-weight:700;color:var(--warn);font-variant-numeric:tabular-nums;min-width:46px}.prog-wrap{background:var(--border);border-radius:4px;height:6px;flex:1;overflow:hidden}.prog-fill{height:100%;background:var(--warn);border-radius:4px;transition:width 1s linear}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}.stat{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh);text-align:center}.stat .n{font-size:1.8rem;font-weight:800;color:var(--primary)}.stat .lbl{font-size:.76rem;color:var(--muted);margin-top:3px;font-weight:500}@media (max-width:640px){.stats-grid{grid-template-columns:repeat(2,1fr)}}.score-row{display:flex;align-items:center;gap:18px;margin-bottom:18px}.sc{width:80px;height:80px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}.sc .sn{font-size:1.6rem;font-weight:800;line-height:1}.sc .sd{font-size:.68rem;opacity:.7}.sc-a{background:#dcfce7;color:#166534}.sc-b{background:#dbeafe;color:#1e40af}.sc-c{background:#fef9c3;color:#854d0e}.sc-d{background:#ffedd5;color:#9a3412}.sc-f{background:#fee2e2;color:#991b1b}.tabs{display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:20px;flex-wrap:wrap}.tab{padding:9px 18px;border:none;background:none;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .18s}.tab.active{color:var(--primary-lt);border-bottom-color:var(--primary-lt)}.tab-panel{display:none}.tab-panel.active{display:block}.tbl{width:100%;border-collapse:collapse;font-size:.84rem}.tbl th{background:var(--bg);padding:9px 12px;text-align:left;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border)}.tbl td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}.tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:#f8fafc}.tbl-hd th{background:var(--primary);color:#fff}.tbl-hd th:first-child{border-radius:8px 0 0 0}.tbl-hd th:last-child{border-radius:0 8px 0 0}.pass{color:var(--ok);font-weight:700}.fail{color:var(--err);font-weight:700}.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:600}.bg-ok{background:#dcfce7;color:#166534}.bg-err{background:#fee2e2;color:#991b1b}.bg-warn{background:#fef9c3;color:#854d0e}.bg-gray{background:#f1f5f9;color:#475569}.bg-blue{background:#dbeafe;color:#1e40af}.bg-purple{background:#f3e8ff;color:#6b21a8}.bar-wrap{display:flex;align-items:center;gap:8px}.bar{height:8px;border-radius:4px;flex:1;background:var(--border);overflow:hidden;min-width:60px}.bar-fill{height:100%;border-radius:4px}.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}.overlay.open{display:flex}.modal{background:#fff;border-radius:var(--r);padding:26px;max-width:620px;width:100%;max-height:86vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.modal-head h2{font-size:1rem;color:var(--primary)}.modal-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted)}.a-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:22px}.a-card{background:var(--card);border-radius:var(--r);padding:20px;box-shadow:var(--sh);border:2px solid transparent;cursor:pointer;transition:all .2s;position:relative}.a-card:hover{border-color:var(--primary-lt);transform:translateY(-2px)}.a-card .a-name{font-size:1rem;font-weight:700;color:var(--primary);margin-bottom:4px}.a-card .a-meta{font-size:.76rem;color:var(--muted)}.a-card .a-del{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;opacity:.5}.a-card .a-del:hover{opacity:1;color:var(--err)}.a-card-new{border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;min-height:100px;color:var(--muted);font-size:.88rem}.a-card-new:hover{border-color:var(--primary-lt);color:var(--primary-lt);background:#f0f7ff}.toast{position:fixed;bottom:22px;right:22px;color:#fff;padding:11px 18px;border-radius:8px;font-size:.86rem;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translateY(70px);opacity:0;transition:all .28s;z-index:9999;max-width:320px}.toast.show{transform:translateY(0);opacity:1}.toast.ok{background:var(--ok)}.toast.er{background:var(--err)}.toast.wr{background:var(--warn)}.toast.def{background:var(--primary)}.spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .65s linear infinite;vertical-align:middle}@keyframes sp{to{transform:rotate(360deg)}}.pending{text-align:center;padding:36px 20px;color:var(--muted)}.pending .pi{font-size:2.5rem;margin-bottom:10px}.task-row td .ov-btn{font-size:.7rem;padding:2px 7px;border-radius:4px;cursor:pointer;border:1px solid}.ov-pass{background:#dcfce7;color:#166534;border-color:#86efac}.ov-fail{background:#fee2e2;color:#991b1b;border-color:#fca5a5}.ov-badge{font-size:.68rem;padding:1px 6px;border-radius:10px;background:#f3e8ff;color:#6b21a8;margin-left:4px}code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:.8rem;color:#0f172a}.sep{height:1px;background:var(--border);margin:14px 0}.chart-wrap{position:relative;height:230px;margin-top:14px}.side-link{padding:10px;border-radius:6px;cursor:pointer;margin-bottom:5px}.side-link:hover{background:rgba(255,255,255,.15)}.panel{display:none}.panel.active{display:block}
+ 
+
+.chart-card h2 {
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+
+.chart-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.chart-card {
+  height: 330px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card canvas {
+  flex: 1;
+}
+
+
+#gradeChart {
+  max-height: 200px;
+  max-width: 200px;
+  margin: auto;
+}
+
+
+/* Responsive fallback */
+@media (max-width: 900px) {
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+    </style>
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav id="app-nav" style="display:none">
+    <div class="brand">📚 Assessment Portal</div>
+    <div class="nav-right">
+      <span id="nav-email" style="font-size:.83rem"></span>
+      <span class="role-badge" id="nav-role"></span>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </nav>
+  <div class="a-bar" id="a-bar">
+    <span>📁</span>
+    <span id="a-bar-name" style="font-weight:600"></span>
+    <button onclick="backToAssessments()">← All Assessments</button>
+  </div>
+
+  <!-- ════════════════ LOGIN ════════════════ -->
+  <div id="view-login" class="view active">
+    <div class="login-card">
+      <div class="login-logo">🎓</div>
+      <h1>Assessment Portal</h1>
+      <p>Sign in with your school email address</p>
+      <div class="fg">
+        <label>Email Address</label>
+        <input class="inp" type="email" id="login-email" placeholder="you@school.com"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
+      <div class="err-msg" id="login-err"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════ STUDENT ════════════════ -->
+  <div id="view-student" class="view">
+    <div class="main">
+      <div class="pg-title">📖 My Assessments</div>
+      <div id="stu-assessment-list">
+        <div class="pending">
+          <div class="pi">⏳</div>
+          <p>Loading assessments…</p>
+        </div>
+      </div>
+      <!-- Per-assessment student view (hidden until one is selected) -->
+      <div id="stu-work" style="display:none">
+        <div id="lock-banner" class="banner banner-warn" style="display:none">
+          <span>🔒</span>
+          <div style="flex:1">
+            <strong style="display:block;margin-bottom:5px">Submission locked</strong>
+            <div class="prog-wrap">
+              <div class="prog-fill" id="lock-prog"></div>
+            </div>
+          </div>
+          <div class="timer" id="lock-timer">5:00</div>
+        </div>
+        <div class="card">
+          <h2>📤 Submit Your File</h2>
+          <p style="font-size:.84rem;color:var(--muted);margin-bottom:14px">
+            Upload your <strong>.docx</strong> document. You have <strong>one submission
+              per 5-minute window</strong>. The teacher may unlock your submission if needed.
+          </p>
+          <div class="drop-zone" id="drop-zone" onclick="triggerUpload()">
+            <div class="dz-icon">📄</div>
+            <strong id="dz-label">Click to select your .docx file</strong>
+            <p>Word documents only (.docx)</p>
+          </div>
+          <input type="file" id="stu-file" accept=".docx" onchange="submitFile()">
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-blue" id="sub-btn" onclick="triggerUpload()">
+              Upload &amp; Submit
+            </button>
+            <span id="sub-status" style="font-size:.83rem;color:var(--muted)"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>📋 Your Marking Report</h2>
+          <div id="report-area">
+            <div class="pending">
+              <div class="pi">⏳</div>
+              <p>Your report will appear here once your teacher marks your submission.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ════════════════ TEACHER — ASSESSMENT PICKER ════════════════ -->
+  <div id="view-teacher-home" class="view">
+    <div style="display:flex;min-height:calc(100vh - 60px)">
+  
+      <!-- SIDEBAR -->
+      <div style="width:220px;background:var(--primary);color:#fff;padding:20px">
+        <div style="font-weight:700;margin-bottom:20px">⚙️ Admin</div>
+  
+        <div class="side-link" onclick="showPanel('dashboard')">📊 Dashboard</div>
+        <div class="side-link" onclick="showPanel('students')">👥 Students</div>
+        <div class="side-link" onclick="showPanel('assessments')">📚 Assessments</div>
+        <div class="side-link" onclick="showPanel('analytics')">📊 Analytics</div>
+      </div>
+  
+      <!-- MAIN -->
+      <div style="flex:1;padding:20px">
+  
+        <!-- DASHBOARD -->
+        <div id="panel-dashboard" class="panel active">
+          <div class="pg-title">📊 Overview</div>
+          <div class="stats-grid">
+            <div class="stat">
+              <div class="n" id="dash-students">0</div>
+              <div class="lbl">Students</div>
+            </div>
+            <div class="stat">
+              <div class="n" id="dash-assessments">0</div>
+              <div class="lbl">Assessments</div>
+            </div>
+            <div class="stat">
+              <div class="n" id="dash-submissions">—</div>
+              <div class="lbl">Submissions</div>
+            </div>
+            <div class="stat">
+              <div class="n" id="dash-marked">—</div>
+              <div class="lbl">Marked</div>
+            </div>
+          </div>
+        </div>
+  
+        
+        <div id="panel-analytics" class="panel">
+  <div class="pg-title">📊 Analytics</div>
+
+  <!-- FILTER -->
+  <div class="card">
+    <h2>Assessment Analytics</h2>
+    <select id="analytics-assessment" class="inp" onchange="loadAssessmentAnalytics()"></select>
+  </div>
+
+  <div class="card">
+    <h2>Insights</h2>
+    <div id="insights-box"></div>
+  </div>
+
+  <!-- ROW CONTAINER -->
+  <div class="chart-row">
+
+    <div class="card chart-card">
+      <h2>Overall</h2>
+      <canvas id="overallChart"></canvas>
+    </div>
+
+    <div class="card chart-card">
+      <h2>Grades</h2>
+      <canvas id="gradeChart"></canvas>
+    </div>
+
+    <div class="card chart-card">
+      <h2>Trend</h2>
+      <canvas id="trendChart"></canvas>
+    </div>
+
+  </div>
+
+  <!-- FULL WIDTH -->
+  <div class="card">
+    <h2>Task Performance</h2>
+    <canvas id="taskChart"></canvas>
+  </div>
+
+</div>
+        <!-- STUDENTS -->
+        <div id="panel-students" class="panel">
+          <div class="pg-title">👥 Student Management</div>
+
+          <div style="display:flex;gap:10px;margin-bottom:10px">
+            <input class="inp" id="new-email" placeholder="student@email.com">
+            <input class="inp" id="new-class" placeholder="Class">
+            <button class="btn btn-green" onclick="addStudent()">Add</button>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-bottom:10px">
+            <input class="inp" id="search-students" placeholder="Search email..." oninput="filterStudents()">
+            <select id="filter-class" class="inp" onchange="filterStudents()"></select>
+            <button class="btn btn-out" onclick="exportCSV()">Export CSV</button>
+          </div>
+          <div id="students-table-area"></div>
+        </div>
+
+        <!-- ASSESSMENTS -->
+        <div id="panel-assessments" class="panel">
+          <div class="pg-title">📚 Assessments</div>
+          <div id="a-grid" class="a-grid"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="students-table-area" style="margin-top:15px"></div>
+  </div>
+  </div>
+  </div>
+
+  <!-- ════════════════ TEACHER — ASSESSMENT DETAIL ════════════════ -->
+  <div id="view-teacher-detail" class="view">
+    <div class="main">
+      <div class="pg-title" id="detail-title">Assessment</div>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="n" id="st-total">—</div>
+          <div class="lbl">Students</div>
+        </div>
+        <div class="stat">
+          <div class="n" id="st-sub">—</div>
+          <div class="lbl">Submitted</div>
+        </div>
+        <div class="stat">
+          <div class="n" id="st-marked">—</div>
+          <div class="lbl">Marked</div>
+        </div>
+        <div class="stat">
+          <div class="n" id="st-avg">—</div>
+          <div class="lbl">Class Average</div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="submissions" onclick="switchTab('submissions')">📬 Submissions</button>
+        <button class="tab" data-tab="script" onclick="switchTab('script')">🐍 Script</button>
+        <button class="tab" data-tab="reports" onclick="switchTab('reports')">📊 Reports</button>
+      </div>
+
+      <!-- TAB: SUBMISSIONS -->
+      <div id="tab-submissions" class="tab-panel active">
+        <div class="card">
+          <h2 style="justify-content:space-between">
+            👥 Student Submissions
+            <button class="btn btn-sm btn-out" onclick="loadDetail()">🔄 Refresh</button>
+          </h2>
+          <div id="sub-table-area">
+            <div class="pending">
+              <div class="pi">📭</div>
+              <p>No submissions yet.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: SCRIPT -->
+      <div id="tab-script" class="tab-panel">
+        <div class="card">
+          <h2>⬆️ Upload Marking Script</h2>
+          <div class="banner banner-info" style="font-size:.82rem">
+            ℹ️ Called as: <code>python script.py &lt;folder&gt; &lt;email&gt;</code><br>
+            Must print JSON to stdout with: <code>score</code>, <code>total</code>,
+            <code>grade</code>, <code>tasks[]</code>
+          </div>
+          <div style="height:10px"></div>
+          <div id="script-status-box"></div>
+          <div class="drop-zone" onclick="document.getElementById('script-inp').click()">
+            <div class="dz-icon">🐍</div>
+            <strong>Click to upload script.py</strong>
+            <p>Python files only (.py)</p>
+          </div>
+          <input type="file" id="script-inp" accept=".py" onchange="uploadScript()">
+        </div>
+        <div class="card">
+          <h2>▶️ Run Marking</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-green" onclick="runMarking(null)">▶ Mark All Submissions</button>
+            <button class="btn btn-out" onclick="openMarkOne()">🎯 Mark One Student</button>
+          </div>
+          <div id="mark-prog" style="margin-top:14px"></div>
+        </div>
+      </div>
+
+      <!-- TAB: REPORTS -->
+      <div id="tab-reports" class="tab-panel">
+        <div class="card">
+          <h2>📊 Class Score Chart</h2>
+          <div class="chart-wrap"><canvas id="chart"></canvas></div>
+        </div>
+        <div class="card">
+          <h2 style="justify-content:space-between">
+            📋 Full Results
+            <button class="btn btn-sm btn-out" onclick="loadDetail()">🔄 Refresh</button>
+          </h2>
+          <div id="report-table-area">
+            <div class="pending">
+              <div class="pi">📭</div>
+              <p>No results yet.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="overlay" id="overlay" onclick="maybeClose(event)">
+    <div class="modal" id="modal-box">
+      <div class="modal-head">
+        <h2 id="modal-title"></h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="toast def" id="toast"></div>
+
+ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Fallback Script -->
+<script>
+  if (typeof Chart === 'undefined') {
+    document.write('<script src="./chart.min.js"><\/script>');
+    console.warn('Chart.js CDN failed, loaded local version.');
+  }
+</script>
+  <script>
+    // ─── State ──────────────────────────────────────────────────
+    const API = "http://localhost:5000/api";
+    const LOCK = 300;
+    let S = { email: null, role: null };
+    let CUR = null;   // current assessment {id, name}
+    let lockEnd = 0, lockIv = null, pollIv = null, chartObj = null;
+
+    let ALL_STUDENTS = [];
+    let overallChartInstance = null;
+    let analyticsCharts = {};
+
+function destroyChart(id) {
+  if (analyticsCharts[id]) {
+    analyticsCharts[id].destroy();
+  }
+}
+
+
+    async function loadStudents() {
+      const [, students] = await api("/students");
+      ALL_STUDENTS = students;
+      populateClassFilter(students);
+      renderStudentsTable(students);
+    }
+
+    function populateClassFilter(students) {
+      const sel = document.getElementById("filter-class");
+      const classes = [...new Set(students.map(s => s.class))];
+
+      sel.innerHTML = `<option value="">All Classes</option>` +
+        classes.map(c => `<option>${c}</option>`).join("");
+    }
+
+    function filterStudents() {
+      const term = document.getElementById("search-students").value.toLowerCase();
+      const cls = document.getElementById("filter-class").value;
+
+      const filtered = ALL_STUDENTS.filter(s => {
+        return (!term || s.email.includes(term)) &&
+          (!cls || s.class === cls);
+      });
+
+      renderStudentsTable(filtered);
+    }
+
+    function exportCSV() {
+      window.open(API + "/students/export");
+    }
+
+    function renderInsights(data) {
+  const i = data.insights || {};
+
+  const atRisk = (i.at_risk || []).map(s => s.email).join(", ") || "None";
+  const top = (i.top_performers || []).map(s => s.email).join(", ") || "None";
+
+  const hardest = i.hardest_task?.name || "-";
+  const easiest = i.easiest_task?.name || "-";
+  const variance = i.variance ?? "-";
+
+  document.getElementById("insights-box").innerHTML = `
+    <div>⚠️ At Risk: ${atRisk}</div>
+    <div>🏆 Top: ${top}</div>
+    <div>🔥 Hardest Task: ${hardest}</div>
+    <div>🎯 Easiest Task: ${easiest}</div>
+    <div>📊 Variance: ${variance}</div>
+  `;
+}
+
+    async function loadAnalytics(){
+  const [,data]=await api("/analytics/overall");
+
+  const ctx = document.getElementById("overallChart");
+
+  destroyChart("overall");
+
+  analyticsCharts["overall"] = new Chart(ctx,{
+    type:"bar",
+    data:{
+      labels:Object.keys(data.students),
+      datasets:[{label:"Avg %",data:Object.values(data.students)}]
+    }
+  });
+
+  loadAssessmentList();
+}
+
+    async function loadAssessmentList() {
+      const [, a] = await api("/assessments");
+      const sel = document.getElementById("analytics-assessment");
+
+      sel.innerHTML = a.map(x => `<option value="${x.id}">${x.name}</option>`).join("");
+
+      if (a.length) loadAssessmentAnalytics();
+    }
+
+    async function loadAssessmentAnalytics() {
+  const id = document.getElementById("analytics-assessment").value;
+  const [, data] = await api(`/a/${id}/analytics`);
+
+  const grades = data.grades || {};
+  const tasks = data.tasks || {};
+  const trend = data.trend || [];
+
+  // ✅ Destroy old charts
+  destroyChart("grade");
+  destroyChart("trend");
+  destroyChart("task");
+
+  // ✅ Grade chart
+  analyticsCharts["grade"] = new Chart(document.getElementById("gradeChart"), {
+    type: "pie",
+    data: {
+      labels: Object.keys(grades),
+      datasets: [{ data: Object.values(grades) }]
+    },
+    
+options: {
+  responsive: true,
+  maintainAspectRatio: false,
+  cutout: "40%",
+  plugins: {
+    legend: {
+      position: "bottom",
+      labels: { font: { size: 10 } }
+    }
+  }
+}
+
+  });
+
+  // ✅ Trend chart
+  if (trend.length) {
+    analyticsCharts["trend"] = new Chart(document.getElementById("trendChart"), {
+      type: "line",
+      data: {
+        labels: trend.map(t => t.assessment),
+        datasets: [{
+          label: "Average %",
+          data: trend.map(t => t.average)
+        }]
+      }
+    });
+  }
+
+  // ✅ Task chart (full width)
+  if (Object.keys(tasks).length) {
+    analyticsCharts["task"] = new Chart(document.getElementById("taskChart"), {
+      type: "bar",
+      data: {
+        labels: Object.values(tasks).map(t => t.name),
+        datasets: [{
+          label: "Pass %",
+          data: Object.values(tasks).map(t => t.pass_rate)
+        }]
+      }
+    });
+  }
+
+  renderInsights(data);
+}
+
+    // ─── Routing helpers ────────────────────────────────────────
+    function showView(id) {
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      const nav = document.getElementById("app-nav");
+      nav.style.display = id === "view-login" ? "none" : "flex";
+      const bar = document.getElementById("a-bar");
+      bar.classList.toggle("show", id === "view-teacher-detail" || id === "view-student");
+    }
+
+    function logout() {
+      S = { email: null, role: null }; CUR = null;
+      clearInterval(lockIv); clearInterval(pollIv);
+      showView("view-login");
+      document.getElementById("login-email").value = "";
+      document.getElementById("login-err").style.display = "none";
+      document.getElementById("a-bar").classList.remove("show");
+    }
+
+    function backToAssessments() {
+      CUR = null;
+      document.getElementById("a-bar").classList.remove("show");
+      document.getElementById("stu-work").style.display = "none";
+      if (S.role === "teacher") {
+        showView("view-teacher-home"); loadAssessmentGrid();
+      } else {
+        showView("view-student"); loadStudentAssessments();
+      }
+    }
+
+    // ─── Toast ──────────────────────────────────────────────────
+    function toast(msg, type = "def") {
+      const el = document.getElementById("toast");
+      el.textContent = msg; el.className = `toast ${type} show`;
+      setTimeout(() => el.className = `toast ${type}`, 3200);
+    }
+
+    // ─── API ────────────────────────────────────────────────────
+    async function api(path, opts = {}) {
+      const r = await fetch(API + path, opts);
+      return [r, await r.json()];
+    }
+    const enc = s => encodeURIComponent(s);
+    function fmt(iso) {
+      if (!iso) return "—";
+      try { return new Date(iso).toLocaleString(); } catch { return iso; }
+    }
+
+    // ─── Tabs ────────────────────────────────────────────────────
+    function switchTab(name) {
+      document.querySelectorAll(".tab").forEach(t =>
+        t.classList.toggle("active", t.dataset.tab === name));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      document.getElementById("tab-" + name).classList.add("active");
+      if (name === "reports") { loadDetail(); buildChart(); }
+      if (name === "submissions") loadDetail();
+      if (name === "script") checkScript();
+    }
+
+    function showPanel(name) {
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      document.getElementById("panel-" + name).classList.add("active");
+
+      if (name === "students") loadStudents();
+      if (name === "assessments") loadAssessmentGrid();
+      if (name === "dashboard") loadDashboard();
+      if (name === "analytics") loadAnalytics();
+    }
+
+    async function loadDashboard() {
+      try {
+        const [, students] = await api("/students");
+        const [, assessments] = await api("/assessments");
+
+        document.getElementById("dash-students").textContent = students.length;
+        document.getElementById("dash-assessments").textContent = assessments.length;
+
+      } catch { }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  LOGIN
+    // ════════════════════════════════════════════════════════════
+    async function doLogin() {
+      const email = document.getElementById("login-email").value.trim().toLowerCase();
+      const errEl = document.getElementById("login-err");
+      const btn = document.getElementById("login-btn");
+      if (!email) { setErr(errEl, "Please enter your email."); return; }
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin"></span> Signing in…';
+      errEl.style.display = "none";
+      try {
+        const [r, d] = await api("/login", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+        if (!r.ok) { setErr(errEl, d.error); return; }
+        S.email = d.email; S.role = d.role;
+        document.getElementById("nav-email").textContent = d.email;
+        document.getElementById("nav-role").textContent = d.role;
+        if (d.role === "teacher") {
+          showView("view-teacher-home");
+          loadDashboard();
+          loadAssessmentGrid();
+        } else {
+          showView("view-student"); loadStudentAssessments();
+        }
+      } catch {
+        setErr(errEl, "Cannot reach server — is server.py running on port 5000?");
+      } finally {
+        btn.disabled = false; btn.textContent = "Sign In";
+      }
+    }
+    function setErr(el, msg) { el.textContent = msg; el.style.display = "block"; }
+
+    // ════════════════════════════════════════════════════════════
+    //  TEACHER — ASSESSMENT GRID
+    // ════════════════════════════════════════════════════════════
+    async function quickUpdate(email, newClass) {
+      await api(`/students/${encodeURIComponent(email)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ class: newClass })
+      });
+      toast("Updated", "ok");
+    }
+
+    function renderStudentsTable(students) {
+      const area = document.getElementById("students-table-area");
+
+      const rows = students.map(s => `
+    <tr>
+      <td>${s.email}</td>
+      <td>
+        <input value="${s.class}" 
+          onchange="quickUpdate('${s.email}',this.value)"
+          class="inp" style="padding:4px 6px;font-size:.8rem">
+      </td>
+      <td>
+        <button class="btn btn-xs btn-red"
+          onclick="deleteStudentUI('${s.email}')">Delete</button>
+      </td>
+    </tr>
+  `).join("");
+
+      area.innerHTML = `
+    <table class="tbl tbl-hd">
+      <thead><tr><th>Email</th><th>Class</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+    }
+
+    async function deleteStudentUI(email) {
+      if (!confirm(`Delete ${email}?`)) return;
+
+      try {
+        const [r, d] = await api(`/students/${encodeURIComponent(email)}`, {
+          method: "DELETE"
+        });
+
+        if (!r.ok) return toast(d.error, "er");
+
+        toast("Deleted", "ok");
+        loadStudents();
+      } catch {
+        toast("Delete failed", "er");
+      }
+    }
+
+    async function editStudent(oldEmail, oldClass) {
+      const newEmail = prompt("Edit email:", oldEmail);
+      if (!newEmail) return;
+
+      const newClass = prompt("Edit class:", oldClass || "Unassigned");
+
+      try {
+        const [r, d] = await api(`/students/${encodeURIComponent(oldEmail)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: newEmail.trim().toLowerCase(),
+            class: newClass
+          })
+        });
+
+        if (!r.ok) return toast(d.error, "er");
+
+        toast("Updated", "ok");
+        loadStudents();
+      } catch {
+        toast("Update failed", "er");
+      }
+    }
+
+    function renderStudentsTable(students) {
+      const area = document.getElementById("students-table-area");
+
+      if (!students.length) {
+        area.innerHTML = `<div class="pending"><p>No students registered.</p></div>`;
+        return;
+      }
+
+      const rows = students.map(s => `
+    <tr>
+      <td>${s.email}</td>
+      <td>${s.class || "Unassigned"}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-xs btn-warn"
+          onclick="editStudent('${s.email}','${s.class}')">✏️ Edit</button>
+        <button class="btn btn-xs btn-red"
+          onclick="deleteStudentUI('${s.email}')">🗑 Delete</button>
+      </td>
+    </tr>
+  `).join("");
+
+      area.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="tbl tbl-hd">
+        <thead>
+          <tr><th>Email</th><th>Class</th><th>Actions</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+    }
+
+    async function loadStudents() {
+      try {
+        const [, students] = await api("/students");
+        renderStudentsTable(students);
+      } catch {
+        document.getElementById("students-table-area").innerHTML =
+          `<div class="pending"><p>Failed to load students.</p></div>`;
+      }
+    }
+
+    async function loadAssessmentGrid() {
+      try {
+        const [, data] = await api("/assessments");
+        const grid = document.getElementById("a-grid");
+        grid.innerHTML = data.map(a => `
+      <div class="a-card" onclick="openAssessment('${a.id}','${esc(a.name)}')">
+        <button class="a-del" onclick="event.stopPropagation();deleteAssessment('${a.id}')">🗑</button>
+        <div class="a-name">📄 ${esc(a.name)}</div>
+        <div class="a-meta">Created ${fmt(a.created_at)}</div>
+      </div>`).join("") +
+          `<div class="a-card a-card-new" onclick="createAssessment()">
+        <span style="font-size:1.8rem">＋</span>
+        <span>New Assessment</span>
+      </div>`;
+        // Load registration count
+        const [, students] = await api("/students");
+        const rs = document.getElementById("reg-status");
+        rs.innerHTML = students.length
+          ? `<div class="banner banner-ok">✅ <span>${students.length} student(s) registered.</span></div>`
+          : "";
+      } catch { }
+      loadStudents();
+    }
+
+    async function createAssessment() {
+      const name = prompt("Assessment name (e.g. Week 1 — Word Skills):");
+      if (!name || !name.trim()) return;
+      try {
+        const [, d] = await api("/assessments", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name.trim() })
+        });
+        toast(`Assessment "${d.name}" created.`, "ok");
+        loadAssessmentGrid();
+      } catch { toast("Failed to create.", "er"); }
+    }
+
+    async function deleteAssessment(id) {
+      if (!confirm("Delete this assessment? Submissions and reports will remain on disk.")) return;
+      await api(`/assessments/${id}`, { method: "DELETE" });
+      toast("Assessment removed.", "wr");
+      loadAssessmentGrid();
+    }
+
+    function openAssessment(id, name) {
+      CUR = { id, name };
+      document.getElementById("a-bar-name").textContent = name;
+      document.getElementById("a-bar").classList.add("show");
+      document.getElementById("detail-title").textContent = "📄 " + name;
+      showView("view-teacher-detail");
+      // reset to first tab
+      switchTab("submissions");
+      document.querySelectorAll(".tab").forEach(t =>
+        t.classList.toggle("active", t.dataset.tab === "submissions"));
+      loadDetail();
+    }
+
+    // ─── Student list upload ────────────────────────────────────
+    async function uploadStudentList() {
+      const file = document.getElementById("stu-list-inp").files[0];
+      if (!file) return;
+      const fd = new FormData(); fd.append("file", file);
+      try {
+        const [r, d] = await api("/upload-students", { method: "POST", body: fd });
+        if (!r.ok) { toast(d.error, "er"); return; }
+        toast(`${d.count} student(s) registered.`, "ok");
+        loadAssessmentGrid();
+      } catch { toast("Upload failed.", "er"); }
+    }
+
+    // ─── Load detail (both submission + report tables) ──────────
+    async function loadDetail() {
+      if (!CUR) return;
+      try {
+        const [, data] = await api(`/a/${CUR.id}/summary`);
+        updateStats(data);
+        renderSubTable(data);
+        renderReportTable(data);
+      } catch { }
+    }
+
+    function updateStats(data) {
+      const submitted = data.filter(s => s.submitted).length;
+      const marked = data.filter(s => s.marking_status === "success").length;
+      const scores = data
+        .filter(s => s.adjusted_score !== undefined && s.adjusted_score !== null
+          && s.report?.total)
+        .map(s => 100 * s.adjusted_score / s.report.total);
+      const avg = scores.length
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) + "%" : "—";
+      document.getElementById("st-total").textContent = data.length;
+      document.getElementById("st-sub").textContent = submitted;
+      document.getElementById("st-marked").textContent = marked;
+      document.getElementById("st-avg").textContent = avg;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  SUBMISSION TABLE  (with versions + clear + unlock)
+    // ════════════════════════════════════════════════════════════
+    function renderSubTable(data) {
+      const area = document.getElementById("sub-table-area");
+      if (!data.length) {
+        area.innerHTML = `<div class="pending"><div class="pi">📭</div><p>No students registered.</p></div>`;
+        return;
+      }
+      const rows = data.map(s => {
+        const verCount = s.version_count || 0;
+        const locked = s.locked;
+        return `<tr>
+      <td style="font-size:.82rem">${s.email}</td>
+      <td>${s.submitted
+            ? `<span class="badge bg-ok">✔ Submitted</span>`
+            : `<span class="badge bg-gray">Pending</span>`}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${s.filename || "—"}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${fmt(s.submitted_at)}</td>
+      <td>
+        ${verCount > 0
+            ? `<button class="btn btn-xs btn-out" onclick="showVersions('${s.email}')">
+               📂 ${verCount} version${verCount > 1 ? "s" : ""}</button>`
+            : `<span style="color:var(--muted);font-size:.78rem">—</span>`}
+      </td>
+      <td style="display:flex;gap:5px;flex-wrap:wrap">
+        ${s.submitted && locked
+            ? `<button class="btn btn-xs btn-warn" onclick="unlockStudent('${s.email}')">🔓 Unlock</button>`
+            : ""}
+        ${verCount > 0
+            ? `<button class="btn btn-xs btn-red" onclick="confirmClear('${s.email}')">🗑 Clear</button>`
+            : ""}
+      </td>
+    </tr>`;
+      }).join("");
+      area.innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="tbl tbl-hd">
+      <thead><tr>
+        <th>Email</th><th>Status</th><th>File</th>
+        <th>Submitted</th><th>Versions</th><th>Actions</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+    }
+
+    // ─── Versions modal ─────────────────────────────────────────
+    async function showVersions(email) {
+      try {
+        const [, data] = await api(`/a/${CUR.id}/versions/${enc(email)}`);
+        const versions = data.versions || [];
+        if (!versions.length) { toast("No versions found.", "wr"); return; }
+        const rows = versions.map((v, i) => `
+      <tr>
+        <td style="font-weight:600">#${i + 1}</td>
+        <td>${v.filename}</td>
+        <td style="font-size:.78rem;color:var(--muted)">${fmt(v.submitted_at)}</td>
+        <td>
+          ${v.folder === data.current
+            ? `<span class="badge bg-ok">Current</span>`
+            : `<span class="badge bg-gray">Superseded</span>`}
+        </td>
+      </tr>`).join("");
+        openModal(`📂 Submission Versions — ${email}`, `
+      <p style="font-size:.84rem;color:var(--muted);margin-bottom:14px">
+        All submissions are stored on disk under
+        <code>data/assessments/${CUR.id}/submissions/</code>.
+        Only the <strong>current</strong> version is used for marking.
+      </p>
+      <table class="tbl tbl-hd">
+        <thead><tr><th>#</th><th>Filename</th><th>Submitted At</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-warn btn-sm" onclick="unlockStudent('${email}');closeModal()">
+          🔓 Unlock Submission
+        </button>
+        <button class="btn btn-red btn-sm" onclick="confirmClear('${email}');closeModal()">
+          🗑 Clear All Versions
+        </button>
+      </div>`);
+      } catch { toast("Could not load versions.", "er"); }
+    }
+
+    // ─── Unlock ─────────────────────────────────────────────────
+    async function unlockStudent(email) {
+      try {
+        const [r, d] = await api(`/a/${CUR.id}/unlock/${enc(email)}`, { method: "POST" });
+        toast(r.ok ? `🔓 ${email} unlocked.` : d.error, r.ok ? "ok" : "er");
+        loadDetail();
+      } catch { toast("Unlock failed.", "er"); }
+    }
+
+    // ─── Clear submissions ──────────────────────────────────────
+    function confirmClear(email) {
+      openModal(`⚠️ Clear Submissions`, `
+    <div class="banner banner-err">
+      This will <strong>permanently delete all submission files</strong> for
+      <strong>${email}</strong> in this assessment and reset their lock.<br>
+      This cannot be undone.
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn btn-red" onclick="clearSubmission('${email}')">
+        🗑 Yes, Clear All Versions
+      </button>
+      <button class="btn btn-out" onclick="closeModal()">Cancel</button>
+    </div>`);
+    }
+
+    async function clearSubmission(email) {
+      try {
+        const [r, d] = await api(`/a/${CUR.id}/clear/${enc(email)}`, { method: "DELETE" });
+        closeModal();
+        toast(r.ok ? `All versions cleared for ${email}.` : d.error, r.ok ? "ok" : "er");
+        loadDetail();
+      } catch { toast("Clear failed.", "er"); }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  SCRIPT TAB
+    // ════════════════════════════════════════════════════════════
+    async function checkScript() {
+      if (!CUR) return;
+      try {
+        const [, d] = await api(`/a/${CUR.id}/script-status`);
+        document.getElementById("script-status-box").innerHTML = d.uploaded
+          ? `<div class="banner banner-ok">✅ <div>
+           <strong>Script active</strong><br>
+           <span style="font-size:.78rem;color:#166534">Uploaded: ${fmt(d.uploaded_at)}</span>
+         </div></div>`
+          : `<div class="banner banner-warn">⚠️ <span>No marking script uploaded yet.</span></div>`;
+      } catch { }
+    }
+
+    async function uploadScript() {
+      const file = document.getElementById("script-inp").files[0];
+      if (!file || !CUR) return;
+      const fd = new FormData(); fd.append("file", file);
+      try {
+        const [r, d] = await api(`/a/${CUR.id}/upload-script`, { method: "POST", body: fd });
+        toast(r.ok ? d.message : d.error, r.ok ? "ok" : "er");
+        checkScript();
+      } catch { toast("Upload failed.", "er"); }
+    }
+
+    async function runMarking(email){
+  if(!CUR) return;
+
+  const prog = document.getElementById("mark-prog");
+
+  prog.innerHTML = `
+    <div class="banner banner-info">
+      ⏳ Starting marking job...
+    </div>`;
+
+  try{
+    const body = email ? {email} : {};
+
+    const [,data] = await api(`/a/${CUR.id}/run-marking`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    });
+
+    pollJob(data.job_id);
+
+  }catch{
+    prog.innerHTML = `<div class="banner banner-err">❌ Failed to start job</div>`;
+  }
+}
+
+async function pollJob(jobId){
+  const prog = document.getElementById("mark-prog");
+
+  const interval = setInterval(async ()=>{
+    try{
+      const [,job] = await api(`/job-status/${jobId}`);
+
+      const pct = job.total ? Math.round(100*job.progress/job.total) : 0;
+
+      prog.innerHTML = `
+        <div class="banner banner-warn">
+          ⏳ ${job.progress}/${job.total} processed (${pct}%)
+        </div>
+        <div style="font-size:.75rem;margin-top:6px;max-height:120px;overflow:auto">
+          ${job.logs.slice(-5).join("<br>")}
+        </div>
+      `;
+
+      if(job.status==="completed"){
+        clearInterval(interval);
+
+        prog.innerHTML = `
+          <div class="banner banner-ok">
+            ✅ Marking completed (${job.total} students)
+          </div>
+        `;
+
+        loadDetail();
+        toast("Marking complete","ok");
+      }
+
+    }catch{
+      clearInterval(interval);
+      prog.innerHTML = `<div class="banner banner-err">❌ Lost connection</div>`;
+    }
+  }, 1500);
+}
+
+    /*
+    async function runMarking(email) {
+      if (!CUR) return;
+      const prog = document.getElementById("mark-prog");
+      prog.innerHTML = `<div class="banner banner-warn">
+    <span class="spin" style="border-top-color:var(--warn)"></span>
+    &nbsp;Running marking script…</div>`;
+      try {
+        const body = email ? { email } : {};
+        const [, data] = await api(`/a/${CUR.id}/run-marking`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const total = Object.keys(data).length;
+        const ok = Object.values(data).filter(d => d.status === "success").length;
+        prog.innerHTML = `<div class="banner banner-ok">
+      ✅ Marking complete — ${ok}/${total} successful.</div>`;
+        toast("Marking complete!", "ok");
+        loadDetail();
+        if (document.getElementById("tab-reports").classList.contains("active")) buildChart();
+      } catch {
+        prog.innerHTML = `<div class="banner banner-err">❌ Marking failed.</div>`;
+      }
+    }
+    */
+
+
+    function openMarkOne() {
+      openModal("🎯 Mark One Student", `
+    <p style="font-size:.84rem;color:var(--muted);margin-bottom:12px">
+      Enter the student's email to run the marking script on their latest submission:</p>
+    <div class="fg">
+      <input class="inp" type="email" id="mo-email" placeholder="student@school.com">
+    </div>
+    <button class="btn btn-green" onclick="doMarkOne()">▶ Run Marking</button>`);
+    }
+    async function doMarkOne() {
+      const email = (document.getElementById("mo-email")?.value || "").trim().toLowerCase();
+      if (!email) return;
+      closeModal(); await runMarking(email);
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  REPORTS TABLE
+    // ════════════════════════════════════════════════════════════
+    function renderReportTable(data) {
+      const area = document.getElementById("report-table-area");
+      const marked = data.filter(s => s.marking_status === "success");
+      if (!marked.length) {
+        area.innerHTML = `<div class="pending"><div class="pi">📭</div><p>No marked results yet.</p></div>`;
+        return;
+      }
+      const rows = marked.map(s => {
+        const adj = s.adjusted_score ?? s.report?.score ?? null;
+        const tot = s.report?.total ?? 20;
+        const pct = adj !== null ? Math.round(100 * adj / tot) : null;
+        const clr = pct >= 80 ? "#16a34a" : pct >= 60 ? "#d97706" : "#dc2626";
+        const ovCount = Object.keys(s.overrides || {}).length;
+        return `<tr>
+      <td style="font-size:.82rem">${s.email}</td>
+      <td>${pct !== null
+            ? `<div class="bar-wrap">
+            <div class="bar"><div class="bar-fill" style="width:${pct}%;background:${clr}"></div></div>
+            <span style="font-size:.78rem;font-weight:700;min-width:44px">${adj}/${tot}</span>
+           </div>` : "—"}</td>
+      <td>${s.adjusted_grade
+            ? `<span class="badge ${s.adjusted_grade === "A" || s.adjusted_grade === "B" ? "bg-ok" : s.adjusted_grade === "C" ? "bg-blue" : "bg-err"}">
+            ${s.adjusted_grade}</span>` : "—"}</td>
+      <td>${ovCount
+            ? `<span class="badge bg-purple">✏️ ${ovCount} override${ovCount > 1 ? "s" : ""}</span>`
+            : `<span style="color:var(--muted);font-size:.76rem">—</span>`}</td>
+      <td style="font-size:.76rem;color:var(--muted)">${fmt(s.marked_at)}</td>
+      <td><button class="btn btn-xs btn-out" onclick="showReport('${s.email}')">View / Edit</button></td>
+    </tr>`;
+      }).join("");
+      area.innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="tbl tbl-hd">
+      <thead><tr>
+        <th>Email</th><th>Score</th><th>Grade</th>
+        <th>Overrides</th><th>Marked At</th><th>Report</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+    }
+
+    // ─── Report + override modal ─────────────────────────────────
+    async function showReport(email) {
+      if (!CUR) return;
+      try {
+        const [, data] = await api(`/a/${CUR.id}/report/${enc(email)}`);
+        openModal(`📋 Report — ${email}`, "");
+        renderReportModal(document.getElementById("modal-body"), data, email);
+      } catch { toast("Could not load report.", "er"); }
+    }
+
+    function renderReportModal(container, entry, email) {
+      const r = entry.report || {};
+      const overrides = entry.overrides || {};
+      const adj_score = entry.adjusted_score ?? r.score ?? 0;
+      const adj_grade = entry.adjusted_grade ?? r.grade ?? "—";
+      const total = r.total ?? 20;
+      const pct = Math.round(100 * adj_score / total);
+      const gc = "sc-" + (adj_grade).toLowerCase();
+
+      const rows = (r.tasks || []).map(t => {
+        const ov = overrides[String(t.id)];
+        const effPass = ov ? ov.passed : t.passed;
+        const isOv = !!ov;
+        return `<tr id="task-row-${t.id}">
+      <td>${t.id}</td>
+      <td>${t.name}${isOv
+            ? `<span class="ov-badge" title="Override note: ${ov.note || '—'}">✏️ adjusted</span>` : ""}</td>
+      <td class="${effPass ? "pass" : "fail"}">${effPass ? "✔ Pass" : "✘ Fail"}</td>
+      <td>
+        <button class="ov-btn ${effPass ? "ov-fail" : "ov-pass"}"
+          onclick="toggleOverride('${email}',${t.id},${!effPass})">
+          ${effPass ? "Set Fail" : "Set Pass"}
+        </button>
+        ${isOv
+            ? `<button class="ov-btn" style="margin-left:4px;background:#f1f5f9;border-color:var(--border)"
+              onclick="resetOverride('${email}',${t.id})">↩ Reset</button>`
+            : ""}
+      </td>
+    </tr>`;
+      }).join("");
+
+      container.innerHTML = `
+    <div class="score-row">
+      <div class="sc ${gc}">
+        <span class="sn">${adj_score}</span>
+        <span class="sd">/ ${total}</span>
+      </div>
+      <div>
+        <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">Grade: ${adj_grade}</div>
+        <div style="color:var(--muted);font-size:.84rem">${pct}% &nbsp;·&nbsp; Marked: ${fmt(entry.marked_at)}</div>
+        ${Object.keys(overrides).length
+          ? `<span class="badge bg-purple" style="margin-top:5px">
+              ✏️ ${Object.keys(overrides).length} teacher override(s)</span>` : ""}
+      </div>
+    </div>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px">
+      Click <strong>Set Pass / Set Fail</strong> to override a task result.
+      Scores recalculate instantly. Use <strong>↩ Reset</strong> to restore the original.
+    </p>
+    <div style="overflow-x:auto">
+    <table class="tbl tbl-hd">
+      <thead><tr><th>#</th><th>Task</th><th>Result</th><th>Override</th></tr></thead>
+      <tbody id="task-tbody-${email.replace(/[@.]/g, "_")}">${rows}</tbody>
+    </table></div>`;
+    }
+
+    async function toggleOverride(email, taskId, newPassed) {
+      const note = prompt(`Override note for task ${taskId} (optional):`) ?? "";
+      try {
+        const [r, data] = await api(`/a/${CUR.id}/override/${enc(email)}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ task_id: taskId, passed: newPassed, note })
+        });
+        if (!r.ok) { toast(data.error, "er"); return; }
+        toast("Override saved. Score recalculated.", "ok");
+        renderReportModal(document.getElementById("modal-body"), data, email);
+        loadDetail();
+      } catch { toast("Override failed.", "er"); }
+    }
+
+    async function resetOverride(email, taskId) {
+      try {
+        const [r, data] = await api(`/a/${CUR.id}/override/${enc(email)}/${taskId}`,
+          { method: "DELETE" });
+        if (!r.ok) { toast(data.error, "er"); return; }
+        toast("Override removed.", "ok");
+        renderReportModal(document.getElementById("modal-body"), data, email);
+        loadDetail();
+      } catch { toast("Reset failed.", "er"); }
+    }
+
+    // ─── Chart ──────────────────────────────────────────────────
+    async function buildChart() {
+      if (!CUR) return;
+      try {
+        const [, data] = await api(`/a/${CUR.id}/summary`);
+        const marked = data.filter(s => s.adjusted_score !== null && s.adjusted_score !== undefined
+          && s.report?.total);
+        const ctx = document.getElementById("chart").getContext("2d");
+        const labels = marked.map(s => s.email.split("@")[0]);
+        const scores = marked.map(s => Math.round(100 * s.adjusted_score / s.report.total));
+        const colors = scores.map(p => p >= 80 ? "#16a34a" : p >= 60 ? "#d97706" : "#dc2626");
+        if (chartObj) chartObj.destroy();
+        if (!marked.length) return;
+        chartObj = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels, datasets: [{
+              label: "Score (%)", data: scores,
+              backgroundColor: colors, borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { min: 0, max: 100, ticks: { callback: v => v + "%" } } },
+            plugins: { legend: { display: false } }
+          }
+        });
+      } catch { }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  STUDENT SIDE
+    // ════════════════════════════════════════════════════════════
+    async function loadStudentAssessments() {
+      try {
+        const [, assessments] = await api("/assessments");
+        const area = document.getElementById("stu-assessment-list");
+        if (!assessments.length) {
+          area.innerHTML = `<div class="pending"><div class="pi">📭</div>
+        <p>No assessments available yet. Ask your teacher.</p></div>`;
+          return;
+        }
+        area.innerHTML = `<div class="a-grid">
+      ${assessments.map(a => `
+        <div class="a-card" onclick="openStudentAssessment('${a.id}','${esc(a.name)}')">
+          <div class="a-name">📄 ${esc(a.name)}</div>
+          <div class="a-meta">Available since ${fmt(a.created_at)}</div>
+        </div>`).join("")}
+    </div>`;
+      } catch { }
+    }
+
+    async function openStudentAssessment(id, name) {
+      CUR = { id, name };
+      document.getElementById("a-bar-name").textContent = name;
+      document.getElementById("a-bar").classList.add("show");
+      document.getElementById("stu-assessment-list").style.display = "none";
+      document.getElementById("stu-work").style.display = "block";
+      checkLock(); pollReport();
+    }
+
+    // ─── Lock ────────────────────────────────────────────────────
+    async function checkLock() {
+      if (!CUR) return;
+      try {
+        const [, d] = await api(`/a/${CUR.id}/lock-status/${enc(S.email)}`);
+        if (d.locked) {
+          lockEnd = Date.now() + d.remaining * 1000;
+          startLock(d.remaining);
+          setDisabled(true, d.filename || "File submitted");
+        } else { setDisabled(false); }
+      } catch { }
+    }
+
+    function startLock(secs) {
+      clearInterval(lockIv);
+      const banner = document.getElementById("lock-banner");
+      const timerEl = document.getElementById("lock-timer");
+      const prog = document.getElementById("lock-prog");
+      banner.style.display = "flex";
+      function tick() {
+        const rem = Math.max(0, Math.round((lockEnd - Date.now()) / 1000));
+        const m = Math.floor(rem / 60), s = rem % 60;
+        timerEl.textContent = `${m}:${s.toString().padStart(2, "0")}`;
+        prog.style.width = `${(rem / LOCK) * 100}%`;
+        if (rem <= 0) {
+          clearInterval(lockIv);
+          banner.style.display = "none";
+          setDisabled(false);
+          toast("Submission window re-opened.", "ok");
+        }
+      }
+      tick(); lockIv = setInterval(tick, 1000);
+    }
+
+    function triggerUpload() {
+      if (document.getElementById("drop-zone").classList.contains("locked")) return;
+      document.getElementById("stu-file").click();
+    }
+
+    function setDisabled(yes, label = "Click to select your .docx file") {
+      document.getElementById("drop-zone").classList.toggle("locked", yes);
+      document.getElementById("sub-btn").disabled = yes;
+      document.getElementById("dz-label").textContent = yes ? `📎 ${label}` : label;
+      if (!yes) document.getElementById("lock-banner").style.display = "none";
+    }
+
+    async function submitFile() {
+      if (!CUR) return;
+      const file = document.getElementById("stu-file").files[0];
+      if (!file) return;
+      const stat = document.getElementById("sub-status");
+      stat.textContent = "Uploading…";
+      const fd = new FormData();
+      fd.append("email", S.email);
+      fd.append("file", file);
+      try {
+        const [r, d] = await api(`/a/${CUR.id}/submit`, { method: "POST", body: fd });
+        if (!r.ok) {
+          if (d.locked) { lockEnd = Date.now() + d.remaining * 1000; startLock(d.remaining); }
+          toast(d.error, "er"); stat.textContent = ""; return;
+        }
+        toast("File submitted successfully!", "ok");
+        stat.textContent = `✔ ${file.name} received (version ${d.version})`;
+        lockEnd = Date.now() + LOCK * 1000;
+        startLock(LOCK);
+        setDisabled(true, file.name);
+        pollReport();
+      } catch { toast("Upload failed.", "er"); stat.textContent = ""; }
+    }
+
+    function pollReport() {
+      clearInterval(pollIv);
+      fetchReport();
+      pollIv = setInterval(fetchReport, 12000);
+    }
+
+    async function fetchReport() {
+      if (!CUR) return;
+      try {
+        const [, d] = await api(`/a/${CUR.id}/report/${enc(S.email)}`);
+        if (d.status === "pending") return;
+        renderStudentReport(document.getElementById("report-area"), d);
+        clearInterval(pollIv);
+      } catch { }
+    }
+
+    function renderStudentReport(container, entry) {
+      const r = entry.report || {};
+      const overrides = entry.overrides || {};
+      const adj_score = entry.adjusted_score ?? r.score ?? 0;
+      const adj_grade = entry.adjusted_grade ?? r.grade ?? "—";
+      const total = r.total ?? 20;
+      const pct = Math.round(100 * adj_score / total);
+      const gc = "sc-" + adj_grade.toLowerCase();
+
+      if (r.error) {
+        container.innerHTML = `<div class="pending"><div class="pi">⚠️</div>
+      <p>${r.error}</p></div>`; return;
+      }
+
+      const rows = (r.tasks || []).map((t, i) => {
+        const ov = overrides[String(t.id)];
+        const effPass = ov ? ov.passed : t.passed;
+        return `<tr>
+      <td>${i + 1}</td>
+      <td>${t.name}${ov
+            ? `<span class="ov-badge" title="Teacher adjusted">✏️</span>` : ""}</td>
+      <td class="${effPass ? "pass" : "fail"}">${effPass ? "✔ Pass" : "✘ Fail"}</td>
+    </tr>`;
+      }).join("");
+
+      container.innerHTML = `
+    <div class="score-row">
+      <div class="sc ${gc}">
+        <span class="sn">${adj_score}</span>
+        <span class="sd">/ ${total}</span>
+      </div>
+      <div>
+        <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">Grade: ${adj_grade}</div>
+        <div style="color:var(--muted);font-size:.84rem">${pct}% — ${fmt(entry.marked_at)}</div>
+        ${Object.keys(overrides).length
+          ? `<span class="badge bg-purple" style="margin-top:4px">
+              ✏️ ${Object.keys(overrides).length} task(s) adjusted by teacher</span>` : ""}
+      </div>
+    </div>
+    <table class="tbl tbl-hd">
+      <thead><tr><th>#</th><th>Task</th><th>Result</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  MODAL
+    // ════════════════════════════════════════════════════════════
+    function openModal(title, body) {
+      document.getElementById("modal-title").textContent = title;
+      document.getElementById("modal-body").innerHTML = body;
+      document.getElementById("overlay").classList.add("open");
+    }
+    function closeModal() { document.getElementById("overlay").classList.remove("open"); }
+    function maybeClose(e) { if (e.target === document.getElementById("overlay")) closeModal(); }
+
+    // ─── XSS helper ─────────────────────────────────────────────
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+1;"Appearance"
+2;"Courtesy"
+3;"Merit"
+4;"Half-Colours"
+5;"Full-Colours"
+6;"Honours"

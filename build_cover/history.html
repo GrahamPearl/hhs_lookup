@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cover History — Full Archive</title>
+  <link rel="stylesheet" href="./bootstrap.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    body { background: #f4f6f9; padding-top: 0; }
+    .filter-bar {
+      background: #fff;
+      border-bottom: 2px solid #dee2e6;
+      padding: 1rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    }
+    .stats-bar {
+      background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      color: #fff;
+      padding: .75rem 1.5rem;
+    }
+    .stats-bar .stat-item { text-align:center; }
+    .stats-bar .stat-val  { font-size:1.4rem; font-weight:700; }
+    .stats-bar .stat-lbl  { font-size:.75rem; opacity:.8; }
+    .day-card { box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    .archive-gate {
+      border:2px dashed #dc3545;
+      border-radius:8px;
+      padding:1.5rem;
+      margin-top:2rem;
+      background:#fff8f8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+      <span class="navbar-brand fw-bold">📜 Cover History — Full Archive</span>
+      <div class="d-flex gap-2">
+        <button id="cloudReadHistoryBtn" class="btn btn-outline-warning btn-sm" style="display:none">
+          ☁️ Read From Cloud
+        </button>
+        <button id="exportCsvBtn"   class="btn btn-outline-light btn-sm">⬇ CSV</button>
+        <button id="exportExcelBtn" class="btn btn-outline-light btn-sm">⬇ Excel</button>
+        <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#historyReportsModal">
+          📊 Insight Reports
+        </button>
+        <a href="index.html" class="btn btn-outline-light btn-sm">← Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Summary stats bar -->
+  <div class="stats-bar" id="statsBar">
+    <div class="row g-2 text-center">
+      <div class="col stat-item"><div class="stat-val" id="statTotal">—</div><div class="stat-lbl">Records Shown</div></div>
+      <div class="col stat-item"><div class="stat-val" id="statDays">—</div><div class="stat-lbl">Days with Covers</div></div>
+      <div class="col stat-item"><div class="stat-val" id="statAbsent">—</div><div class="stat-lbl">Unique Absent Teachers</div></div>
+      <div class="col stat-item"><div class="stat-val" id="statCover">—</div><div class="stat-lbl">Unique Cover Teachers</div></div>
+      <div class="col stat-item"><div class="stat-val" id="statReason">—</div><div class="stat-lbl">Most Common Reason</div></div>
+      <div class="col stat-item"><div class="stat-val" id="statTopCover">—</div><div class="stat-lbl">Most Active Cover Teacher</div></div>
+    </div>
+  </div>
+
+  <!-- Reports panel button (navbar) -->
+  <!-- Triggered via reportsModal below -->
+
+  <!-- ── Reports Modal ─────────────────────────────────────────── -->
+  <div class="modal fade" id="historyReportsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">📊 Insight Reports</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-0">
+
+            <!-- Left: report list -->
+            <div class="col-md-4 border-end pe-3">
+              <p class="text-muted small mb-2">Select a report to preview:</p>
+              <div class="list-group list-group-flush" id="reportListGroup">
+
+                <div class="list-group-item py-1"><small class="text-uppercase fw-bold text-muted">Patterns</small></div>
+                <button class="list-group-item list-group-item-action" data-hist-report="day-of-week">
+                  Day-of-Week Pattern
+                  <div class="small text-muted">Which days generate most cover load</div>
+                </button>
+                <button class="list-group-item list-group-item-action" data-hist-report="period-utilisation">
+                  Period Utilisation
+                  <div class="small text-muted">Cover load by period across all weeks</div>
+                </button>
+                <button class="list-group-item list-group-item-action" data-hist-report="availability-trend">
+                  Availability Trend
+                  <div class="small text-muted">Week-by-week pool usage &amp; fatigue</div>
+                </button>
+
+                <div class="list-group-item py-1 mt-1"><small class="text-uppercase fw-bold text-muted">Absences</small></div>
+                <button class="list-group-item list-group-item-action" data-hist-report="consecutive-absence">
+                  Consecutive Absences
+                  <div class="small text-muted">Teachers absent on multiple consecutive days</div>
+                </button>
+                <button class="list-group-item list-group-item-action" data-hist-report="absence-frequency">
+                  Absence Frequency
+                  <div class="small text-muted">Teachers ranked by absence rate</div>
+                </button>
+
+                <div class="list-group-item py-1 mt-1"><small class="text-uppercase fw-bold text-muted">Coverage</small></div>
+                <button class="list-group-item list-group-item-action" data-hist-report="subject-coverage">
+                  Subject Coverage
+                  <div class="small text-muted">Subjects most frequently needing cover</div>
+                </button>
+                <button class="list-group-item list-group-item-action" data-hist-report="ten-week-fairness">
+                  10-Week Fairness Overview
+                  <div class="small text-muted">Equity trends and balance</div>
+                </button>
+                <button class="list-group-item list-group-item-action" data-hist-report="cover-refusal">
+                  Cover Refusal / Conflict
+                  <div class="small text-muted">Auto-assign sessions and conflicts</div>
+                </button>
+
+              </div>
+            </div>
+
+            <!-- Right: preview pane -->
+            <div class="col-md-8 ps-3">
+              <div id="histReportPreview" class="text-muted fst-italic small py-3">
+                Select a report on the left to preview it here.
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label mb-1 small fw-semibold">Cover Teacher</label>
+        <input type="text" id="filterCoverTeacher" class="form-control form-control-sm" placeholder="Search…" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1 small fw-semibold">Absent Teacher</label>
+        <input type="text" id="filterAbsentTeacher" class="form-control form-control-sm" placeholder="Search…" />
+      </div>
+      <div class="col-md-1">
+        <label class="form-label mb-1 small fw-semibold">Week</label>
+        <select id="filterWeek" class="form-select form-select-sm">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1 small fw-semibold">Absence Reason</label>
+        <select id="filterReason" class="form-select form-select-sm">
+          <option value="">All Reasons</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1 small fw-semibold">From Date</label>
+        <input type="date" id="filterDateFrom" class="form-control form-control-sm" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1 small fw-semibold">To Date</label>
+        <input type="date" id="filterDateTo" class="form-control form-control-sm" />
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button id="clearFiltersBtn" class="btn btn-sm btn-outline-secondary w-100">Clear</button>
+      </div>
+    </div>
+    <div class="mt-2 d-flex justify-content-between align-items-center">
+      <small class="text-muted" id="resultCount">Loading…</small>
+      <small class="text-muted" id="dateRangeLabel"></small>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="container-fluid py-4">
+    <div id="historyTableContainer">
+      <p class="text-muted text-center py-5">Loading history…</p>
+    </div>
+
+    <!-- Hidden Archive -->
+    <div class="archive-gate" id="archiveSection">
+      <h5 class="text-danger mb-1">🔒 Hidden Archive</h5>
+      <p class="text-muted small mb-3">
+        Reveals the system audit log and all backup history snapshots.
+        These records are <strong>read-only</strong>.
+        Type <strong class="text-danger">SHOW ARCHIVE</strong> below to unlock.
+      </p>
+      <div class="input-group" style="max-width:420px">
+        <input type="text" id="archiveConfirmInput" class="form-control form-control-sm"
+               placeholder="Type SHOW ARCHIVE to unlock…" autocomplete="off" />
+        <button class="btn btn-sm btn-outline-danger" id="archiveUnlockBtn">Unlock</button>
+      </div>
+      <div id="archiveInvalidMsg" class="text-danger small mt-1" style="display:none">
+        Incorrect confirmation. Type exactly: SHOW ARCHIVE
+      </div>
+      <div id="archiveContent" style="display:none" class="mt-4"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="./firebase-adapter.js"></script>
+  <script src="./bootstrap.bundle.min.js"></script>
+  <script src="./xlsx.full.min.js"></script>
+  <script>
+  (() => {
+    "use strict";
+
+    const HISTORY_KEY        = "coverHistory";
+    const HISTORY_BACKUP_KEY = "coverHistoryBackup";
+    const HISTORY_LOG_KEY    = "coverHistoryLog";
+
+    function load(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+      catch { return fallback; }
+    }
+    function esc(v) {
+      return String(v ?? "")
+        .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    }
+    function fmtDate(d) {
+      try { return new Date(d+"T00:00:00").toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"short",day:"numeric"}); }
+      catch { return esc(d); }
+    }
+    function fmtDateTime(d) {
+      try { return new Date(d).toLocaleString(); } catch { return esc(d); }
+    }
+
+    // ── State ─────────────────────────────────────────────────────
+    let allHistory      = [];
+    let filteredHistory = [];
+
+    allHistory = load(HISTORY_KEY, []).sort((a,b) => new Date(b.date) - new Date(a.date));
+    filteredHistory = allHistory;
+
+    populateWeekFilter();
+    populateReasonFilter();
+    setDateRangeDefaults();
+    renderTable(allHistory);
+    updateStats(allHistory);
+    bindFilters();
+    bindExports();
+    bindArchiveUnlock();
+    bindHistoryReports();
+    initCloudReadButton();
+
+    // ── Filter population ─────────────────────────────────────────
+    function populateWeekFilter() {
+      const weeks = [...new Set(allHistory.map(h=>h.week).filter(Boolean))].sort((a,b)=>a-b);
+      const sel = document.getElementById("filterWeek");
+      weeks.forEach(w => {
+        const o = document.createElement("option");
+        o.value=w; o.textContent="Week "+w; sel.appendChild(o);
+      });
+    }
+    function populateReasonFilter() {
+      const reasons = [...new Set(allHistory.map(h=>h.absentReason).filter(Boolean))].sort();
+      const sel = document.getElementById("filterReason");
+      reasons.forEach(r => {
+        const o = document.createElement("option");
+        o.value=r; o.textContent=r; sel.appendChild(o);
+      });
+    }
+    function setDateRangeDefaults() {
+      if (!allHistory.length) return;
+      const dates = allHistory.map(h=>h.date).filter(Boolean).sort();
+      document.getElementById("filterDateFrom").value = dates[dates.length-1]; // most recent at top = oldest in array
+      document.getElementById("filterDateTo").value   = dates[0];
+      updateDateRangeLabel();
+    }
+    function updateDateRangeLabel() {
+      const from = document.getElementById("filterDateFrom").value;
+      const to   = document.getElementById("filterDateTo").value;
+      const lbl  = document.getElementById("dateRangeLabel");
+      if (from && to) lbl.textContent = `Date range: ${from} → ${to}`;
+      else lbl.textContent = "";
+    }
+
+    // ── Filter logic ──────────────────────────────────────────────
+    function applyFilters() {
+      const coverQ  = document.getElementById("filterCoverTeacher").value.trim().toLowerCase();
+      const absentQ = document.getElementById("filterAbsentTeacher").value.trim().toLowerCase();
+      const weekQ   = document.getElementById("filterWeek").value;
+      const reasonQ = document.getElementById("filterReason").value;
+      const fromQ   = document.getElementById("filterDateFrom").value;
+      const toQ     = document.getElementById("filterDateTo").value;
+
+      filteredHistory = allHistory.filter(h => {
+        if (coverQ  && !(h.coverTeacher   ||"").toLowerCase().includes(coverQ))  return false;
+        if (absentQ && !(h.coveredTeacher ||"").toLowerCase().includes(absentQ)) return false;
+        if (weekQ   && String(h.week) !== weekQ)                                  return false;
+        if (reasonQ && (h.absentReason||"") !== reasonQ)                          return false;
+        if (fromQ   && h.date < fromQ)                                            return false;
+        if (toQ     && h.date > toQ)                                              return false;
+        return true;
+      });
+      renderTable(filteredHistory);
+      updateStats(filteredHistory);
+      updateDateRangeLabel();
+    }
+
+    function bindFilters() {
+      ["filterCoverTeacher","filterAbsentTeacher"].forEach(id =>
+        document.getElementById(id).addEventListener("input", applyFilters));
+      ["filterWeek","filterReason","filterDateFrom","filterDateTo"].forEach(id =>
+        document.getElementById(id).addEventListener("change", applyFilters));
+      document.getElementById("clearFiltersBtn").addEventListener("click", () => {
+        ["filterCoverTeacher","filterAbsentTeacher"].forEach(id =>
+          document.getElementById(id).value = "");
+        ["filterWeek","filterReason"].forEach(id =>
+          document.getElementById(id).value = "");
+        setDateRangeDefaults();
+        applyFilters();
+      });
+    }
+
+    // ── Stats bar ─────────────────────────────────────────────────
+    function updateStats(records) {
+      const days      = new Set(records.map(h=>h.date)).size;
+      const absent    = new Set(records.map(h=>h.coveredTeacher)).size;
+      const cover     = new Set(records.map(h=>h.coverTeacher)).size;
+
+      const reasonCounts = {};
+      const coverCounts  = {};
+      for (const h of records) {
+        const r = h.absentReason||""; if (r) reasonCounts[r] = (reasonCounts[r]||0)+1;
+        const c = h.coverTeacher||""; if (c) coverCounts[c]  = (coverCounts[c] ||0)+1;
+      }
+      const topReason   = Object.entries(reasonCounts).sort((a,b)=>b[1]-a[1])[0];
+      const topCoverer  = Object.entries(coverCounts).sort((a,b)=>b[1]-a[1])[0];
+
+      document.getElementById("statTotal").textContent    = records.length.toLocaleString();
+      document.getElementById("statDays").textContent     = days;
+      document.getElementById("statAbsent").textContent   = absent;
+      document.getElementById("statCover").textContent    = cover;
+      document.getElementById("statReason").textContent   = topReason   ? `${topReason[0]} (${topReason[1]})` : "—";
+      document.getElementById("statTopCover").textContent = topCoverer  ? `${topCoverer[0]} (${topCoverer[1]})`: "—";
+      document.getElementById("resultCount").textContent  =
+        `Showing ${records.length.toLocaleString()} of ${allHistory.length.toLocaleString()} records`;
+    }
+
+    // ── Table render ──────────────────────────────────────────────
+    function renderTable(records) {
+      const container = document.getElementById("historyTableContainer");
+      if (records.length === 0) {
+        container.innerHTML = "<div class='alert alert-info'>No records match the current filters.</div>";
+        return;
+      }
+      const byDate = {};
+      for (const h of records) {
+        if (!byDate[h.date]) byDate[h.date] = [];
+        byDate[h.date].push(h);
+      }
+      const dates = Object.keys(byDate).sort((a,b) => new Date(b)-new Date(a));
+      let html = "";
+      for (const date of dates) {
+        const entries = byDate[date].sort((a,b)=>(a.period||0)-(b.period||0));
+        const weekNum = entries[0]?.week ?? "?";
+        html += `
+          <div class="card mb-3 day-card">
+            <div class="card-header d-flex justify-content-between align-items-center bg-light">
+              <strong>${fmtDate(date)}</strong>
+              <span class="badge bg-secondary">
+                Week ${esc(String(weekNum))} &nbsp;·&nbsp;
+                ${entries.length} cover${entries.length!==1?"s":""}
+              </span>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered mb-0">
+                <thead class="table-secondary">
+                  <tr>
+                    <th style="width:40px">P</th>
+                    <th>Absent Teacher</th>
+                    <th>Reason</th>
+                    <th>Cover Teacher</th>
+                    <th>Subject</th>
+                    <th>Class</th>
+                    <th>Venue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${entries.map(e=>`
+                    <tr>
+                      <td class="text-center">${esc(String(e.period??""))}</td>
+                      <td>${esc(e.coveredTeacher||"")}</td>
+                      <td><small class="text-muted fst-italic">${esc(e.absentReason||"—")}</small></td>
+                      <td><strong>${esc(e.coverTeacher||"")}</strong></td>
+                      <td><small>${esc(e.subject||"")}</small></td>
+                      <td><small>${esc(e.className||"")}</small></td>
+                      <td><small>${esc(e.venue||"")}</small></td>
+                    </tr>`).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    // ── Exports ───────────────────────────────────────────────────
+    const EXPORT_HEADERS = ["Date","Week","Absent Teacher","Reason","Cover Teacher","Period","Subject","Class","Venue"];
+    function recordToRow(h) {
+      return [h.date, h.week, h.coveredTeacher, h.absentReason||"",
+              h.coverTeacher, h.period, h.subject, h.className, h.venue];
+    }
+
+    function exportCSV() {
+      const rows = filteredHistory.map(h =>
+        recordToRow(h).map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")
+      );
+      const csv  = [EXPORT_HEADERS.join(","), ...rows].join("\n");
+      const blob = new Blob([csv],{type:"text/csv"});
+      const a    = document.createElement("a");
+      a.href     = URL.createObjectURL(blob);
+      a.download = `cover_history_${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }
+
+    function exportExcel() {
+      if (!window.XLSX) { alert("XLSX library not loaded. Ensure xlsx.full.min.js is in the same folder."); return; }
+      const data = [EXPORT_HEADERS, ...filteredHistory.map(recordToRow)];
+      const wb   = XLSX.utils.book_new();
+      const ws   = XLSX.utils.aoa_to_sheet(data);
+      // Auto column widths (approximate)
+      ws["!cols"] = EXPORT_HEADERS.map((_,i) => {
+        const max = Math.max(...data.map(r=>String(r[i]??"").length));
+        return { wch: Math.min(Math.max(max,10),40) };
+      });
+      XLSX.utils.book_append_sheet(wb, ws, "Cover History");
+      XLSX.writeFile(wb, `cover_history_${new Date().toISOString().split("T")[0]}.xlsx`);
+    }
+
+    function bindExports() {
+      document.getElementById("exportCsvBtn").addEventListener("click",   exportCSV);
+      document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
+    }
+
+    // ── History page report rendering ────────────────────────────
+    function bindHistoryReports() {
+      const preview = document.getElementById("histReportPreview");
+      document.querySelectorAll("[data-hist-report]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("[data-hist-report]").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          preview.innerHTML = renderHistReport(btn.dataset.histReport);
+        });
+      });
+    }
+
+    function renderHistReport(type) {
+      switch (type) {
+        case "day-of-week":         return histReportDayOfWeek();
+        case "period-utilisation":  return histReportPeriodUtilisation();
+        case "availability-trend":  return histReportAvailabilityTrend();
+        case "consecutive-absence": return histReportConsecutiveAbsence();
+        case "absence-frequency":   return histReportAbsenceFrequency();
+        case "subject-coverage":    return histReportSubjectCoverage();
+        case "ten-week-fairness":   return histReportTenWeekFairness();
+        case "cover-refusal":       return histReportCoverRefusal();
+        default: return "<p class='text-muted'>Report not available.</p>";
+      }
+    }
+
+    // helper: progress bar row
+    function pBar(count, max, cls) {
+      const pct = max > 0 ? ((count/max)*100).toFixed(0) : 0;
+      return `<div class="progress" style="height:18px"><div class="progress-bar ${cls||""}" style="width:${pct}%">${count}</div></div>`;
+    }
+
+    function histReportDayOfWeek() {
+      if (!allHistory.length) return "<p class='text-muted'>No history available.</p>";
+      const names = ["","Monday","Tuesday","Wednesday","Thursday","Friday"];
+      const counts = {1:0,2:0,3:0,4:0,5:0};
+      const uniqAbs = {1:new Set(),2:new Set(),3:new Set(),4:new Set(),5:new Set()};
+      for (const h of allHistory) {
+        const d = new Date(h.date+"T00:00:00").getDay();
+        if (counts[d] !== undefined) { counts[d]++; uniqAbs[d].add(h.coveredTeacher); }
+      }
+      const rows = [1,2,3,4,5].map(d => ({day:names[d],covers:counts[d],abs:uniqAbs[d].size}))
+        .sort((a,b) => b.covers-a.covers);
+      const max = Math.max(...rows.map(r=>r.covers),1);
+      return `<h6>Day-of-Week Pattern</h6>
+        <table class="table table-sm table-bordered">
+          <thead class="table-light"><tr><th>Day</th><th style="width:70px">Covers</th><th>Load</th><th style="width:110px">Unique Absences</th></tr></thead>
+          <tbody>${rows.map(r=>`<tr>
+            <td><strong>${esc(r.day)}</strong></td>
+            <td class="text-center">${r.covers}</td>
+            <td>${pBar(r.covers,max)}</td>
+            <td class="text-center">${r.abs}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+        <div class="alert alert-info small mt-2">💡 High counts on one day may indicate a recurring meeting or timetabling gap.</div>`;
+    }
+
+    function histReportPeriodUtilisation() {
+      if (!allHistory.length) return "<p class='text-muted'>No history available.</p>";
+      const counts = {};
+      for (const h of allHistory) { const p=h.period??"?"; counts[p]=(counts[p]||0)+1; }
+      const rows  = Object.entries(counts).sort((a,b)=>Number(a[0])-Number(b[0]));
+      const max   = Math.max(...rows.map(r=>r[1]),1);
+      const total = allHistory.length;
+      return `<h6>Period Utilisation</h6>
+        <table class="table table-sm table-bordered">
+          <thead class="table-light"><tr><th>Period</th><th style="width:70px">Covers</th><th>Load</th><th style="width:90px">% Total</th></tr></thead>
+          <tbody>${rows.map(([p,c])=>`<tr>
+            <td class="text-center fw-semibold">P${esc(String(p))}</td>
+            <td class="text-center">${c}</td>
+            <td>${pBar(c,max,"bg-success")}</td>
+            <td class="text-center"><span class="badge bg-secondary">${((c/total)*100).toFixed(1)}%</span></td>
+          </tr>`).join("")}</tbody>
+        </table>
+        <div class="alert alert-info small mt-2">💡 Persistently high periods may indicate timetabling issues.</div>`;
+    }
+
+    function histReportAvailabilityTrend() {
+      if (!allHistory.length) return "<p class='text-muted'>No history available.</p>";
+      const weeks = {};
+      for (const h of allHistory) {
+        const w = h.week;
+        if (!weeks[w]) weeks[w] = {covers:0,teachers:new Set(),absences:new Set()};
+        weeks[w].covers++; weeks[w].teachers.add(h.coverTeacher); weeks[w].absences.add(h.coveredTeacher);
+      }
+      const rows  = Object.entries(weeks).sort((a,b)=>Number(a[0])-Number(b[0]));
+      const maxC  = Math.max(...rows.map(r=>r[1].covers),1);
+      return `<h6>Availability Trend</h6>
+        <table class="table table-sm table-bordered">
+          <thead class="table-light"><tr><th>Wk</th><th>Covers</th><th>Load</th><th>Cover Teachers</th><th>Absences</th><th>Avg/Teacher</th></tr></thead>
+          <tbody>${rows.map(([w,d])=>{
+            const avg=(d.covers/d.teachers.size).toFixed(1);
+            return `<tr>
+              <td class="text-center fw-semibold">W${esc(String(w))}</td>
+              <td class="text-center">${d.covers}</td>
+              <td>${pBar(d.covers,maxC,"bg-primary")}</td>
+              <td class="text-center">${d.teachers.size}</td>
+              <td class="text-center">${d.absences.size}</td>
+              <td class="text-center ${parseFloat(avg)>3?"text-danger fw-bold":""}">${avg}</td>
+            </tr>`;
+          }).join("")}</tbody>
+        </table>
+        <div class="alert alert-warning small mt-2">⚠️ Avg &gt;3/teacher (red) suggests unsustainable load.</div>`;
+    }
+
+    function histReportConsecutiveAbsence() {
+      if (!allHistory.length) return "<p class='text-muted'>No history available.</p>";
+      const byTeacher = {};
+      for (const h of allHistory) {
+        if (!byTeacher[h.coveredTeacher]) byTeacher[h.coveredTeacher] = new Set();
+        byTeacher[h.coveredTeacher].add(h.date);
+      }
+      const runs = [];
+      for (const [teacher, dateSet] of Object.entries(byTeacher)) {
+        const dates = [...dateSet].sort();
+        let streak  = [dates[0]];
+        for (let i=1;i<dates.length;i++) {
+          const diff = (new Date(dates[i]+"T00:00:00")-new Date(dates[i-1]+"T00:00:00"))/86400000;
+          if (diff<=4) streak.push(dates[i]);
+          else { if(streak.length>=2) runs.push({teacher,dates:[...streak]}); streak=[dates[i]]; }
+        }
+        if (streak.length>=2) runs.push({teacher,dates:[...streak]});
+      }
+      if (!runs.length) return `<h6>Consecutive Absences</h6><p class="text-success fw-semibold">✓ No consecutive absences detected.</p>`;
+      runs.sort((a,b)=>b.dates.length-a.dates.length);
+      return `<h6>Consecutive Absences</h6>
+        <table class="table table-sm table-bordered">
+          <thead class="table-light"><tr><th>Teacher</th><th style="width:70px">Days</th><th>From</th><th>To</th></tr></thead>
+          <tbody>${runs.map(r=>`<tr>
+            <td>${esc(r.teacher)}</td>
+            <td class="text-center"><span class="badge ${r.dates.length>=3?"bg-danger":"bg-warning text-dark"}">${r.dates.length}</span></td>
+            <td>${esc(r.dates[0])}</td>
+            <td>${esc(r.dates[r.dates.length-1])}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+        <small class="text-muted">3+ day streaks (red) — consider extended leave planning.</small>`;
+    }
+
+    function histReportAbsenceFrequency() {
+      if (!allHistory.length) return "<p class='text-muted'>No history available.</p>";
+      const periodCounts={}, dayCounts={};
+      for (const h of allHistory) {
+        const t=h.coveredTeacher;
+        periodCounts[t]=(periodCounts[t]||0)+1;
+        if(!dayCounts[t]) dayCounts[t]=new Set();
+        dayCounts[t].add(h.date);
+      }
+      const rows=Object.entries(periodCounts).sort((a,b)=>b[1]-a[1]);
+      return `<h6>Absence Frequency</h6>
+        <table class="table table-sm table-striped table-bordered">
+          <thead class="table-light"><tr><th style="width:45px">Rank</th><th>Teacher</th><th style="width:110px">Total Periods</th><th style="width:110px">Absence Days</th></tr></thead>
+          <tbody>${rows.map(([t,c],i)=>`<tr>
+            <td class="text-center fw-semibold">${i+1}</td>
+            <td>${esc(t)}</td>
+            <td class="text-center">${c}</td>
+            <td class="text-center">${dayCounts[t].size}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+        <div class="alert alert-warning small mt-2">⚠️ High absence frequency increases peer cover load.</div>`;
+    }
+
+    function histReportSubjectCoverage() {
+      if (!allHistory.length) return "<p class='text-muted'>No history available.</p>";
+      const counts={};
+      for (const h of allHistory) { const s=h.subject||"Unknown"; counts[s]=(counts[s]||0)+1; }
+      const rows=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+      const total=allHistory.length, max=rows[0]?.[1]||1;
+      return `<h6>Subject Coverage</h6>
+        <table class="table table-sm table-bordered">
+          <thead class="table-light"><tr><th>Subject</th><th style="width:70px">Covers</th><th>Distribution</th><th style="width:90px">% Total</th></tr></thead>
+          <tbody>${rows.map(([s,c])=>`<tr>
+            <td>${esc(s)}</td>
+            <td class="text-center">${c}</td>
+            <td>${pBar(c,max,"bg-info")}</td>
+            <td class="text-center"><span class="badge bg-secondary">${((c/total)*100).toFixed(1)}%</span></td>
+          </tr>`).join("")}</tbody>
+        </table>`;
+    }
+
+    function histReportTenWeekFairness() {
+      if (!allHistory.length) return "<p class='text-muted'>No history available.</p>";
+      const totals={}, reasonTotals={};
+      for (const h of allHistory) {
+        totals[h.coverTeacher]=(totals[h.coverTeacher]||0)+1;
+        const r=h.absentReason||"Unknown"; reasonTotals[r]=(reasonTotals[r]||0)+1;
+      }
+      let min=Infinity,max=0,sum=0;
+      const list=[];
+      for (const [teacher,total] of Object.entries(totals)) {
+        list.push({teacher,total});
+        if(total<min) min=total; if(total>max) max=total; sum+=total;
+      }
+      list.sort((a,b)=>a.total-b.total);
+      const avg=sum/list.length;
+      const ratio=min>0&&min!==Infinity?(max/min).toFixed(2):"N/A";
+      const total=allHistory.length;
+      return `<h6>10-Week Fairness Overview</h6>
+        <div class="row g-2 mb-3">
+          ${[["Min",min===Infinity?0:min],["Max",max],["Avg",avg.toFixed(2)],["Ratio",ratio]].map(([l,v])=>
+            `<div class="col-6 col-sm-3"><div class="border rounded p-2 text-center">
+              <div class="small text-muted">${l}</div><div class="fw-semibold">${v}</div></div></div>`).join("")}
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered">
+            <thead class="table-light"><tr><th>Teacher</th><th style="width:90px">Covers</th><th>% of Total</th></tr></thead>
+            <tbody>${list.map(x=>{
+              const pct=((x.total/total)*100).toFixed(1);
+              return `<tr>
+                <td>${esc(x.teacher)}</td>
+                <td class="text-center fw-semibold">${x.total}</td>
+                <td><div class="progress" style="height:18px"><div class="progress-bar" style="width:${pct}%">${pct}%</div></div></td>
+              </tr>`;
+            }).join("")}</tbody>
+          </table>
+        </div>
+        <div class="alert alert-info small mt-2">📈 Max/Min ratio target: &lt; 2.0</div>`;
+    }
+
+    function histReportCoverRefusal() {
+      const log=JSON.parse(localStorage.getItem("coverHistoryLog")||"[]");
+      const events=log.filter(e=>e.action==="AUTO_ASSIGN_APPLIED")
+                      .sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+      if (!events.length) return "<p class='text-muted'>No auto-assign events recorded yet.</p>";
+      const totalAssigned=events.reduce((s,e)=>s+(e.details?.assignmentsMade||0),0);
+      return `<h6>Cover Refusal / Conflict</h6>
+        <div class="row g-2 mb-3">
+          ${[["Sessions",events.length],["Total Assigned",totalAssigned],["Avg/Session",(totalAssigned/events.length).toFixed(1)]].map(([l,v])=>
+            `<div class="col-4"><div class="border rounded p-2 text-center">
+              <div class="small text-muted">${l}</div><div class="fw-semibold">${v}</div></div></div>`).join("")}
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-bordered">
+            <thead class="table-light"><tr><th>Timestamp</th><th>Strategy</th><th style="width:90px">Assigned</th></tr></thead>
+            <tbody>${events.slice(0,20).map(e=>`<tr>
+              <td><small>${fmtDateTime(e.timestamp)}</small></td>
+              <td>${esc(e.details?.strategy||"unknown")}</td>
+              <td class="text-center">${e.details?.assignmentsMade??0}</td>
+            </tr>`).join("")}</tbody>
+          </table>
+        </div>`;
+    }
+
+    // ── Cloud read (history.html) ─────────────────────────────────
+    function initCloudReadButton() {
+      const btn = document.getElementById("cloudReadHistoryBtn");
+      if (!btn) return;
+      // Always show the button; state drives behaviour
+      btn.style.display = "inline-block";
+      if (!FirebaseAdapter.isConfigured()) {
+        btn.classList.remove("btn-outline-warning");
+        btn.classList.add("btn-outline-secondary");
+        btn.title = "Firebase not configured — open index.html Settings → Firebase Storage";
+        btn.addEventListener("click", () => {
+          alert("☁️ Firebase is not configured on this device.\n\nOpen the Cover Management Dashboard → Settings → Firebase Storage tab to enter your credentials.");
+        });
+        return;
+      }
+      btn.classList.add("btn-outline-warning");
+      btn.title = `Read history from cloud (School: ${FirebaseAdapter.getStoredSchoolId()})`;
+      btn.addEventListener("click", async () => {
+        if (!confirm("Merge cloud history into the local view?")) return;
+        try {
+          btn.disabled = true; btn.textContent = "⏳ Reading…";
+          const cloudHistory = await FirebaseAdapter.readHistory();
+          if (!cloudHistory.length) { alert("No history found in cloud."); return; }
+          const existingKeys = new Set(
+            allHistory.map(h => `${h.date}_${h.coveredTeacher}_P${h.period}_${h.coverTeacher}`)
+          );
+          const newEntries = cloudHistory.filter(
+            h => !existingKeys.has(`${h.date}_${h.coveredTeacher}_P${h.period}_${h.coverTeacher}`)
+          );
+          allHistory = [...allHistory, ...newEntries]
+            .sort((a,b) => new Date(b.date) - new Date(a.date));
+          renderTable(allHistory);
+          updateStats(allHistory);
+          alert(`✅ Merged ${newEntries.length} new record(s) from cloud.`);
+        } catch(e) {
+          alert("❌ Cloud read failed:\n" + e.message);
+        } finally {
+          btn.disabled = false; btn.textContent = "☁️ Read From Cloud";
+        }
+      });
+    }
+
+    // ── Hidden archive unlock ─────────────────────────────────────
+    function bindArchiveUnlock() {
+      const input   = document.getElementById("archiveConfirmInput");
+      const btn     = document.getElementById("archiveUnlockBtn");
+      const invalid = document.getElementById("archiveInvalidMsg");
+      input.addEventListener("input", () => { invalid.style.display="none"; });
+      btn.addEventListener("click", () => {
+        if (input.value.trim() !== "SHOW ARCHIVE") {
+          invalid.style.display="block"; input.focus(); return;
+        }
+        invalid.style.display="none";
+        input.disabled=true; btn.disabled=true;
+        renderArchive();
+        const content = document.getElementById("archiveContent");
+        content.style.display="block";
+        content.scrollIntoView({behavior:"smooth"});
+      });
+    }
+
+    function renderArchive() {
+      const backups    = load(HISTORY_BACKUP_KEY,[]);
+      const log        = load(HISTORY_LOG_KEY,[]);
+      const sortedLog  = [...log].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+      const content    = document.getElementById("archiveContent");
+
+      // Audit log table
+      let logHtml = `
+        <h5 class="border-bottom pb-2 text-danger">🗒️ System Audit Log
+          <span class="badge bg-secondary ms-2">${sortedLog.length} entries</span>
+          <button id="archiveCsvBtn" class="btn btn-sm btn-outline-danger ms-2">⬇ CSV</button>
+        </h5>`;
+      if (!sortedLog.length) {
+        logHtml += "<p class='text-muted'>No audit log entries found.</p>";
+      } else {
+        logHtml += `
+          <div class="table-responsive mb-4">
+            <table class="table table-sm table-striped table-bordered">
+              <thead class="table-dark">
+                <tr><th style="width:180px">Timestamp</th><th style="width:220px">Action</th><th>Details</th><th style="width:100px">History #</th></tr>
+              </thead>
+              <tbody>
+                ${sortedLog.map(e=>`
+                  <tr>
+                    <td><small>${fmtDateTime(e.timestamp)}</small></td>
+                    <td><code>${esc(e.action||"")}</code></td>
+                    <td><small class="text-muted">${esc(JSON.stringify(e.details||{}))}</small></td>
+                    <td class="text-center"><small>${esc(String(e.dataSnapshot?.historyCount??""))}</small></td>
+                  </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>`;
+      }
+
+      // Backup snapshots
+      const sortedBackups = [...backups].sort((a,b)=>new Date(b.date)-new Date(a.date));
+      let backupHtml = `
+        <h5 class="border-bottom pb-2 text-danger mt-4">💾 History Backup Snapshots
+          <span class="badge bg-secondary ms-2">${sortedBackups.length} snapshots</span>
+        </h5>`;
+      if (!sortedBackups.length) {
+        backupHtml += "<p class='text-muted'>No backup snapshots found.</p>";
+      } else {
+        sortedBackups.forEach((snap, idx) => {
+          const snapRecords = (snap.data||[]).sort((a,b)=>new Date(b.date)-new Date(a.date));
+          backupHtml += `
+            <div class="card mb-3 border-warning">
+              <div class="card-header bg-warning bg-opacity-25 d-flex justify-content-between align-items-center">
+                <strong>Snapshot ${sortedBackups.length-idx}</strong>
+                <span class="text-muted small">${fmtDateTime(snap.date)} &nbsp;·&nbsp; ${snap.historyCount??snapRecords.length} records</span>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0">
+                  <thead class="table-light">
+                    <tr><th>Date</th><th>Wk</th><th>Absent Teacher</th><th>Reason</th><th>Cover Teacher</th><th>P</th><th>Subject</th></tr>
+                  </thead>
+                  <tbody>
+                    ${snapRecords.map(e=>`
+                      <tr>
+                        <td><small>${esc(e.date||"")}</small></td>
+                        <td class="text-center">${esc(String(e.week??""))}</td>
+                        <td>${esc(e.coveredTeacher||"")}</td>
+                        <td><small class="fst-italic text-muted">${esc(e.absentReason||"—")}</small></td>
+                        <td><strong>${esc(e.coverTeacher||"")}</strong></td>
+                        <td class="text-center">${esc(String(e.period??""))}</td>
+                        <td><small>${esc(e.subject||"")}</small></td>
+                      </tr>`).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>`;
+        });
+      }
+
+      content.innerHTML = logHtml + backupHtml;
+
+      // Audit log CSV export
+      document.getElementById("archiveCsvBtn")?.addEventListener("click", () => {
+        const hdrs = ["Timestamp","Action","Details","History Count"];
+        const rows = sortedLog.map(e => [
+          e.timestamp, e.action||"",
+          JSON.stringify(e.details||{}),
+          e.dataSnapshot?.historyCount??""
+        ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
+        const csv  = [hdrs.join(","),...rows].join("\n");
+        const blob = new Blob([csv],{type:"text/csv"});
+        const a    = document.createElement("a");
+        a.href     = URL.createObjectURL(blob);
+        a.download = `audit_log_${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      });
+    }
+
+  })();
+  </script>
+</body>
+</html>

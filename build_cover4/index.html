@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" data-theme="corporate">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cover Management Dashboard</title>
+
+    <!-- Tailwind (Play CDN — no build step needed for static Hosting) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- DaisyUI default theme, plain CDN, no config overrides -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet" type="text/css" />
+
+    <link rel="stylesheet" href="./css/app.css" />
+  </head>
+  <body class="min-h-screen bg-base-200">
+
+    <!-- ============================================================
+         AUTH GATE — Session 2 fills this in with email-link sign-in.
+         Shown by default; app.js hides it and shows #appShell once a
+         session exists.
+         ============================================================ -->
+    <div id="authGate" class="min-h-screen flex items-center justify-center">
+      <div class="card w-96 bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+          <h1 class="card-title">📚 Cover Management</h1>
+          <p class="text-sm text-base-content/70">
+            Sign-in (email link) will be wired up in Session 2. This card is a
+            placeholder so the shell has a defined "logged out" state.
+          </p>
+          <div class="form-control w-full">
+            <input type="email" id="loginEmailInput" placeholder="you@school.org" class="input input-bordered w-full" />
+          </div>
+          <button id="sendLinkBtn" class="btn btn-primary w-full mt-2">Send sign-in link</button>
+          <p id="loginStatus" class="text-sm mt-2"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         APP SHELL — hidden until authenticated (Session 2 toggles this).
+         Structure only: drawer + navbar + content regions with stable
+         IDs that later sessions render into.
+         ============================================================ -->
+    <div id="appShell" class="drawer lg:drawer-open hidden">
+      <input id="sidebarDrawerToggle" type="checkbox" class="drawer-toggle" />
+
+      <div class="drawer-content flex flex-col">
+
+        <!-- Top navbar -->
+        <div class="navbar bg-base-100 shadow-sm sticky top-0 z-30">
+          <div class="flex-none lg:hidden">
+            <label for="sidebarDrawerToggle" aria-label="open sidebar" class="btn btn-square btn-ghost">
+              ☰
+            </label>
+          </div>
+          <div class="flex-1">
+            <span class="text-lg font-semibold px-2">📚 Cover Management Dashboard</span>
+          </div>
+          <div class="flex-none flex gap-2">
+            <button class="btn btn-ghost btn-sm" data-open-modal="reportsModal">📊 Reports</button>
+            <button class="btn btn-ghost btn-sm" data-open-modal="settingsModal">⚙️ Settings</button>
+            <button id="signOutBtn" class="btn btn-ghost btn-sm">Sign out</button>
+          </div>
+        </div>
+
+        <!-- Dashboard summary strip — Session 7 (fairness.js) populates these values -->
+        <div id="dashboardSummary" class="stats shadow m-4 bg-primary text-primary-content">
+          <div class="stat">
+            <div class="stat-title text-primary-content/70">Fairness Score</div>
+            <div class="stat-value" id="fairnessScoreDisplay">--</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title text-primary-content/70">Total Covers (10W)</div>
+            <div class="stat-value" id="totalCoversDisplay">--</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title text-primary-content/70">Active Teachers</div>
+            <div class="stat-value" id="teacherCountDisplay">--</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title text-primary-content/70">Max/Min Ratio</div>
+            <div class="stat-value" id="imbalanceRatioDisplay">--</div>
+          </div>
+        </div>
+
+        <!-- Daily plan controls — Session 4 (absences.js) wires the date/day-slot pickers -->
+        <div id="dailyPlanControls" class="flex flex-wrap gap-3 items-end px-4 mb-2">
+          <div class="form-control">
+            <label class="label"><span class="label-text">Cover Date</span></label>
+            <input type="date" id="coverDate" class="input input-bordered input-sm" />
+          </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text">Rotation Day</span></label>
+            <select id="daySlotSelect" class="select select-bordered select-sm">
+              <option value="0">Day 1</option>
+              <option value="1">Day 2</option>
+              <option value="2">Day 3</option>
+              <option value="3">Day 4</option>
+              <option value="4">Day 5</option>
+            </select>
+          </div>
+          <span class="text-sm text-base-content/60">Week <span id="weekDisplay">--</span> of 10</span>
+        </div>
+
+        <!-- Main content: cover grid — Session 5 (coverGrid.js) renders into this -->
+        <main class="flex-1 p-4">
+          <div id="coverGrid" class="card bg-base-100 shadow-sm p-6">
+            <p class="text-base-content/50 text-sm">
+              Cover grid renders here once absences exist for the selected day
+              (Session 4 + Session 5).
+            </p>
+          </div>
+        </main>
+
+        <!-- Available cover teachers — Session 5 renders into this -->
+        <div class="collapse collapse-arrow bg-base-100 border-t">
+          <input type="checkbox" />
+          <div class="collapse-title font-medium">👥 Available Cover Teachers</div>
+          <div class="collapse-content" id="availableCoverList">
+            <p class="text-base-content/50 text-sm">Populated once a day is selected.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar drawer — Session 3/4 render teacher search + absence list here -->
+      <div class="drawer-side z-40">
+        <label for="sidebarDrawerToggle" aria-label="close sidebar" class="drawer-overlay"></label>
+        <div class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
+          <h2 class="text-lg font-semibold mb-3">Cover System</h2>
+
+          <div id="teacherSearchContainer" class="mb-4">
+            <p class="text-sm text-base-content/50">
+              Teacher search + absence list — Session 3 (teachers.js) and
+              Session 4 (absences.js).
+            </p>
+          </div>
+
+          <div id="absentListContainer" class="mb-4"></div>
+
+          <div class="divider"></div>
+
+          <button class="btn btn-outline btn-sm w-full mb-2" data-open-modal="tenWeekModal">
+            Manage Period
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL PLACEHOLDERS (DaisyUI <dialog> pattern).
+         Empty bodies — each is filled by its owning session.
+         ============================================================ -->
+    <dialog id="addAbsenceModal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg">➕ Add Absent Teacher</h3>
+        <p class="text-sm text-base-content/50 py-2">Session 4 (absences.js)</p>
+        <div class="modal-action">
+          <form method="dialog"><button class="btn">Close</button></form>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="reportsModal" class="modal">
+      <div class="modal-box max-w-3xl">
+        <h3 class="font-bold text-lg">📊 Reports & Analysis</h3>
+        <p class="text-sm text-base-content/50 py-2">Session 8 (reports.js)</p>
+        <div class="modal-action">
+          <form method="dialog"><button class="btn">Close</button></form>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="settingsModal" class="modal">
+      <div class="modal-box max-w-2xl">
+        <h3 class="font-bold text-lg">⚙️ Settings</h3>
+        <p class="text-sm text-base-content/50 py-2">Session 9 (settings.js)</p>
+        <div class="modal-action">
+          <form method="dialog"><button class="btn">Close</button></form>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="tenWeekModal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg">10-Week Period</h3>
+        <p class="text-sm text-base-content/50 py-2">Session 9 (settings.js)</p>
+        <div class="modal-action">
+          <form method="dialog"><button class="btn">Close</button></form>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Firebase SDK + app modules -->
+    <script type="module" src="./js/firebase-config.js"></script>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

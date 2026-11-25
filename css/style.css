@@ -1,0 +1,171 @@
+/* ================================
+   Hillcrest High School Theme
+   Palette: Blue, Red, White
+   ================================ */
+
+/* --- Core Colors (CSS Variables) --- */
+:root {
+  --hhs-blue: #0a4fa3;
+  --hhs-blue-600: #0a3f82;
+  --hhs-red: #c62828;
+  --hhs-red-600: #a61f1f;
+  --hhs-white: #ffffff;
+  --hhs-bg: #f7f9fc;
+  --hhs-muted: #6c757d;
+}
+
+/* --- Bootstrap Primary Override --- */
+.btn-primary,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: var(--hhs-blue);
+  border-color: var(--hhs-blue);
+}
+
+.btn-primary:hover {
+  background-color: var(--hhs-blue-600);
+  border-color: var(--hhs-blue-600);
+}
+
+.btn-outline-secondary {
+  color: var(--hhs-blue);
+  border-color: var(--hhs-blue);
+}
+
+.btn-outline-secondary:hover {
+  color: #fff;
+  background-color: var(--hhs-blue);
+  border-color: var(--hhs-blue);
+}
+
+/* --- Header --- */
+.hhs-header {
+  background: linear-gradient(90deg, var(--hhs-blue), var(--hhs-blue-600));
+  color: var(--hhs-white);
+}
+
+.hhs-title {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+/* --- Body & General Cards --- */
+body {
+  background-color: var(--hhs-bg);
+}
+
+.card-fixed {
+  border: 1px solid rgba(10, 79, 163, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.card-fixed .card-body {
+  padding: 0;
+}
+
+.card-fixed .col-md-8 {
+  padding: 0;
+  flex: 1 1 auto;
+}
+
+.card-fixed .img-col {
+  display: contents;
+}
+
+.card-fixed .row.g-0 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* --- Form Controls --- */
+.form-label {
+  font-weight: 600;
+  color: #15233b;
+}
+
+.form-select:focus,
+.form-control:focus {
+  border-color: var(--hhs-blue);
+  box-shadow: 0 0 0 0.2rem rgba(10, 79, 163, 0.15);
+}
+
+/* --- Results Grid Layout --- */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.results-grid .card {
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.results-grid .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.35rem 1rem rgba(10, 27, 60, 0.12);
+}
+
+.results-grid .card .card-body {
+  padding: 0;
+  min-width: 0;
+}
+
+.results-grid .card .card-title {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* --- Student Photos --- */
+.student-photo {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  display: block;
+  flex: 0 0 64px;
+}
+
+/* Larger photo for detailed card view */
+.card-fixed .student-photo {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+}
+
+/* --- Helper Classes --- */
+.img-col {
+  min-height: 240px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* --- Links & Accents --- */
+a,
+.link-primary {
+  color: var(--hhs-blue);
+}
+
+a:hover {
+  color: var(--hhs-blue-600);
+}
+
+.alert-info {
+  border-left: 4px solid var(--hhs-red);
+}
+
+/* --- Commented for future use ---
+.badge-hhs { background-color: var(--hhs-red); color: #fff; }
+*/

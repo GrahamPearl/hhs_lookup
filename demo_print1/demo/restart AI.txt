@@ -1,0 +1,1 @@
+“Load the attached PROJECT_RESTART_SUMMARY.md and continue the project. Preserve architecture and rendering rules.”

@@ -1,0 +1,11 @@
+/* Intentionally minimal — Tailwind + DaisyUI defaults cover styling.
+   Add overrides here only when a later session needs something the
+   default theme can't express (e.g. print stylesheet in Session 10). */
+
+@media print {
+  #authGate,
+  .drawer-side,
+  .navbar {
+    display: none !important;
+  }
+}

@@ -1,0 +1,130 @@
+[
+  {
+    "badge": "Teachers",
+    "badgeClass": "bg-primary",
+    "title": "Teacher Timetable Builder",
+    "description": "Browse timetable information, build your own.",
+    "buttonText": "Open Teacher Timetable Builder",
+    "link": "./build_timetable/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Teacher Timetable Senior Management",
+    "description": "Browse sport information, codes and resources.",
+    "buttonText": "Senior Management Timetable Editor",
+    "link": "./build_timetable_senior/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Timetable Builder v1.0",
+    "description": "Cover teacher timetable.",
+    "buttonText": "Open Cover Teacher Timetable Builder",
+    "link": "./build_cover/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Timetable Builder v2.0",
+    "description": "Cover teacher timetable.",
+    "buttonText": "Open Cover Teacher Timetable Builder",
+    "link": "./build_cover2/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Timetable Builder v3.0",
+    "description": "Cover teacher timetable.",
+    "buttonText": "Open Cover Teacher Timetable Builder",
+    "link": "./build_cover3/index.html",
+    "buttonClass": "btn-hhs"
+  },
+   {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Viewer",
+    "description": "Cover teacher Viewer - daily list.",
+    "buttonText": "Open Cover Teacher Viewer",
+    "link": "./viewer_cover/index.html",
+    "buttonClass": "btn-hhs"
+  },
+   {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Cover Teacher Viewer (Admin)",
+    "description": "Cover teacher Viewer - reports.",
+    "buttonText": "Open Cover Teacher Viewer - Admin",
+    "link": "./viewer_coverAdmin/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Exam Seating Plan (Admin)",
+    "description": "Exam Seating Plan - Trials 2026.",
+    "buttonText": "Exam Seating Plan - Trials 2026",
+    "link": "./build_seating/seating-plan.html",
+    "buttonClass": "btn-hhs"
+  },
+   {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Exam Seating Plan (Admin)",
+    "description": "Exam Seating Plan - Finals 2026.",
+    "buttonText": "Exam Seating Plan - Finals 2026",
+    "link": "./build_seating_final/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Management",
+    "badgeClass": "bg-secondary",
+    "title": "Exam Viewer (Admin)",
+    "description": "Exam Viewer - June 2026.",
+    "buttonText": "Exam Viewer - June 2026",
+    "link": "./exam_viewer/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Support Staff",
+      "badgeClass": "bg-success",
+    "title": "Print Queue",
+    "description": "Print Queue Manager v1.",
+    "buttonText": "Main Print Demo",
+    "link": "./demo_print1/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Support Staff",
+      "badgeClass": "bg-success",
+    "title": "Print Queue",
+    "description": "Print Queue Manager v2, Added Email",
+    "buttonText": "Print Queue Manager v2",
+    "link": "./demo_print2/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Support Staff",
+      "badgeClass": "bg-success",
+    "title": "Teacher Tracking",
+    "description": "Activity Tracker v1. (Habit/Tasks)",
+    "buttonText": "Activity Tracking",
+    "link": "./demo_teacher_tracking/index.html",
+    "buttonClass": "btn-hhs"
+  },
+  {
+    "badge": "Eduware",
+    "badgeClass": "bg-warning",
+    "title": "Demo Python Game",
+    "description": "Coding and Robotics: Python",
+    "buttonText": "Dungeon V1.0",
+    "link": "./demo_game1/index.html",
+    "buttonClass": "btn-hhs"
+  }
+  
+
+]

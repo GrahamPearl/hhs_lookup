@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cover Data Viewer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="./viewer-styles.css" />
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark bg-dark sticky-top">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h5">📊 Cover Data Viewer</span>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#settingsModal">
+          ⚙️ Settings
+        </button>
+        <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#exportModal">
+          ⬇️ Export
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container-fluid py-4">
+    <!-- Date Range & Filter Bar -->
+    <div class="card mb-4">
+      <div class="card-header bg-light">
+        <!-- Date Range Section -->
+        <div class="row g-3 align-items-end mb-3">
+          <div class="col-md-1">
+            <label class="form-label small fw-semibold">From Date</label>
+            <input type="date" id="filterDateFrom" class="form-control form-control-sm" />
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label small fw-semibold">To Date</label>
+            <input type="date" id="filterDateTo" class="form-control form-control-sm" />
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Quick Select</label>
+            <div class="btn-group btn-group-sm w-100" role="group">
+              <button type="button" id="quickLast7" class="btn btn-outline-secondary">7 Days</button>
+              <button type="button" id="quickLast30" class="btn btn-outline-secondary">30 Days</button>
+              <button type="button" id="quickAllData" class="btn btn-outline-secondary">All Data</button>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <button id="refreshDataBtn" class="btn btn-sm btn-outline-primary w-100" title="Refresh data from Firebase">🔄 Refresh</button>
+          </div>
+
+          <div class="col-md-2 text-end">
+            <small id="resultCount" class="text-muted">Loading...</small>
+          </div>
+        </div>
+
+        <!-- Teacher Filters Section -->
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Absent Teacher</label>
+            <input type="text" id="filterAbsentTeacher" class="form-control form-control-sm" placeholder="Search..." />
+            <div id="absentTeacherDropdown" class="dropdown-menu" style="display: none; width: 100%; position: static;">
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Cover Teacher</label>
+            <input type="text" id="filterCoverTeacher" class="form-control form-control-sm" placeholder="Search..." />
+            <div id="coverTeacherDropdown" class="dropdown-menu" style="display: none; width: 100%; position: static;">
+            </div>
+          </div>
+
+          <div class="col-md-3 d-flex gap-1">
+            <button id="clearFiltersBtn" class="btn btn-sm btn-outline-secondary w-100">Clear All Filters</button>
+          </div>
+
+          <div class="col-md-3 text-end">
+            <small id="dateRangeDisplay" class="text-muted">Date range: all data</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div id="statsBar" class="card mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <div class="card-body">
+        <div class="row text-center g-3">
+          <div class="col-md-2">
+            <div style="font-size: 1.4rem; font-weight: bold;" id="statTotal">—</div>
+            <small>Total Records</small>
+          </div>
+          <div class="col-md-2">
+            <div style="font-size: 1.4rem; font-weight: bold;" id="statDates">—</div>
+            <small>Dates</small>
+          </div>
+          <div class="col-md-2">
+            <div style="font-size: 1.4rem; font-weight: bold;" id="statAbsentUnique">—</div>
+            <small>Unique Absent</small>
+          </div>
+          <div class="col-md-2">
+            <div style="font-size: 1.4rem; font-weight: bold;" id="statCoverUnique">—</div>
+            <small>Unique Cover</small>
+          </div>
+          <div class="col-md-2">
+            <div style="font-size: 1.4rem; font-weight: bold;" id="statTopAbsent">—</div>
+            <small>Top Absent</small>
+          </div>
+          <div class="col-md-2">
+            <div style="font-size: 1.4rem; font-weight: bold;" id="statTopCover">—</div>
+            <small>Top Cover</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="cursor: pointer;" data-sort="date">📅 Date</th>
+              <th style="cursor: pointer;" data-sort="week">Week</th>
+              <th style="cursor: pointer;" data-sort="coveredTeacher">Absent Teacher</th>
+              <th style="cursor: pointer;" data-sort="absentReason">Reason</th>
+              <th style="cursor: pointer;" data-sort="coverTeacher">Cover Teacher</th>
+              <th style="cursor: pointer;" data-sort="period">Period</th>
+              <th style="cursor: pointer;" data-sort="subject">Subject</th>
+              <th>Class</th>
+              <th>Venue</th>
+            </tr>
+          </thead>
+          <tbody id="dataTable">
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">Loading data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">⚙️ Viewer Settings</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <h6 class="border-bottom pb-2">Firebase Configuration</h6>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">School ID</label>
+            <input type="text" id="settingSchoolId" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">API Key</label>
+            <input type="text" id="settingApiKey" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Project ID</label>
+            <input type="text" id="settingProjectId" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Auth Domain</label>
+            <input type="text" id="settingAuthDomain" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Storage Bucket</label>
+            <input type="text" id="settingStorageBucket" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Messaging Sender ID</label>
+            <input type="text" id="settingMessagingSenderId" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">App ID</label>
+            <input type="text" id="settingAppId" class="form-control" />
+          </div>
+          <button id="testConnectionBtn" class="btn btn-outline-primary w-100 mb-2">🔗 Test Connection</button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Modal -->
+  <div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">⬇️ Export Data</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body d-grid gap-2">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Select Report</label>
+            <select id="reportSelector" class="form-select form-select-sm">
+              <option value="">None - Export filtered data as-is</option>
+              <option value="a1-teacher-absence-profile">A1: Individual Teacher Absence Profile</option>
+              <option value="a2-cover-teacher-workload">A2: Cover Teacher Workload Analysis</option>
+              <option value="b3-absence-trend">B3: Absence Trend Report</option>
+              <option value="b4-absence-reason-analysis">B4: Absence Reason Analysis</option>
+              <option value="c5-coverage-gap">C5: Coverage Gap Report</option>
+              <option value="c6-subject-impact">C6: Subject & Curriculum Impact Report</option>
+            </select>
+            <small class="text-muted d-block mt-2">Selected report will respect the current date range and filters</small>
+          </div>
+          <hr />
+          <button id="viewReportBtn" class="btn btn-outline-info">👁️ View Report</button>
+          <hr />
+          <button id="exportCsvBtn" class="btn btn-outline-dark">📄 Export to CSV</button>
+          <button id="exportExcelBtn" class="btn btn-outline-dark">📊 Export to Excel (with Summary)</button>
+          <button id="printBtn" class="btn btn-outline-dark">🖨️ Print</button>
+          <hr />
+          <div class="alert alert-info small">
+            <strong>ℹ️ Info:</strong> Exports include currently filtered data and selected date range. Clear filters to export all records.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Viewer Modal -->
+  <div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title" id="reportTitle">Report</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          <div id="reportMetadata" class="alert alert-secondary mb-3 small">
+            <strong>Report Generated:</strong> <span id="reportTimestamp"></span> | 
+            <strong>Records:</strong> <span id="reportRecordCount"></span> | 
+            <strong>Date Range:</strong> <span id="reportDateRange"></span>
+          </div>
+          
+          <!-- Chart section (if applicable) -->
+          <div id="reportChartContainer" class="mb-4"></div>
+          
+          <!-- Table/Data section -->
+          <div id="reportTableContainer"></div>
+          
+          <!-- Pagination controls -->
+          <nav id="reportPaginationContainer" class="mt-3"></nav>
+        </div>
+        <div class="modal-footer">
+          <button id="reportExportExcelBtn" class="btn btn-success">📥 Export to Excel</button>
+          <button id="reportPrintBtn" class="btn btn-info">🖨️ Print Report</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/2.8.0/xlsx.full.min.js"></script>
+
+  <!-- Shared Firebase adapter (from main project) -->
+  <script src="./firebase-adapter.js"></script>
+
+  <!-- Viewer scripts -->
+  <script src="./viewer-config.js"></script>
+  <script src="./viewer-export.js"></script>
+  <script src="./viewer-charts.js"></script>
+  <script src="./viewer-reports.js"></script>
+  <script src="./viewer.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+/schools/{schoolId}/
+  settings/
+    fairness        ← fairness settings
+    absenceReasons  ← managed reasons list
+    tenWeekStart    ← period start date
+  teachers/{teacherName}
+    ← timetable JSON
+  allocations/{dateStr}/
+    coverAssignments
+    noCoverNeeded
+    absentTeachers
+    partialAbsentTeachers
+    absentTeacherReasons
+  history/{docId}
+    ← individual cover history entries
+  metrics/{teacherName}
+    ← cover tallies
+  auditLog/{docId}
+    ← history log entries

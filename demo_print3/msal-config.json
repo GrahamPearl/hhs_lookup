@@ -1,0 +1,8 @@
+{
+  "clientId": "YOUR-CLIENT-ID",
+  "tenantId": "YOUR-TENANT-ID",
+  "redirectUri": "http://localhost/printqueue/",
+  "scopes": ["Mail.Send"],
+  "senderMailbox": "no-reply@forestview.co.za",
+  "saveToSentItems": false
+}

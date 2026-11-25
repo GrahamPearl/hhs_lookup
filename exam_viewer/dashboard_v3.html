@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educator Exam Workload Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight">Exam Duty Analytics Dashboard</h1>
+                <p class="text-xs text-slate-500 mt-0.5">Dynamic Source: <span class="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-700">data_dashboard.json</span></p>
+            </div>
+            <nav class="flex space-x-1 bg-slate-100 p-1 rounded-lg text-sm font-medium">
+                <button onclick="switchTab('tally-tab')" id="btn-tally-tab" class="tab-btn px-4 py-2 rounded-md transition bg-white text-slate-900 shadow-sm">Workload Tally</button>
+                <button onclick="switchTab('heatmap-tab')" id="btn-heatmap-tab" class="tab-btn px-4 py-2 rounded-md transition text-slate-600 hover:text-slate-900">Duty Heatmap</button>
+                <button onclick="switchTab('diagnostics-tab')" id="btn-diagnostics-tab" class="tab-btn px-4 py-2 rounded-md transition text-slate-600 hover:text-slate-900 relative">
+                    System Diagnostics
+                    <span id="clash-badge" class="absolute -top-1 -right-1 hidden flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Fairness model explanation banner -->
+        <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3.5 flex items-start gap-3 text-sm text-blue-800">
+            <svg class="w-4 h-4 mt-0.5 shrink-0 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/></svg>
+            <span><strong class="font-semibold">Fairness model:</strong> Workload equity is evaluated on two ordered axes — <strong>Session Count</strong> (primary) then <strong>Total Hours</strong> (tiebreaker). A teacher with fewer sessions is always preferred for the next allocation regardless of hours, ensuring no individual accumulates disproportionate duty frequency.</span>
+        </div>
+
+        <div id="error-banner" class="hidden bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-sm font-medium shadow-xs">
+            ⚠️ <span id="error-message">Failed to fetch data source.</span>
+        </div>
+
+        <!-- KPI Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Active Staff</span>
+                <span id="kpi-staff" class="text-3xl font-bold text-slate-900 mt-2">--</span>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Allocated Hours</span>
+                <span id="kpi-hours" class="text-3xl font-bold text-slate-900 mt-2">-- hrs</span>
+            </div>
+            <!-- Average card now shows sessions/hours compound metric -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Load per Staff</span>
+                <span id="kpi-avg" class="text-3xl font-bold text-slate-900 mt-2">--</span>
+                <span id="kpi-avg-sub" class="text-xs text-slate-400 mt-1">sessions · hrs</span>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Clash Incidents</span>
+                <span id="kpi-clashes" class="text-3xl font-bold mt-2">--</span>
+            </div>
+        </section>
+
+        <!-- TAB 1: Workload Tally -->
+        <section id="tally-tab" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                    <!-- Chart title reflects dual-axis nature -->
+                    <h2 class="text-base font-bold text-slate-900 mb-1">Sessions &amp; Hours Distribution (Top 20)</h2>
+                    <p class="text-xs text-slate-500 mb-4">Sorted by Session Count (primary fairness axis), then Total Hours (tiebreaker).</p>
+                    <div class="h-80 w-full relative">
+                        <canvas id="workloadChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 mb-2">Controls &amp; Sorting</h2>
+                        <p class="text-xs text-slate-500 mb-4">Sort order mirrors the allocation algorithm: Sessions first, Hours as tiebreaker.</p>
+                        <input type="text" id="search-input" oninput="renderTallyTable()" placeholder="Search educator..." class="w-full text-sm px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 placeholder:text-slate-400 mb-4">
+                    </div>
+                    <div class="space-y-2">
+                        <!-- Sort labels updated to reflect sessions-first priority -->
+                        <button onclick="setSorting('desc')" id="sort-desc" class="w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border bg-slate-900 border-slate-900 text-white flex justify-between items-center cursor-pointer">
+                            <span>Highest Sessions → Hours</span>
+                            <span>↓</span>
+                        </button>
+                        <button onclick="setSorting('asc')" id="sort-asc" class="w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 flex justify-between items-center cursor-pointer">
+                            <span>Lowest Sessions → Hours</span>
+                            <span>↑</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Educator Metrics Table</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Fairness Rank is computed from the composite score: Sessions (primary) + Hours (tiebreaker).</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
+                                <th class="px-6 py-3">Educator Name</th>
+                                <!-- Sessions column is now explicitly labelled as primary axis -->
+                                <th class="px-6 py-3 text-right">
+                                    Sessions Assigned
+                                    <span class="ml-1 bg-slate-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Primary</span>
+                                </th>
+                                <th class="px-6 py-3 text-right">
+                                    Total Hours
+                                    <span class="ml-1 bg-slate-300 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">Tiebreaker</span>
+                                </th>
+                                <!-- New: composite fairness rank column -->
+                                <th class="px-6 py-3 text-right">Fairness Rank</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tally-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: Heatmap (unchanged structurally) -->
+        <section id="heatmap-tab" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                <div class="mb-4">
+                    <h2 class="text-base font-bold text-slate-900">Duty Load Heatmap Matrix</h2>
+                    <p class="text-xs text-slate-500 mt-1">Grid cells track total hours assigned per day across standard Sessions 1 &amp; 2. Darker green colors denote higher time density assignments. Orange cells signify Study Venue supervision assignments.</p>
+                </div>
+                <div class="overflow-x-auto mt-6">
+                    <div class="min-w-[900px] p-2">
+                        <div id="heatmap-grid" class="grid gap-x-1 gap-y-1.5 items-center">
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-xs font-medium text-slate-500 border-t border-slate-100 pt-4">
+                    <span>Legend indicators:</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-slate-100 border border-slate-200 rounded-xs"></span> 0 hrs (Free)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-emerald-100 border border-emerald-200 rounded-xs"></span> Light Load (&le; 1hr)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-emerald-300 border border-emerald-400 rounded-xs"></span> Medium Load (&le; 2.5hrs)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-emerald-600 rounded-xs"></span> Heavy Load (&gt; 2.5hrs)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-amber-500 rounded-xs"></span> Study Venue Flag</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: Diagnostics -->
+        <section id="diagnostics-tab" class="tab-content hidden space-y-6">
+
+            <!-- Diagnostic B: now shows sessions + hours dispersion side-by-side -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                <div>
+                    <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Diagnostic B</span>
+                    <h2 class="text-lg font-bold text-slate-900 mt-1">Workload Equity &amp; Dispersion Analysis</h2>
+                    <p class="text-xs text-slate-500">Fairness is assessed on two axes. Session dispersion is the primary equity signal; hours dispersion is the secondary signal.</p>
+                </div>
+
+                <!-- Sessions dispersion block (PRIMARY) -->
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        Session Count Dispersion
+                        <span class="bg-slate-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">Primary Axis</span>
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl text-center">
+                        <div class="p-2 border-r border-slate-200/60 last:border-0">
+                            <span class="text-xs font-semibold text-slate-400 block">Spread Range Max−Min</span>
+                            <span id="diag-sessions-range" class="text-2xl font-bold text-slate-900 block mt-1">--</span>
+                        </div>
+                        <div class="p-2 border-r border-slate-200/60 last:border-0">
+                            <span class="text-xs font-semibold text-slate-400 block">Standard Deviation (&sigma;)</span>
+                            <span id="diag-sessions-stddev" class="text-2xl font-bold text-slate-900 block mt-1">--</span>
+                        </div>
+                        <div class="p-2">
+                            <span class="text-xs font-semibold text-slate-400 block">Session Equity Rating</span>
+                            <span id="diag-sessions-rating" class="text-xl font-bold block mt-1.5">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hours dispersion block (SECONDARY) -->
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        Total Hours Dispersion
+                        <span class="bg-slate-300 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Tiebreaker Axis</span>
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl text-center">
+                        <div class="p-2 border-r border-slate-200/60 last:border-0">
+                            <span class="text-xs font-semibold text-slate-400 block">Spread Range Max−Min</span>
+                            <span id="diag-range" class="text-2xl font-bold text-slate-900 block mt-1">--</span>
+                        </div>
+                        <div class="p-2 border-r border-slate-200/60 last:border-0">
+                            <span class="text-xs font-semibold text-slate-400 block">Standard Deviation (&sigma;)</span>
+                            <span id="diag-stddev" class="text-2xl font-bold text-slate-900 block mt-1">--</span>
+                        </div>
+                        <div class="p-2">
+                            <span class="text-xs font-semibold text-slate-400 block">Hours Equity Rating</span>
+                            <span id="diag-rating" class="text-xl font-bold block mt-1.5">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Composite equity verdict -->
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Composite Equity Verdict</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Driven primarily by session σ; hours σ shown as context.</p>
+                    </div>
+                    <span id="diag-composite" class="text-xl font-bold text-slate-900">--</span>
+                </div>
+            </div>
+
+            <!-- Diagnostic A: Double-booking (unchanged) -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+                <div class="flex justify-between items-start border-b border-slate-100 pb-4">
+                    <div>
+                        <span class="bg-red-50 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Diagnostic A</span>
+                        <h2 class="text-lg font-bold text-slate-900 mt-1">Double-Booking / Conflict Matrix Detection</h2>
+                        <p class="text-xs text-slate-500">Identifies timeline overlaps where an educator is simultaneously scheduled in multiple venues during the exact same session.</p>
+                    </div>
+                    <span id="clash-count-pill" class="text-xs font-bold px-2.5 py-1 rounded-full">-- Clashes Found</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
+                                <th class="px-4 py-3">Educator</th>
+                                <th class="px-4 py-3">Date</th>
+                                <th class="px-4 py-3">Session</th>
+                                <th class="px-4 py-3">Time/Period Slot</th>
+                                <th class="px-4 py-3">Conflicting Venues &amp; Sessions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clash-table-body" class="divide-y divide-slate-100 font-medium text-slate-700 text-xs">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // ── Global State ──────────────────────────────────────────────────────
+        let rawDataset      = [];
+        let staffWorkloadData = [];
+        let clashReport     = [];
+        let dateUniverse    = [];
+        let sortDirection   = 'desc';
+        let mainChartRef    = null;
+
+        // HOURS_SCALE mirrors the Python constant: large enough that hours can
+        // never override a sessions difference in the composite score.
+        const HOURS_SCALE = 200.0;
+
+        // ── Utility helpers ───────────────────────────────────────────────────
+        function parseDuration(examTimeStr) {
+            const normalized = String(examTimeStr).trim().toLowerCase();
+            if (normalized.includes('period') || normalized === 'break') return 1.0;
+            const v = parseFloat(normalized);
+            return isNaN(v) ? 0.0 : v;
+        }
+
+        function standardizeName(name) {
+            return String(name).trim().toUpperCase().replace(/\s+/g, ' ');
+        }
+
+        /**
+         * Composite fairness score matching the Python algorithm exactly.
+         * Lower score = heavier (less fair) workload → ranked first for display.
+         * Primary:   sessionCount
+         * Secondary: totalHours / HOURS_SCALE  (cannot override a session gap)
+         */
+        function compositeFairnessScore(sessionCount, totalHours) {
+            return sessionCount + (totalHours / HOURS_SCALE);
+        }
+
+        // ── Remote data fetch ─────────────────────────────────────────────────
+        async function fetchLocalDatabase() {
+            try {
+                const response = await fetch('data_dashboard.json');
+                if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+                rawDataset = await response.json();
+                document.getElementById('error-banner').classList.add('hidden');
+                runDataAnalysisEngine();
+            } catch (error) {
+                console.error("Data ingestion failed:", error);
+                document.getElementById('error-banner').classList.remove('hidden');
+                document.getElementById('error-message').innerText =
+                    `Error loading "data_dashboard.json". Ensure the file is in the same directory and the page is served from a local server. Detail: ${error.message}`;
+            }
+        }
+
+        // ── Core analytics pipeline ───────────────────────────────────────────
+        function runDataAnalysisEngine() {
+            const rawMap     = {};
+            const uniqueDates = new Set();
+            clashReport      = [];
+            const scheduleMap = {};
+
+            rawDataset.forEach(row => {
+                const educator   = standardizeName(row.Educator);
+                const date       = row.Date;
+                const timeSlot   = row["Exam Time"];
+                const sessionNum = parseInt(row.Session) || 1;
+                const hours      = parseDuration(timeSlot);
+                const isStudyVenue =
+                    (row.Grade && row.Grade.trim().toLowerCase() === "study venue") ||
+                    (row.Exam  && row.Exam.trim().toLowerCase()  === "study venue");
+
+                uniqueDates.add(date);
+
+                if (!rawMap[educator]) {
+                    rawMap[educator] = {
+                        educator,
+                        totalHours:   0,
+                        dutyCount:    0,   // session count — PRIMARY fairness axis
+                        matrixGrid:   {}
+                    };
+                }
+                rawMap[educator].totalHours += hours;
+                rawMap[educator].dutyCount  += 1;   // increment session count
+
+                const gridCellKey = `${date}||Session_${sessionNum}`;
+                if (!rawMap[educator].matrixGrid[gridCellKey]) {
+                    rawMap[educator].matrixGrid[gridCellKey] = { hours: 0, hasStudyVenue: false };
+                }
+                rawMap[educator].matrixGrid[gridCellKey].hours += hours;
+                if (isStudyVenue) rawMap[educator].matrixGrid[gridCellKey].hasStudyVenue = true;
+
+                const fingerprint = `${educator}||${date}||${sessionNum}||${timeSlot}`;
+                if (!scheduleMap[fingerprint]) scheduleMap[fingerprint] = [];
+                scheduleMap[fingerprint].push(row);
+            });
+
+            staffWorkloadData = Object.values(rawMap);
+
+            dateUniverse = Array.from(uniqueDates).sort((a, b) => {
+                const d1 = a.split('-').reverse().join('');
+                const d2 = b.split('-').reverse().join('');
+                return d1.localeCompare(d2);
+            });
+
+            // Diagnostic A: clash detection
+            Object.keys(scheduleMap).forEach(key => {
+                if (scheduleMap[key].length > 1) {
+                    const sample = scheduleMap[key][0];
+                    clashReport.push({
+                        educator: standardizeName(sample.Educator),
+                        date:     sample.Date,
+                        timeSlot: sample["Exam Time"],
+                        session:  sample.Session,
+                        venues:   scheduleMap[key].map(
+                            item => `${item.Exam || 'Duty'} (${item["Venue Number"] || 'Unk Venue'})`
+                        )
+                    });
+                }
+            });
+
+            updateKPIDashboard();
+            executeDiagnosticB();
+            renderTallyTable();
+            renderHeatmapMatrix();
+            renderClashTable();
+        }
+
+        // ── Tab controller ────────────────────────────────────────────────────
+        function switchTab(targetId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+                btn.classList.add('text-slate-600', 'hover:text-slate-900');
+            });
+            document.getElementById(targetId).classList.remove('hidden');
+            const targetBtn = document.getElementById(`btn-${targetId}`);
+            targetBtn.classList.remove('text-slate-600', 'hover:text-slate-900');
+            targetBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+            if (targetId === 'tally-tab' && mainChartRef) mainChartRef.resize();
+        }
+
+        // ── KPI Dashboard ─────────────────────────────────────────────────────
+        function updateKPIDashboard() {
+            const totalStaff   = staffWorkloadData.length;
+            const totalHours   = staffWorkloadData.reduce((acc, d) => acc + d.totalHours, 0);
+            const totalClashes = clashReport.length;
+
+            // Compound average: "N.N sessions · H.H hrs"
+            const avgSessions = totalStaff > 0
+                ? (staffWorkloadData.reduce((a, d) => a + d.dutyCount, 0) / totalStaff).toFixed(1)
+                : 0;
+            const avgHours = totalStaff > 0 ? (totalHours / totalStaff).toFixed(1) : 0;
+
+            document.getElementById('kpi-staff').innerText  = totalStaff;
+            document.getElementById('kpi-hours').innerText  = `${totalHours.toFixed(1)} h`;
+            document.getElementById('kpi-avg').innerText    = `${avgSessions} · ${avgHours}`;
+            document.getElementById('kpi-avg-sub').innerText = 'avg sessions · avg hrs';
+
+            const clashCard = document.getElementById('kpi-clashes');
+            clashCard.innerText = totalClashes;
+            const badge = document.getElementById('clash-badge');
+            const pill  = document.getElementById('clash-count-pill');
+
+            if (totalClashes > 0) {
+                clashCard.className = "text-3xl font-bold mt-2 text-red-600";
+                badge.classList.remove('hidden');
+                pill.className  = "text-xs font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-700";
+                pill.innerText  = `${totalClashes} Clashes Found`;
+            } else {
+                clashCard.className = "text-3xl font-bold mt-2 text-emerald-600";
+                badge.classList.add('hidden');
+                pill.className  = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700";
+                pill.innerText  = "No Conflicts Detected";
+            }
+        }
+
+        // ── Sort control ──────────────────────────────────────────────────────
+        function setSorting(dir) {
+            sortDirection = dir;
+            const activeClass   = "w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border bg-slate-900 border-slate-900 text-white flex justify-between items-center cursor-pointer";
+            const inactiveClass = "w-full text-left text-xs font-medium px-3 py-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 flex justify-between items-center cursor-pointer";
+            document.getElementById('sort-desc').className = dir === 'desc' ? activeClass : inactiveClass;
+            document.getElementById('sort-asc').className  = dir === 'asc'  ? activeClass : inactiveClass;
+            renderTallyTable();
+        }
+
+        // ── Tally table & chart ───────────────────────────────────────────────
+        function renderTallyTable() {
+            const keyword  = document.getElementById('search-input').value.toUpperCase().trim();
+            let filtered   = staffWorkloadData.filter(d => d.educator.includes(keyword));
+
+            // Sort mirrors the Python algorithm: sessions first, hours tiebreaker
+            filtered.sort((a, b) => {
+                const sessionDiff = b.dutyCount - a.dutyCount;
+                if (sessionDiff !== 0) return sortDirection === 'desc' ? sessionDiff : -sessionDiff;
+                const hoursDiff = b.totalHours - a.totalHours;
+                return sortDirection === 'desc' ? hoursDiff : -hoursDiff;
+            });
+
+            const tbody = document.getElementById('tally-table-body');
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 text-xs">No educators matching search criteria.</td></tr>`;
+            } else {
+                filtered.forEach((row, index) => {
+                    // Fairness rank = composite score rounded to 3dp for display
+                    const fairnessScore = compositeFairnessScore(row.dutyCount, row.totalHours);
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/80 transition-colors";
+                    tr.innerHTML = `
+                        <td class="px-6 py-3.5 font-semibold text-slate-900">${row.educator}</td>
+                        <td class="px-6 py-3.5 text-right font-bold tabular-nums text-slate-800">${row.dutyCount}</td>
+                        <td class="px-6 py-3.5 text-right font-bold tabular-nums text-slate-500">${row.totalHours.toFixed(1)} hrs</td>
+                        <td class="px-6 py-3.5 text-right tabular-nums">
+                            <span class="inline-block bg-slate-100 text-slate-700 text-xs font-bold px-2 py-0.5 rounded-full">${fairnessScore.toFixed(3)}</span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Chart uses top 20 in current sort order
+            generateWorkloadChart(filtered.slice(0, 20));
+        }
+
+        /**
+         * Dual-dataset bar chart: sessions (primary, dark) + hours (secondary, lighter).
+         * Two y-axes so both scales are readable independently.
+         */
+        function generateWorkloadChart(dataSlice) {
+            const canvasCtx = document.getElementById('workloadChart').getContext('2d');
+            if (mainChartRef) mainChartRef.destroy();
+
+            mainChartRef = new Chart(canvasCtx, {
+                type: 'bar',
+                data: {
+                    labels: dataSlice.map(d => d.educator),
+                    datasets: [
+                        {
+                            label: 'Sessions (Primary)',
+                            data:  dataSlice.map(d => d.dutyCount),
+                            backgroundColor: '#0f172a',
+                            borderRadius: 5,
+                            barThickness: 10,
+                            yAxisID: 'ySessions',
+                            order: 1
+                        },
+                        {
+                            label: 'Hours (Tiebreaker)',
+                            data:  dataSlice.map(d => d.totalHours),
+                            backgroundColor: '#94a3b8',
+                            borderRadius: 5,
+                            barThickness: 10,
+                            yAxisID: 'yHours',
+                            order: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { font: { size: 10, weight: '600' }, boxWidth: 12, padding: 12 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: (items) => {
+                                    const d = dataSlice[items[0].dataIndex];
+                                    const score = compositeFairnessScore(d.dutyCount, d.totalHours);
+                                    return [`Fairness Score: ${score.toFixed(3)}`];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 9, weight: '500' }, maxRotation: 45 }
+                        },
+                        ySessions: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Sessions', font: { size: 9, weight: '600' } },
+                            border: { dash: [4, 4] },
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { size: 9 }, stepSize: 1 }
+                        },
+                        yHours: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'Hours', font: { size: 9, weight: '600' } },
+                            grid: { drawOnChartArea: false },
+                            ticks: { font: { size: 9 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Diagnostic B: dual-axis equity analysis ───────────────────────────
+        function executeDiagnosticB() {
+            if (staffWorkloadData.length === 0) return;
+
+            // ── Sessions dispersion (PRIMARY axis) ────────────────────────────
+            const sessionArray = staffWorkloadData.map(d => d.dutyCount);
+            const sMax  = Math.max(...sessionArray);
+            const sMin  = Math.min(...sessionArray);
+            const sRange = sMax - sMin;
+            const sMean  = sessionArray.reduce((a, v) => a + v, 0) / sessionArray.length;
+            const sSigma = Math.sqrt(
+                sessionArray.reduce((a, v) => a + Math.pow(v - sMean, 2), 0) / sessionArray.length
+            );
+
+            document.getElementById('diag-sessions-range').innerText  = `${sRange} sessions`;
+            document.getElementById('diag-sessions-stddev').innerText = `± ${sSigma.toFixed(2)}`;
+
+            const sessionsRatingNode = document.getElementById('diag-sessions-rating');
+            let sessionsRatingText, sessionsRatingClass;
+            if (sSigma <= 1.0) {
+                sessionsRatingText  = "Highly Balanced";
+                sessionsRatingClass = "text-xl font-bold block mt-1.5 text-emerald-600";
+            } else if (sSigma <= 2.0) {
+                sessionsRatingText  = "Moderate Dispersion";
+                sessionsRatingClass = "text-xl font-bold block mt-1.5 text-amber-600";
+            } else {
+                sessionsRatingText  = "High Duty Disparity";
+                sessionsRatingClass = "text-xl font-bold block mt-1.5 text-red-600";
+            }
+            sessionsRatingNode.innerText   = sessionsRatingText;
+            sessionsRatingNode.className   = sessionsRatingClass;
+
+            // ── Hours dispersion (SECONDARY / tiebreaker axis) ────────────────
+            const hourArray = staffWorkloadData.map(d => d.totalHours);
+            const hMax  = Math.max(...hourArray);
+            const hMin  = Math.min(...hourArray);
+            const hRange = hMax - hMin;
+            const hMean  = hourArray.reduce((a, v) => a + v, 0) / hourArray.length;
+            const hSigma = Math.sqrt(
+                hourArray.reduce((a, v) => a + Math.pow(v - hMean, 2), 0) / hourArray.length
+            );
+
+            document.getElementById('diag-range').innerText  = `${hRange.toFixed(1)} hrs`;
+            document.getElementById('diag-stddev').innerText = `± ${hSigma.toFixed(2)}`;
+
+            const hoursRatingNode = document.getElementById('diag-rating');
+            let hoursRatingText, hoursRatingClass;
+            if (hSigma <= 1.5) {
+                hoursRatingText  = "Highly Balanced";
+                hoursRatingClass = "text-xl font-bold block mt-1.5 text-emerald-600";
+            } else if (hSigma <= 3.0) {
+                hoursRatingText  = "Moderate Dispersion";
+                hoursRatingClass = "text-xl font-bold block mt-1.5 text-amber-600";
+            } else {
+                hoursRatingText  = "High Workload Disparity";
+                hoursRatingClass = "text-xl font-bold block mt-1.5 text-red-600";
+            }
+            hoursRatingNode.innerText = hoursRatingText;
+            hoursRatingNode.className = hoursRatingClass;
+
+            // ── Composite verdict: driven primarily by sessions σ ─────────────
+            const compositeNode = document.getElementById('diag-composite');
+            // Composite scores array using the same formula as the Python scorer
+            const compositeScores = staffWorkloadData.map(
+                d => compositeFairnessScore(d.dutyCount, d.totalHours)
+            );
+            const cMean  = compositeScores.reduce((a, v) => a + v, 0) / compositeScores.length;
+            const cSigma = Math.sqrt(
+                compositeScores.reduce((a, v) => a + Math.pow(v - cMean, 2), 0) / compositeScores.length
+            );
+
+            // Verdict thresholds: σ ≤ 1.1 = balanced (sessions dominate, small spread)
+            if (cSigma <= 1.1) {
+                compositeNode.innerText   = `Balanced  (σ = ${cSigma.toFixed(2)})`;
+                compositeNode.className   = "text-xl font-bold text-emerald-600";
+            } else if (cSigma <= 2.2) {
+                compositeNode.innerText   = `Moderate Dispersion  (σ = ${cSigma.toFixed(2)})`;
+                compositeNode.className   = "text-xl font-bold text-amber-600";
+            } else {
+                compositeNode.innerText   = `High Disparity  (σ = ${cSigma.toFixed(2)})`;
+                compositeNode.className   = "text-xl font-bold text-red-600";
+            }
+        }
+
+        // ── Heatmap (unchanged logic) ─────────────────────────────────────────
+        function renderHeatmapMatrix() {
+            const container = document.getElementById('heatmap-grid');
+            container.innerHTML = '';
+            container.style.gridTemplateColumns =
+                `minmax(160px, max-content) repeat(${dateUniverse.length * 2}, minmax(55px, 1fr))`;
+
+            const cornerCell = document.createElement('div');
+            cornerCell.className = "text-xs font-bold text-slate-400 uppercase tracking-wider p-2 bg-slate-100/80 border border-slate-200 flex items-center justify-center sticky left-0 z-10 font-mono";
+            cornerCell.innerText = "Timeline Matrix";
+            cornerCell.style.gridRow = "1 / span 2";
+            container.appendChild(cornerCell);
+
+            dateUniverse.forEach(date => {
+                const dateHeader = document.createElement('div');
+                dateHeader.className = "text-center text-[11px] font-bold text-slate-700 p-1.5 bg-slate-100 border border-slate-200 rounded-xs shadow-3xs truncate";
+                dateHeader.style.gridColumn = `span 2`;
+                dateHeader.innerText = date;
+                container.appendChild(dateHeader);
+            });
+
+            dateUniverse.forEach(() => {
+                for (let s = 1; s <= 2; s++) {
+                    const sub = document.createElement('div');
+                    sub.className = "text-center text-[9px] font-bold text-slate-400 bg-slate-50 border-x border-b border-slate-200/60 py-0.5";
+                    sub.innerText = `S${s}`;
+                    container.appendChild(sub);
+                }
+            });
+
+            const alphabeticStaff = [...staffWorkloadData].sort((a, b) => a.educator.localeCompare(b.educator));
+            alphabeticStaff.forEach(staff => {
+                const rowLabel = document.createElement('div');
+                rowLabel.className = "text-xs font-bold text-slate-800 p-2 border-b border-slate-200/60 flex items-center bg-white sticky left-0 z-10 shadow-sm truncate";
+                rowLabel.innerText = staff.educator;
+                container.appendChild(rowLabel);
+
+                dateUniverse.forEach(date => {
+                    for (let sNum = 1; sNum <= 2; sNum++) {
+                        const key      = `${date}||Session_${sNum}`;
+                        const cellData = staff.matrixGrid[key];
+                        const hrs      = cellData ? cellData.hours       : 0;
+                        const svFlag   = cellData ? cellData.hasStudyVenue : false;
+
+                        let cls = "bg-slate-50 border border-slate-100 text-slate-300";
+                        if (svFlag) {
+                            cls = "bg-amber-500 text-white font-bold shadow-2xs";
+                        } else if (hrs > 0) {
+                            if      (hrs <= 1.0) cls = "bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold";
+                            else if (hrs <= 2.5) cls = "bg-emerald-300 border border-emerald-400 text-emerald-900 font-bold";
+                            else                 cls = "bg-emerald-600 text-white font-bold";
+                        }
+
+                        const cell = document.createElement('div');
+                        cell.className = `text-center text-[11px] p-2 rounded-xs transition-all tracking-tight ${cls}`;
+                        cell.innerText = (hrs > 0 || svFlag) ? `${hrs.toFixed(1)}` : '0';
+                        cell.title     = svFlag
+                            ? `${staff.educator} (${date} - S${sNum}): Study Venue`
+                            : `${staff.educator} (${date} - S${sNum}): ${hrs.toFixed(1)} hrs`;
+                        container.appendChild(cell);
+                    }
+                });
+            });
+        }
+
+        // ── Clash table (unchanged logic) ─────────────────────────────────────
+        function renderClashTable() {
+            const tbody = document.getElementById('clash-table-body');
+            tbody.innerHTML = '';
+
+            if (clashReport.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-emerald-600 font-semibold bg-emerald-50/40">No scheduling conflict issues or double-booking overlap profiles identified.</td></tr>`;
+                return;
+            }
+
+            clashReport.forEach(incident => {
+                const tr = document.createElement('tr');
+                tr.className = "bg-red-50/50 hover:bg-red-50 border-b border-red-100 transition-colors text-slate-900";
+                const venuesHTML = incident.venues.map(
+                    v => `<span class="inline-block bg-white border border-red-200 text-red-700 px-2 py-0.5 rounded-sm font-medium mr-1 my-0.5 shadow-3xs">${v}</span>`
+                ).join('');
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-bold text-red-900">${incident.educator}</td>
+                    <td class="px-4 py-3 font-medium tabular-nums">${incident.date}</td>
+                    <td class="px-4 py-3 font-medium"><span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-[10px] font-bold">Session ${incident.session}</span></td>
+                    <td class="px-4 py-3 text-slate-500 font-medium">${incident.timeSlot}</td>
+                    <td class="px-4 py-3">${venuesHTML}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ── Boot ──────────────────────────────────────────────────────────────
+        window.addEventListener('DOMContentLoaded', fetchLocalDatabase);
+    </script>
+</body>
+</html>
